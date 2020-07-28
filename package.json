@@ -1,0 +1,38 @@
+{
+  "name": "purescript-react-realworld",
+  "version": "1.0.0",
+  "description": "A real-world application demonstrating PureScript and React",
+  "keywords": [
+    "Purescript",
+    "React",
+    "RealWorld"
+  ],
+  "author": "Jonas Buntinx",
+  "license": "MIT",
+  "scripts": {
+    "build": "spago build",
+    "bundle": "yarn build && parcel build index.html",
+    "clean": "rm -Rf .cache dist output",
+    "dev-server": "parcel serve --no-source-maps index.html",
+    "id": "pscid",
+    "pscid:build": "yarn build",
+    "postinstall": "spago install",
+    "rebuild": "yarn clean && yarn build",
+    "rebundle": "yarn clean && yarn bundle",
+    "serve": "yarn build && yarn dev-server",
+    "test": "spago test"
+  },
+  "devDependencies": {
+    "parcel": "^1.12.4",
+    "pscid": "^2.9.3",
+    "purescript": "^0.13.8",
+    "purescript-psa": "^0.7.3",
+    "purty": "^6.2.0",
+    "spago": "^0.15.3"
+  },
+  "dependencies": {
+    "moment": "^2.27.0",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1"
+  }
+}

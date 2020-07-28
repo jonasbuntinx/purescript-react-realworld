@@ -1,0 +1,10 @@
+{
+  "purescript.addNpmPath": true,
+  "purescript.addPscPackageSources": true,
+  "purescript.addSpagoSources": true,
+  "purescript.editorMode": true,
+  "purescript.buildCommand": "spago build --purs-args \"--json-errors\"",
+  "[purescript]": {
+    "editor.formatOnSave": true
+  }
+}
