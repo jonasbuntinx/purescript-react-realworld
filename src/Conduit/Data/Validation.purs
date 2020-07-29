@@ -1,4 +1,4 @@
-module Conduit.Components.Validation where
+module Conduit.Data.Validation where
 
 import Prelude
 import Control.Comonad (class Comonad, class Extend)

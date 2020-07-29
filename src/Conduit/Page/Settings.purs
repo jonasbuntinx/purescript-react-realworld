@@ -2,19 +2,20 @@ module Conduit.Page.Settings where
 
 import Prelude
 import Conduit.Component.App as App
-import Conduit.Component.Auth (AuthAtom, logout)
 import Conduit.Data.Route (Route(..))
 import Conduit.Effects.Routing (navigate)
+import Conduit.Env (Env)
+import Conduit.State.Auth (logout)
 import React.Basic.DOM as R
 import React.Basic.Events (handler_)
 
 data Action
   = Logout
 
-mkSettingsPage :: forall env. App.Component { authAtom :: AuthAtom | env } Unit
+mkSettingsPage :: App.Component Env Unit
 mkSettingsPage =
-  App.component "SettingsPage" { init, update } \props store -> React.do
-    pure $ render props store
+  App.component "SettingsPage" { init, update } \_ store props -> React.do
+    pure $ render store props
   where
   init = {}
 
@@ -23,7 +24,7 @@ mkSettingsPage =
       logout
       navigate Home
 
-  render props store =
+  render store props =
     container
       [ R.h1
           { className: "text-xs-center"

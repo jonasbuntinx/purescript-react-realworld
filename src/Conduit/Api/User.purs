@@ -24,7 +24,7 @@ type Login
 -- | Types
 type User r
   = Profile
-      ( token :: Token
+      ( token :: String
       | r
       )
 
@@ -34,6 +34,3 @@ type Profile r
     , image :: Maybe String
     | r
     }
-
-type Token
-  = String

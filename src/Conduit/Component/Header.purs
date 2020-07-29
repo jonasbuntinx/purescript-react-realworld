@@ -1,7 +1,7 @@
 module Conduit.Component.Header where
 
 import Prelude
-import Conduit.Component.Auth (Auth)
+import Conduit.Data.Auth (Auth)
 import Conduit.Data.Route (Route(..))
 import Conduit.Effects.Routing (navigate)
 import Data.Maybe (Maybe, isJust, isNothing)

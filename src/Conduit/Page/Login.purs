@@ -6,10 +6,11 @@ import Apiary.Types (none) as Apiary
 import Conduit.Api.User (Login)
 import Conduit.Api.Utils as Utils
 import Conduit.Component.App as App
-import Conduit.Component.Auth (AuthAtom, login)
-import Conduit.Components.Validation (Validated(..), invalid, isValidEmail, modified, setModified)
 import Conduit.Data.Route (Route(..))
+import Conduit.Data.Validation (Validated(..), invalid, isValidEmail, modified, setModified)
 import Conduit.Effects.Routing (navigate)
+import Conduit.Env (Env)
+import Conduit.State.Auth (login)
 import Control.Comonad (extract)
 import Data.Array as Array
 import Data.Either (Either(..))
@@ -29,10 +30,10 @@ data Action
   | UpdatePassword String
   | Submit
 
-mkLoginPage :: forall env. App.Component { authAtom :: AuthAtom | env } Unit
+mkLoginPage :: App.Component Env Unit
 mkLoginPage =
-  App.component "LoginPage" { init, update } \props store -> React.do
-    pure $ render props store
+  App.component "LoginPage" { init, update } \_ store props -> React.do
+    pure $ render store props
   where
   init =
     { email: pure ""
@@ -62,7 +63,7 @@ mkLoginPage =
                             navigate Home
                       }
 
-  render props store =
+  render store props =
     let
       errors = validate store.state # unV identity (const mempty)
     in

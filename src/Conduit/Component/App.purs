@@ -16,7 +16,7 @@ component ::
   { init :: state
   , update :: Instance props state (ReaderT env Aff) -> action -> ReaderT env Aff Unit
   } ->
-  (props -> Store state action -> React.Render (UseStore props state action Unit) hooks React.JSX) ->
+  (env -> Store state action -> props -> React.Render (UseStore props state action Unit) hooks React.JSX) ->
   Component env props
 component name { init, update } renderFn = do
   env <- ask
@@ -29,4 +29,15 @@ component name { init, update } renderFn = do
             , update
             , launch: flip runReaderT env
             }
-        renderFn props store
+        renderFn env store props
+
+component' ::
+  forall env props hooks.
+  String ->
+  (env -> props -> React.Render Unit hooks React.JSX) ->
+  Component env props
+component' name renderFn = do
+  env <- ask
+  lift
+    $ React.component name \props -> React.do
+        renderFn env props
