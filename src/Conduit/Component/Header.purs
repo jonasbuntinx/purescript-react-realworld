@@ -1,18 +1,19 @@
 module Conduit.Component.Header where
 
 import Prelude
-import Conduit.Data.Auth (Auth)
 import Conduit.Data.Route (Route(..))
 import Conduit.Effects.Routing (navigate)
-import Data.Maybe (Maybe, isJust, isNothing)
+import Conduit.State.User (User)
+import Data.Maybe (Maybe(..), isJust, isNothing, maybe)
 import Data.Monoid (guard)
+import Data.Tuple (Tuple(..))
 import React.Basic.DOM as R
 import React.Basic.DOM.Events (preventDefault)
 import React.Basic.Events (handler)
 import React.Basic.Hooks as React
 
-header :: Maybe Auth -> Route -> React.JSX
-header auth route =
+header :: User -> Route -> React.JSX
+header (Tuple auth profile) route =
   R.nav
     { className: "navbar navbar-light"
     , children:
@@ -29,29 +30,28 @@ header auth route =
                     { className: "nav navbar-nav pull-xs-right"
                     , children:
                         [ navItem Home [ R.text "Home" ]
-                        , guard (isJust auth)
-                            $ React.fragment
-                                [ navItem Editor
-                                    [ R.i { className: "ion-compose", children: [] }
-                                    , R.text " New Article"
-                                    ]
-                                , navItem Settings
-                                    [ R.i { className: "ion-gear-a", children: [] }
-                                    , R.text " Settings"
-                                    ]
-                                , navItem (Profile "")
-                                    [ R.img
-                                        { className: "user-pic"
-                                        , src: ""
-                                        }
-                                    , R.text " Profile"
-                                    ]
-                                ]
-                        , guard (isNothing auth)
-                            React.fragment
-                            [ navItem Login [ R.text "Sign in" ]
-                            , navItem Register [ R.text "Sign up" ]
+                        , guard (isNothing auth) navItem Login [ R.text "Sign in" ]
+                        , guard (isNothing auth) navItem Register [ R.text "Sign up" ]
+                        , guard (isJust auth) navItem Editor
+                            [ R.i { className: "ion-compose", children: [] }
+                            , R.text " New Article"
                             ]
+                        , guard (isJust auth) navItem Settings
+                            [ R.i { className: "ion-gear-a", children: [] }
+                            , R.text " Settings"
+                            ]
+                        , profile
+                            # maybe React.empty \{ username, image } ->
+                                navItem (Profile username)
+                                  [ R.img
+                                      { className: "user-pic"
+                                      , src:
+                                          case image of
+                                            Nothing -> "https://static.productionready.io/images/smiley-cyrus.jpg"
+                                            Just url -> url
+                                      }
+                                  , R.text $ " " <> username
+                                  ]
                         ]
                     }
                 ]

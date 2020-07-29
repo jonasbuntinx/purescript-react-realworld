@@ -5,7 +5,7 @@ import Conduit.Component.App as App
 import Conduit.Data.Route (Route(..))
 import Conduit.Effects.Routing (navigate)
 import Conduit.Env (Env)
-import Conduit.State.Auth (logout)
+import Conduit.State.User (logout)
 import React.Basic.DOM as R
 import React.Basic.Events (handler_)
 

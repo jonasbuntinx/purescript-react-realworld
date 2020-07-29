@@ -1,8 +1,8 @@
 module Main where
 
 import Prelude
-import Conduit.Component.Auth as Auth
 import Conduit.Component.Routing as Routing
+import Conduit.Component.User as User
 import Conduit.Data.Route (routeCodec)
 import Conduit.Root as Root
 import Control.Monad.Reader as Reader
@@ -22,7 +22,7 @@ main = do
   case container of
     Nothing -> throw "Conduit container element not found."
     Just c -> do
-      authState /\ authManager <- Auth.mkAuthManager
-      routingState /\ routingManager <- Routing.mkRoutingManager routeCodec (Root.onNavigate authState)
-      root <- Reader.runReaderT Root.mkRoot { authState, routingState }
-      render (authManager (routingManager (root unit))) c
+      userState /\ userManager <- User.mkUserManager
+      routingState /\ routingManager <- Routing.mkRoutingManager routeCodec (Root.onNavigate userState)
+      root <- Reader.runReaderT Root.mkRoot { userState, routingState }
+      render (userManager (routingManager (root unit))) c

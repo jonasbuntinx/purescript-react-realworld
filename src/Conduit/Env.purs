@@ -1,9 +1,9 @@
 module Conduit.Env where
 
-import Conduit.State.Auth (AuthState)
 import Conduit.State.Routing (RoutingState)
+import Conduit.State.User (UserState)
 
 type Env
-  = { authState :: AuthState
+  = { userState :: UserState
     , routingState :: RoutingState
     }

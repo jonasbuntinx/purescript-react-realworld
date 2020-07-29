@@ -10,7 +10,7 @@ import Conduit.Data.Route (Route(..))
 import Conduit.Data.Validation (Validated(..), invalid, isValidEmail, modified, setModified)
 import Conduit.Effects.Routing (navigate)
 import Conduit.Env (Env)
-import Conduit.State.Auth (login)
+import Conduit.State.User (login)
 import Control.Comonad (extract)
 import Data.Array as Array
 import Data.Either (Either(..))
@@ -24,6 +24,7 @@ import Data.Variant as Variant
 import React.Basic.DOM as R
 import React.Basic.DOM.Events (preventDefault, targetValue)
 import React.Basic.Events (handler, handler_)
+import Record as Record
 
 data Action
   = UpdateEmail String
@@ -58,8 +59,8 @@ mkLoginPage =
                 success
                   # Variant.match
                       { ok:
-                          \auth -> do
-                            login auth.user.token
+                          \{ user } -> do
+                            login user.token $ Record.delete (SProxy :: _ "token") user
                             navigate Home
                       }
 

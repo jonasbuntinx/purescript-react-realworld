@@ -1,8 +1,8 @@
 module Conduit.Api.User where
 
 import Apiary.Media (JSON)
-import Apiary.Route (POST)
-import Data.Maybe (Maybe)
+import Apiary.Route (POST, GET)
+import Conduit.Data.Profile (ProfileRep)
 
 type Login
   = POST "/api/users/login"
@@ -16,21 +16,17 @@ type Login
       , response ::
           { ok ::
               JSON
-                { user :: User ()
+                { user :: { | ProfileRep ( token :: String ) }
                 }
           }
       }
 
--- | Types
-type User r
-  = Profile
-      ( token :: String
-      | r
-      )
-
-type Profile r
-  = { username :: String
-    , bio :: Maybe String
-    , image :: Maybe String
-    | r
-    }
+type GetUser
+  = GET "/api/user"
+      { response ::
+          { ok ::
+              JSON
+                { user :: { | ProfileRep ( token :: String ) }
+                }
+          }
+      }

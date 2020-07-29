@@ -6,14 +6,15 @@ import Conduit.Component.Header (header)
 import Conduit.Control.Routing (Completed, Pending, Routing, continue, redirect)
 import Conduit.Data.Route (Route(..))
 import Conduit.Env (Env)
-import Conduit.Hook.Auth (useAuth)
 import Conduit.Hook.Routing (useRoute)
+import Conduit.Hook.User (useUser)
 import Conduit.Page.Home (mkHomePage)
 import Conduit.Page.Login (mkLoginPage)
 import Conduit.Page.Settings (mkSettingsPage)
-import Conduit.State.Auth (AuthState)
+import Conduit.State.User (UserState)
 import Control.Monad.Indexed.Qualified as Ix
 import Data.Maybe (Maybe(..))
+import Data.Tuple (fst)
 import Effect.Class (liftEffect)
 import React.Basic.DOM as R
 import React.Basic.Hooks as React
@@ -25,11 +26,11 @@ mkRoot = do
   loginPage <- mkLoginPage
   settingsPage <- mkSettingsPage
   App.component' "Root" \env props -> React.do
-    auth <- useAuth env
+    user <- useUser env
     route <- useRoute env
     pure
       $ React.fragment
-          [ header auth route
+          [ header user route
           , case route of
               Home -> do
                 homePage unit
@@ -43,9 +44,9 @@ mkRoot = do
                 React.empty
           ]
 
-onNavigate :: AuthState -> Route -> Routing Pending Completed Unit
-onNavigate authState route = Ix.do
-  auth <- (liftEffect :: _ -> _ Pending Pending _) $ Wire.read authState
+onNavigate :: UserState -> Route -> Routing Pending Completed Unit
+onNavigate userState route = Ix.do
+  auth <- (liftEffect :: _ -> _ Pending Pending _) $ fst <$> Wire.read userState
   case route, auth of
     Login, Just _ -> do
       redirect Home
