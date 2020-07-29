@@ -63,8 +63,8 @@ create = do
           pure $ Tuple auth profile
     , update:
         \(Tuple auth profile) -> do
-          Selector.modify authState $ const auth
-          Selector.modify profileState $ const profile
+          Selector.write authState auth
+          Selector.write profileState profile
     }
 
 -- | Local Storage
