@@ -36,9 +36,12 @@ login ::
   String -> m Unit
 login token = do
   { authState } <- ask
-  liftEffect do
-    now <- now
-    modify authState \_ -> Just { token, updated: now }
+  liftEffect $ login' authState token
+
+login' :: AuthState -> String -> Effect Unit
+login' authState token = do
+  now <- now
+  modify authState \_ -> Just { token, updated: now }
 
 logout ::
   forall m r.
@@ -47,5 +50,8 @@ logout ::
   m Unit
 logout = do
   { authState } <- ask
-  liftEffect do
-    modify authState \_ -> Nothing
+  liftEffect $ logout' authState
+
+logout' :: AuthState -> Effect Unit
+logout' authState = do
+  modify authState \_ -> Nothing
