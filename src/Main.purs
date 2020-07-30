@@ -18,6 +18,7 @@ import Web.HTML.Window (document)
 
 main :: Effect Unit
 main = do
+  Root.attachGlobalComponentStyles
   container <- getElementById "conduit" =<< (map toNonElementParentNode $ document =<< window)
   case container of
     Nothing -> throw "Conduit container element not found."

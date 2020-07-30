@@ -10,6 +10,7 @@
     , "react-basic"
     , "react-basic-hooks"
     , "react-basic-hooks-store"
+    , "remotedata"
     , "routing"
     , "routing-duplex"
     , "web-uievents"

@@ -1,4 +1,4 @@
-module Data.Moment where
+module Foreign.Moment where
 
 import Prelude
 import Control.Monad.Error.Class (throwError)

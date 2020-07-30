@@ -79,11 +79,11 @@ setModified = hmap (ModifyValidated (Modified <<< view _Validated))
 validate ::
   forall value err err' result.
   Monoid err' =>
-  (value -> V err result) ->
   (err -> err') ->
+  (value -> V err result) ->
   Validated value ->
   V err' result
-validate validateF invalidF input =
+validate invalidF validateF input =
   if L.is _Modified input then
     lmap invalidF (validateF value)
   else
@@ -100,12 +100,12 @@ toRecord ::
 toRecord lens err = L.set lens err (mempty :: { | errs })
 
 -- | String validators
-validateNonEmpty :: forall m. Applicative m => String -> V (m String) String
+validateNonEmpty :: String -> V (Array String) String
 validateNonEmpty input
   | String.null input = V.invalid $ pure "is required"
   | otherwise = V $ pure input
 
-validateEmailFormat :: forall m. Applicative m => String -> V (m String) String
+validateEmailFormat :: String -> V (Array String) String
 validateEmailFormat input
   | not $ isValidEmail input = V.invalid $ pure "is invalid"
   | otherwise = V $ pure input
@@ -115,12 +115,12 @@ isValidEmail = Regex.test emailRegex
   where
   emailRegex = unsafePartial $ fromRight $ Regex.regex """^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$""" Flags.global
 
-validateMinimumLength :: forall m. Applicative m => Int -> String -> V (m String) String
+validateMinimumLength :: Int -> String -> V (Array String) String
 validateMinimumLength validLength input
   | String.length input <= validLength = V.invalid $ pure "is too short"
   | otherwise = V $ pure input
 
-validateMaximunLength :: forall m. Applicative m => Int -> String -> V (m String) String
+validateMaximunLength :: Int -> String -> V (Array String) String
 validateMaximunLength validLength input
   | String.length input > validLength = V.invalid $ pure "is too long"
   | otherwise = V $ pure input

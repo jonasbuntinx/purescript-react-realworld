@@ -10,4 +10,7 @@ type ProfileRep r
     )
 
 type Profile
-  = { | ProfileRep () }
+  = { | ProfileRep ( email :: String ) }
+
+type Author
+  = { | ProfileRep ( following :: Boolean ) }

@@ -1,16 +1,17 @@
 module Conduit.State.User where
 
 import Prelude
+import Apiary.Client (makeRequest) as Apiary
 import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
 import Conduit.Api.User (GetUser)
-import Conduit.Api.Utils as Utils
+import Conduit.Api.Utils (addBaseUrl, addToken)
 import Conduit.Data.Profile (Profile)
 import Conduit.Effects.LocalStorage as LocalStorage
 import Control.Monad.Reader (class MonadAsk, ask)
 import Data.Either (hush)
 import Data.Maybe (Maybe(..), maybe)
-import Data.Moment (Moment, now)
+import Foreign.Moment (Moment, now)
 import Data.Symbol (SProxy(..))
 import Data.Tuple (Tuple(..))
 import Data.Variant as Variant
@@ -51,7 +52,7 @@ create = do
             auth <- liftEffect $ read authState
             auth
               # maybe (pure Nothing) \{ token } -> do
-                  res <- hush <$> Utils.makeSecureRequest' token (Apiary.Route :: GetUser) Apiary.none Apiary.none Apiary.none
+                  res <- hush <$> Apiary.makeRequest (Apiary.Route :: GetUser) (addBaseUrl <<< addToken token) Apiary.none Apiary.none Apiary.none
                   pure (res >>= Variant.prj (SProxy :: _ "ok") >>> map _.user >>> map (Record.delete (SProxy :: _ "token")))
       , save: const $ pure unit
       }

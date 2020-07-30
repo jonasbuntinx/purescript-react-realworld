@@ -3,8 +3,8 @@ module Conduit.Page.Login where
 import Prelude
 import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
+import Conduit.Api.Request as Request
 import Conduit.Api.User (Login)
-import Conduit.Api.Utils as Utils
 import Conduit.Component.App as App
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Validation as V
@@ -51,7 +51,7 @@ mkLoginPage =
         case toEither (validate state) of
           Left _ -> self.setState (const state)
           Right validated -> do
-            res <- Utils.makeRequest (Apiary.Route :: Login) Apiary.none Apiary.none { user: validated }
+            res <- Request.makeRequest (Apiary.Route :: Login) Apiary.none Apiary.none { user: validated }
             case res of
               Left err -> self.setState _ { error = true }
               Right success -> do
@@ -180,15 +180,15 @@ type ValidatedValues
 
 validate :: forall r. ValidationValues r -> V ValidationErrors ValidatedValues
 validate values = ado
-  email <- V.validate validateEmail (V.toRecord (LR.prop (SProxy :: _ "email"))) values.email
-  password <- V.validate validatePassword (V.toRecord (LR.prop (SProxy :: _ "password"))) values.password
+  email <-
+    values.email
+      # V.validate (V.toRecord (LR.prop (SProxy :: _ "email"))) \email -> do
+          V.validateNonEmpty email `andThen` V.validateEmailFormat
+  password <-
+    values.password
+      # V.validate (V.toRecord (LR.prop (SProxy :: _ "password"))) \password -> do
+          V.validateNonEmpty password
+            `andThen`
+              ( V.validateMinimumLength 3 *> V.validateMaximunLength 20
+              )
   in { email, password }
-  where
-  validateEmail email = do
-    V.validateNonEmpty email `andThen` V.validateEmailFormat
-
-  validatePassword password = do
-    V.validateNonEmpty password
-      `andThen`
-        ( V.validateMinimumLength 3 <> V.validateMaximunLength 20
-        )
