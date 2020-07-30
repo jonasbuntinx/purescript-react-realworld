@@ -7,12 +7,12 @@ import Conduit.Components.Toast as Toast
 import Conduit.Control.Routing (Completed, Pending, Routing, continue, redirect)
 import Conduit.Data.Route (Route(..))
 import Conduit.Env (Env)
+import Conduit.Env.User (UserSignal)
 import Conduit.Hook.Routing (useRoute)
 import Conduit.Hook.User (useUser)
 import Conduit.Page.Home (mkHomePage)
 import Conduit.Page.Login (mkLoginPage)
 import Conduit.Page.Settings (mkSettingsPage)
-import Conduit.State.User (UserState)
 import Control.Monad.Indexed.Qualified as Ix
 import Data.Foldable (traverse_)
 import Data.Maybe (Maybe(..))
@@ -49,9 +49,9 @@ mkRoot = do
                 React.empty
           ]
 
-onNavigate :: UserState -> Route -> Routing Pending Completed Unit
-onNavigate userState route = Ix.do
-  auth <- (liftEffect :: _ -> _ Pending Pending _) $ fst <$> Wire.read userState
+onNavigate :: UserSignal -> Route -> Routing Pending Completed Unit
+onNavigate userSignal route = Ix.do
+  auth <- (liftEffect :: _ -> _ Pending Pending _) $ fst <$> Wire.read userSignal
   case route, auth of
     Login, Just _ -> do
       redirect Home

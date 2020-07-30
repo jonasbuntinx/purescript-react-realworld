@@ -23,7 +23,7 @@ main = do
   case container of
     Nothing -> throw "Conduit container element not found."
     Just c -> do
-      userState /\ userManager <- User.mkUserManager
-      routingState /\ routingManager <- Routing.mkRoutingManager routeCodec (Root.onNavigate userState)
-      root <- Reader.runReaderT Root.mkRoot { userState, routingState }
+      userSignal /\ userManager <- User.mkUserManager
+      routingSignal /\ routingManager <- Routing.mkRoutingManager routeCodec (Root.onNavigate userSignal)
+      root <- Reader.runReaderT Root.mkRoot { userSignal, routingSignal }
       render (userManager (routingManager (root unit))) c

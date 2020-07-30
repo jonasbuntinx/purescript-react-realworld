@@ -3,7 +3,7 @@ module Conduit.Component.Header where
 import Prelude
 import Conduit.Data.Route (Route(..))
 import Conduit.Effects.Routing (navigate)
-import Conduit.State.User (User)
+import Conduit.Env.User (User)
 import Data.Maybe (Maybe(..), isJust, isNothing, maybe)
 import Data.Monoid (guard)
 import Data.Tuple (Tuple(..))

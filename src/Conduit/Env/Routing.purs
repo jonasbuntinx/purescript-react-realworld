@@ -1,4 +1,4 @@
-module Conduit.State.Routing where
+module Conduit.Env.Routing where
 
 import Prelude
 import Conduit.Data.Route (Route(..))
@@ -7,8 +7,8 @@ import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Wire.React.Pure (Pure, create) as Pure
 
-type RoutingState
+type RoutingSignal
   = Pure.Pure Transition
 
-create :: Effect RoutingState
+create :: Effect RoutingSignal
 create = Pure.create $ Loading Nothing Home

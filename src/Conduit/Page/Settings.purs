@@ -11,7 +11,7 @@ import Conduit.Data.Route (Route(..))
 import Conduit.Data.Validation as V
 import Conduit.Effects.Routing (navigate)
 import Conduit.Env (Env)
-import Conduit.State.User (logout)
+import Conduit.Env.User (logout)
 import Control.Comonad (extract)
 import Data.Array as Array
 import Data.Either (Either(..))

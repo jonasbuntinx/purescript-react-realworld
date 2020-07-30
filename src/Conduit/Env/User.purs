@@ -1,4 +1,4 @@
-module Conduit.State.User where
+module Conduit.Env.User where
 
 import Prelude
 import Apiary.Client (makeRequest) as Apiary
@@ -31,10 +31,10 @@ type Auth
 type User
   = Tuple (Maybe Auth) (Maybe Profile)
 
-type UserState
+type UserSignal
   = Selector.Selector User
 
-create :: Effect UserState
+create :: Effect UserSignal
 create = do
   authState <-
     Sync.create
@@ -75,44 +75,44 @@ cachedAuth = LocalStorage.StorageKey "auth"
 -- | Helpers
 login ::
   forall m r.
-  MonadAsk { userState :: UserState | r } m =>
+  MonadAsk { userSignal :: UserSignal | r } m =>
   MonadEffect m =>
   String ->
   Profile ->
   m Unit
 login token profile = do
-  { userState } <- ask
-  liftEffect $ login' userState token profile
+  { userSignal } <- ask
+  liftEffect $ login' userSignal token profile
 
-login' :: UserState -> String -> Profile -> Effect Unit
-login' userState token profile = do
+login' :: UserSignal -> String -> Profile -> Effect Unit
+login' userSignal token profile = do
   now <- now
-  modify userState \_ -> Tuple (Just { token, updated: now }) (Just profile)
+  modify userSignal \_ -> Tuple (Just { token, updated: now }) (Just profile)
 
 refreshToken ::
   forall m r.
-  MonadAsk { userState :: UserState | r } m =>
+  MonadAsk { userSignal :: UserSignal | r } m =>
   MonadEffect m =>
   String ->
   m Unit
 refreshToken token = do
-  { userState } <- ask
-  liftEffect $ refreshToken' userState token
+  { userSignal } <- ask
+  liftEffect $ refreshToken' userSignal token
 
-refreshToken' :: UserState -> String -> Effect Unit
-refreshToken' userState token = do
+refreshToken' :: UserSignal -> String -> Effect Unit
+refreshToken' userSignal token = do
   now <- now
-  modify userState \(Tuple _ profile) -> Tuple (Just { token, updated: now }) profile
+  modify userSignal \(Tuple _ profile) -> Tuple (Just { token, updated: now }) profile
 
 logout ::
   forall m r.
-  MonadAsk { userState :: UserState | r } m =>
+  MonadAsk { userSignal :: UserSignal | r } m =>
   MonadEffect m =>
   m Unit
 logout = do
-  { userState } <- ask
-  liftEffect $ logout' userState
+  { userSignal } <- ask
+  liftEffect $ logout' userSignal
 
-logout' :: UserState -> Effect Unit
-logout' userState = do
-  modify userState \_ -> Tuple Nothing Nothing
+logout' :: UserSignal -> Effect Unit
+logout' userSignal = do
+  modify userSignal \_ -> Tuple Nothing Nothing

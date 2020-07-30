@@ -5,7 +5,7 @@ import Conduit.Control.Routing (Command(..), Completed, Pending, Routing)
 import Conduit.Data.Route (Route)
 import Conduit.Data.Transition (Transition(..))
 import Conduit.Effects.Routing (onPushState, redirect)
-import Conduit.State.Routing (RoutingState, create)
+import Conduit.Env.Routing (RoutingSignal, create)
 import Control.Monad.Free.Trans (runFreeT)
 import Data.Foldable (traverse_)
 import Data.Maybe (Maybe(..))
@@ -23,9 +23,9 @@ import Wire.React.Class (modify)
 mkRoutingManager ::
   RouteDuplex' Route ->
   (Route -> Routing Pending Completed Unit) ->
-  Effect (Tuple RoutingState (React.JSX -> React.JSX))
+  Effect (Tuple RoutingSignal (React.JSX -> React.JSX))
 mkRoutingManager routes onNavigate = do
-  routingState <- create
+  routingSignal <- create
   fiberRef <- Ref.new Nothing
   previousRouteRef <- Ref.new Nothing
   component <-
@@ -34,12 +34,12 @@ mkRoutingManager routes onNavigate = do
         Event.subscribe (onPushState routes) \(Tuple _ route) -> do
           Ref.read fiberRef >>= traverse_ \fiber -> launchAff_ do killFiber (error "Transition cancelled") fiber
           previousRoute <- Ref.read previousRouteRef
-          modify routingState $ const $ Loading previousRoute route
+          modify routingSignal $ const $ Loading previousRoute route
           let
             finalise r =
               liftEffect do
                 Ref.write (Just r) previousRouteRef
-                modify routingState $ const $ Loaded previousRoute r
+                modify routingSignal $ const $ Loaded previousRoute r
           fiber <-
             onNavigate route
               # unwrap
@@ -55,4 +55,4 @@ mkRoutingManager routes onNavigate = do
               # launchAff
           Ref.write (Just fiber) fiberRef
       pure content
-  pure $ Tuple routingState component
+  pure $ Tuple routingSignal component

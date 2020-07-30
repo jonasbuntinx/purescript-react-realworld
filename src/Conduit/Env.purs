@@ -1,9 +1,9 @@
 module Conduit.Env where
 
-import Conduit.State.Routing (RoutingState)
-import Conduit.State.User (UserState)
+import Conduit.Env.Routing (RoutingSignal)
+import Conduit.Env.User (UserSignal)
 
 type Env
-  = { userState :: UserState
-    , routingState :: RoutingState
+  = { userSignal :: UserSignal
+    , routingSignal :: RoutingSignal
     }

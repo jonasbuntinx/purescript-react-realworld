@@ -40,5 +40,5 @@ makeSecureRequest ::
   m (Either Apiary.Error response)
 makeSecureRequest route path query body = do
   env <- ask
-  { token } <- liftEffect $ (fst <$> read env.userState) >>= maybe' (const $ throw "Token not available") pure
+  { token } <- liftEffect $ (fst <$> read env.userSignal) >>= maybe' (const $ throw "Token not available") pure
   liftAff $ Apiary.makeRequest route (addBaseUrl <<< addToken token) path query body
