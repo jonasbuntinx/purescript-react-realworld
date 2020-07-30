@@ -77,12 +77,12 @@ setModified = hmap (ModifyValidated (Modified <<< view _Validated))
 
 -- | Helpers
 validate ::
-  forall value err errs result.
-  Monoid errs =>
+  forall value err err' result.
+  Monoid err' =>
   (value -> V err result) ->
-  (err -> errs) ->
+  (err -> err') ->
   Validated value ->
-  V errs result
+  V err' result
 validate validateF invalidF input =
   if L.is _Modified input then
     lmap invalidF (validateF value)
