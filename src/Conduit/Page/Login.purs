@@ -7,7 +7,7 @@ import Conduit.Api.User (Login)
 import Conduit.Api.Utils as Utils
 import Conduit.Component.App as App
 import Conduit.Data.Route (Route(..))
-import Conduit.Data.Validation (Validated(..), invalid, isValidEmail, modified, setModified)
+import Conduit.Data.Validation as V
 import Conduit.Effects.Routing (navigate)
 import Conduit.Env (Env)
 import Conduit.State.User (login)
@@ -17,7 +17,6 @@ import Data.Either (Either(..))
 import Data.Foldable (traverse_)
 import Data.Lens.Record as LR
 import Data.Monoid (guard)
-import Data.String as String
 import Data.Symbol (SProxy(..))
 import Data.Validation.Semigroup (V, andThen, toEither, unV)
 import Data.Variant as Variant
@@ -43,11 +42,11 @@ mkLoginPage =
     }
 
   update self = case _ of
-    UpdateEmail email -> self.setState _ { email = Modified email }
-    UpdatePassword password -> self.setState _ { password = Modified password }
+    UpdateEmail email -> self.setState _ { email = V.Modified email }
+    UpdatePassword password -> self.setState _ { password = V.Modified password }
     Submit ->
       let
-        state = setModified self.state
+        state = V.setModified self.state
       in
         case toEither (validate state) of
           Left _ -> self.setState (const state)
@@ -95,46 +94,48 @@ mkLoginPage =
                 }
         , R.form
             { children:
-                [ R.div
-                    { className: "form-group"
-                    , children:
-                        [ R.input
-                            { className: "form-control form-control-lg"
-                            , type: "email"
-                            , value: extract store.state.email
-                            , placeholder: "Email"
-                            , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateEmail
-                            }
-                        , guard (not $ Array.null errors.email)
-                            $ R.div
-                                { className: "error-messages"
-                                , children: errors.email <#> \error -> R.div_ [ R.text error ]
+                [ R.fieldset_
+                    [ R.fieldset
+                        { className: "form-group"
+                        , children:
+                            [ R.input
+                                { className: "form-control form-control-lg"
+                                , type: "email"
+                                , value: extract store.state.email
+                                , placeholder: "Email"
+                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateEmail
                                 }
-                        ]
-                    }
-                , R.div
-                    { className: "form-group"
-                    , children:
-                        [ R.input
-                            { className: "form-control form-control-lg"
-                            , type: "password"
-                            , value: extract store.state.password
-                            , placeholder: "Password"
-                            , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdatePassword
-                            }
-                        , guard (not $ Array.null errors.email)
-                            $ R.div
-                                { className: "error-messages"
-                                , children: errors.password <#> \error -> R.div_ [ R.text error ]
+                            , guard (not $ Array.null errors.email)
+                                $ R.div
+                                    { className: "error-messages"
+                                    , children: errors.email <#> \error -> R.div_ [ R.text $ "Email " <> error ]
+                                    }
+                            ]
+                        }
+                    , R.fieldset
+                        { className: "form-group"
+                        , children:
+                            [ R.input
+                                { className: "form-control form-control-lg"
+                                , type: "password"
+                                , value: extract store.state.password
+                                , placeholder: "Password"
+                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdatePassword
                                 }
-                        ]
-                    }
-                , R.button
-                    { className: "btn btn-lg btn-primary pull-xs-right"
-                    , type: "button"
-                    , onClick: handler_ $ store.dispatch Submit
-                    , children: [ R.text "Sign in" ]
-                    }
+                            , guard (not $ Array.null errors.email)
+                                $ R.div
+                                    { className: "error-messages"
+                                    , children: errors.password <#> \error -> R.div_ [ R.text $ "Password " <> error ]
+                                    }
+                            ]
+                        }
+                    , R.button
+                        { className: "btn btn-lg btn-primary pull-xs-right"
+                        , type: "button"
+                        , onClick: handler_ $ store.dispatch Submit
+                        , children: [ R.text "Sign in" ]
+                        }
+                    ]
                 ]
             }
         ]
@@ -162,8 +163,8 @@ mkLoginPage =
 
 -- | Validation
 type ValidationValues r
-  = { email :: Validated String
-    , password :: Validated String
+  = { email :: V.Validated String
+    , password :: V.Validated String
     | r
     }
 
@@ -179,40 +180,15 @@ type ValidatedValues
 
 validate :: forall r. ValidationValues r -> V ValidationErrors ValidatedValues
 validate values = ado
-  email <- modified validateEmail values.email
-  password <- modified validatePassword values.password
+  email <- V.validate validateEmail (V.toRecord (LR.prop (SProxy :: _ "email"))) values.email
+  password <- V.validate validatePassword (V.toRecord (LR.prop (SProxy :: _ "password"))) values.password
   in { email, password }
   where
   validateEmail email = do
-    validateNonEmpty email `andThen` (validateMinimumLength 3 *> validateFormat)
-    where
-    throwError err = invalid (LR.prop (SProxy :: _ "email")) (Array.singleton err)
-
-    validateNonEmpty input
-      | String.null input = throwError "Email is required"
-      | otherwise = pure input
-
-    validateMinimumLength validLength input
-      | String.length input <= validLength = throwError "Email is too short"
-      | otherwise = pure input
-
-    validateFormat input
-      | not $ isValidEmail input = throwError "Email is invalid"
-      | otherwise = pure input
+    V.validateNonEmpty email `andThen` V.validateEmailFormat
 
   validatePassword password = do
-    validateNonEmpty password `andThen` (validateMinimumLength 2 *> validateMaximunLength 20)
-    where
-    throwError err = invalid (LR.prop (SProxy :: _ "password")) (Array.singleton err)
-
-    validateNonEmpty input
-      | String.null input = throwError "Password is required"
-      | otherwise = pure input
-
-    validateMinimumLength validLength input
-      | String.length input <= validLength = throwError "Password is too short"
-      | otherwise = pure input
-
-    validateMaximunLength validLength input
-      | String.length input > validLength = throwError "Password is too long"
-      | otherwise = pure input
+    V.validateNonEmpty password
+      `andThen`
+        ( V.validateMinimumLength 3 <> V.validateMaximunLength 20
+        )

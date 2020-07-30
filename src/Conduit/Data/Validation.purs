@@ -7,9 +7,10 @@ import Data.Either (fromRight)
 import Data.Lens (Lens, Lens', Prism', lens, over, prism', view)
 import Data.Lens as L
 import Data.Maybe (Maybe(..))
+import Data.String as String
 import Data.String.Regex as Regex
 import Data.String.Regex.Flags as Flags
-import Data.Validation.Semigroup (V)
+import Data.Validation.Semigroup (V(..))
 import Data.Validation.Semigroup as V
 import Heterogeneous.Mapping (class HMap, class MapRecordWithIndex, class Mapping, ConstMapping, hmap, mapping)
 import Partial.Unsafe (unsafePartial)
@@ -36,6 +37,7 @@ instance comonadValidated :: Comonad Validated where
   extract (Fresh a) = a
   extract (Modified a) = a
 
+-- | Lenses
 _Validated :: forall a b. Lens (Validated a) (Validated b) a b
 _Validated =
   flip lens ($>) case _ of
@@ -54,6 +56,7 @@ _Modified =
     Modified a -> Just a
     _ -> Nothing
 
+-- | Transformation
 newtype ModifyValidated
   = ModifyValidated (Validated ~> Validated)
 
@@ -72,30 +75,52 @@ setFresh = hmap (ModifyValidated (Fresh <<< view _Validated))
 setModified :: forall i o. HMap ModifyValidated i o => i -> o
 setModified = hmap (ModifyValidated (Modified <<< view _Validated))
 
-modified ::
-  forall value err result.
-  Monoid err =>
+-- | Helpers
+validate ::
+  forall value err errs result.
+  Monoid errs =>
   (value -> V err result) ->
+  (err -> errs) ->
   Validated value ->
-  V err result
-modified validate input =
+  V errs result
+validate validateF invalidF input =
   if L.is _Modified input then
-    validate value
+    lmap invalidF (validateF value)
   else
-    lmap (const mempty) (validate value)
+    lmap (const mempty) (validateF value)
   where
   value = L.view _Validated input
 
-invalid ::
-  forall err errs a.
+toRecord ::
+  forall err errs.
   Monoid { | errs } =>
   Lens' { | errs } err ->
   err ->
-  V { | errs } a
-invalid lens err = V.invalid $ L.set lens err (mempty :: { | errs })
+  { | errs }
+toRecord lens err = L.set lens err (mempty :: { | errs })
 
--- | Helpers
+-- | String validators
+validateNonEmpty :: forall m. Applicative m => String -> V (m String) String
+validateNonEmpty input
+  | String.null input = V.invalid $ pure "is required"
+  | otherwise = V $ pure input
+
+validateEmailFormat :: forall m. Applicative m => String -> V (m String) String
+validateEmailFormat input
+  | not $ isValidEmail input = V.invalid $ pure "is invalid"
+  | otherwise = V $ pure input
+
 isValidEmail :: String -> Boolean
 isValidEmail = Regex.test emailRegex
   where
   emailRegex = unsafePartial $ fromRight $ Regex.regex """^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$""" Flags.global
+
+validateMinimumLength :: forall m. Applicative m => Int -> String -> V (m String) String
+validateMinimumLength validLength input
+  | String.length input <= validLength = V.invalid $ pure "is too short"
+  | otherwise = V $ pure input
+
+validateMaximunLength :: forall m. Applicative m => Int -> String -> V (m String) String
+validateMaximunLength validLength input
+  | String.length input > validLength = V.invalid $ pure "is too long"
+  | otherwise = V $ pure input
