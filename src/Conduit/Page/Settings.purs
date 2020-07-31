@@ -11,7 +11,7 @@ import Conduit.Data.Route (Route(..))
 import Conduit.Data.Validation as V
 import Conduit.Effects.Routing (navigate)
 import Conduit.Env (Env)
-import Conduit.Env.User (logout)
+import Conduit.Env.User (logout, updateProfile)
 import Control.Comonad (extract)
 import Data.Array as Array
 import Data.Either (Either(..))
@@ -27,6 +27,7 @@ import React.Basic.DOM as R
 import React.Basic.DOM.Events (targetValue)
 import React.Basic.Events (handler, handler_)
 import React.Basic.Hooks as React
+import Record as Record
 
 data Action
   = Initialize
@@ -96,8 +97,9 @@ mkSettingsPage =
                 response
                   # Variant.match
                       { ok:
-                          const do
+                          \{ user } -> do
                             self.setState _ { submitResponse = RemoteData.Success unit }
+                            updateProfile $ Record.delete (SProxy :: _ "token") user
                             Toast.enqueueToast "Settings saved"
                       }
     Logout -> do

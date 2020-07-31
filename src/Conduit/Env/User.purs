@@ -11,15 +11,15 @@ import Conduit.Effects.LocalStorage as LocalStorage
 import Control.Monad.Reader (class MonadAsk, ask)
 import Data.Either (hush)
 import Data.Maybe (Maybe(..), maybe)
-import Foreign.Moment (Moment, now)
 import Data.Symbol (SProxy(..))
 import Data.Tuple (Tuple(..))
 import Data.Variant as Variant
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
+import Foreign.Moment (Moment, now)
 import Record as Record
 import Wire.React.Async as Async
-import Wire.React.Class (modify, read)
+import Wire.React.Class as Wire
 import Wire.React.Selector as Selector
 import Wire.React.Sync as Sync
 
@@ -36,7 +36,7 @@ type UserSignal
 
 create :: Effect UserSignal
 create = do
-  authState <-
+  authSignal <-
     Sync.create
       { load: LocalStorage.read cachedAuth
       , save:
@@ -44,12 +44,12 @@ create = do
             Nothing -> LocalStorage.delete cachedAuth
             Just auth -> LocalStorage.write cachedAuth auth
       }
-  profileState <-
+  profileSignal <-
     Async.create
       { initial: Nothing
       , load:
           do
-            auth <- liftEffect $ read authState
+            auth <- liftEffect $ Wire.read authSignal
             auth
               # maybe (pure Nothing) \{ token } -> do
                   res <- hush <$> Apiary.makeRequest (Apiary.Route :: GetUser) (addBaseUrl <<< addToken token) Apiary.none Apiary.none Apiary.none
@@ -59,13 +59,13 @@ create = do
   Selector.create
     { select:
         do
-          auth <- Selector.select authState
-          profile <- Selector.select profileState
+          auth <- Selector.select authSignal
+          profile <- Selector.select profileSignal
           pure $ Tuple auth profile
     , update:
         \(Tuple auth profile) -> do
-          Selector.write authState auth
-          Selector.write profileState profile
+          Selector.write authSignal auth
+          Selector.write profileSignal profile
     }
 
 -- | Local Storage
@@ -87,7 +87,7 @@ login token profile = do
 login' :: UserSignal -> String -> Profile -> Effect Unit
 login' userSignal token profile = do
   now <- now
-  modify userSignal \_ -> Tuple (Just { token, updated: now }) (Just profile)
+  Wire.modify userSignal \_ -> Tuple (Just { token, updated: now }) (Just profile)
 
 refreshToken ::
   forall m r.
@@ -102,7 +102,7 @@ refreshToken token = do
 refreshToken' :: UserSignal -> String -> Effect Unit
 refreshToken' userSignal token = do
   now <- now
-  modify userSignal \(Tuple _ profile) -> Tuple (Just { token, updated: now }) profile
+  Wire.modify userSignal \(Tuple _ profile) -> Tuple (Just { token, updated: now }) profile
 
 logout ::
   forall m r.
@@ -115,4 +115,14 @@ logout = do
 
 logout' :: UserSignal -> Effect Unit
 logout' userSignal = do
-  modify userSignal \_ -> Tuple Nothing Nothing
+  Wire.modify userSignal \_ -> Tuple Nothing Nothing
+
+updateProfile ::
+  forall m r.
+  MonadAsk { userSignal :: UserSignal | r } m =>
+  MonadEffect m =>
+  Profile ->
+  m Unit
+updateProfile profile = do
+  { userSignal } <- ask
+  liftEffect $ Wire.modify userSignal \(Tuple auth _) -> Tuple auth (Just profile)
