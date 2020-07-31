@@ -1,7 +1,6 @@
 module Conduit.Api.Request where
 
 import Prelude
-import Apiary.Client (Error(..))
 import Apiary.Client (Error(..), makeRequest) as Apiary
 import Apiary.Client.Request (class BuildRequest) as Apiary
 import Apiary.Client.Response (class DecodeResponse) as Apiary
@@ -55,7 +54,7 @@ makeSecureRequest route path query body = do
   env <- ask
   auth <- liftEffect $ (fst <$> read env.userSignal)
   res <- case auth of
-    Nothing -> pure $ Left $ RuntimeError $ error "Token not available"
+    Nothing -> pure $ Left $ Apiary.RuntimeError $ error "Token not available"
     Just { token } -> liftAff $ Apiary.makeRequest route (addBaseUrl <<< addToken token) path query body
   void $ lfor res onError
   pure res
