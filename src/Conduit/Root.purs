@@ -2,7 +2,8 @@ module Conduit.Root where
 
 import Prelude
 import Conduit.Component.App as App
-import Conduit.Component.Header (header)
+import Conduit.Component.Footer as Footer
+import Conduit.Component.Header as Header
 import Conduit.Components.Toast as Toast
 import Conduit.Control.Routing (Completed, Pending, Routing, continue, redirect)
 import Conduit.Data.Route (Route(..))
@@ -35,7 +36,7 @@ mkRoot = do
     pure
       $ React.fragment
           [ Toast.toastManager
-          , header user route
+          , Header.header user route
           , case route of
               Home -> do
                 homePage unit
@@ -47,6 +48,7 @@ mkRoot = do
                 R.text "Error"
               _ -> do
                 React.empty
+          , Footer.footer
           ]
 
 onNavigate :: UserSignal -> Route -> Routing Pending Completed Unit
