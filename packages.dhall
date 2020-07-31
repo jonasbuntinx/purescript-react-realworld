@@ -136,8 +136,8 @@ let additions =
             , "milkis"
             , "simple-json"
             ]
-          , repo = "https://github.com/robertdp/purescript-apiary"
-          , version = "v0.1.0"
+          , repo = "https://github.com/jonasbuntinx/purescript-apiary"
+          , version = "8d6210b4741bbfed665ec86e732a14ba4e56ba90"
           }
       , react-basic-hooks-store =
           { dependencies =

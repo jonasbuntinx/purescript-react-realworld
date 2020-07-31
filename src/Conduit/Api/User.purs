@@ -3,6 +3,7 @@ module Conduit.Api.User where
 import Apiary.Media (JSON)
 import Apiary.Route (GET, POST, PUT)
 import Conduit.Data.Profile (ProfileRep)
+import Foreign.Object (Object)
 
 type Login
   = POST "/api/users/login"
@@ -18,6 +19,8 @@ type Login
               JSON
                 { user :: { | ProfileRep ( email :: String, token :: String ) }
                 }
+          , unprocessableEntity ::
+              JSON { errors :: Object (Array String) }
           }
       }
 
@@ -42,5 +45,7 @@ type PutUser
               JSON
                 { user :: { | ProfileRep ( email :: String, token :: String ) }
                 }
+          , unprocessableEntity ::
+              JSON { errors :: Object (Array String) }
           }
       }

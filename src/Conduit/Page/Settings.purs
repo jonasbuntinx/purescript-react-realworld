@@ -22,6 +22,7 @@ import Data.Monoid (guard)
 import Data.Symbol (SProxy(..))
 import Data.Validation.Semigroup (V, andThen, toEither, unV)
 import Data.Variant as Variant
+import Foreign.Object as Object
 import Network.RemoteData as RemoteData
 import React.Basic.DOM as R
 import React.Basic.DOM.Events (targetValue)
@@ -92,7 +93,7 @@ mkSettingsPage =
             self.setState _ { submitResponse = RemoteData.Loading }
             res <- Request.makeSecureRequest (Apiary.Route :: PutUser) Apiary.none Apiary.none { user: validated }
             case res of
-              Left error -> self.setState _ { submitResponse = RemoteData.Failure error }
+              Left _ -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown" []) }
               Right response ->
                 response
                   # Variant.match
@@ -101,6 +102,9 @@ mkSettingsPage =
                             self.setState _ { submitResponse = RemoteData.Success unit }
                             updateProfile $ Record.delete (SProxy :: _ "token") user
                             Toast.enqueueToast "Settings saved"
+                      , unprocessableEntity:
+                          \{ errors } ->
+                            self.setState _ { submitResponse = RemoteData.Failure errors }
                       }
     Logout -> do
       logout
@@ -118,6 +122,15 @@ mkSettingsPage =
                     [ R.text "Your Settings"
                     ]
                 }
+            , case store.state.submitResponse of
+                RemoteData.Failure submissionErrors ->
+                  R.ul
+                    { className: "error-messages"
+                    , children:
+                        submissionErrors
+                          # Object.foldMap \key value -> value <#> \error -> R.li_ [ R.text $ key <> " " <> error ]
+                    }
+                _ -> React.empty
             , R.form
                 { children:
                     [ R.fieldset_

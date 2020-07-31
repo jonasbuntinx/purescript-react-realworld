@@ -20,9 +20,12 @@ import Data.Monoid (guard)
 import Data.Symbol (SProxy(..))
 import Data.Validation.Semigroup (V, andThen, toEither, unV)
 import Data.Variant as Variant
+import Foreign.Object as Object
+import Network.RemoteData as RemoteData
 import React.Basic.DOM as R
 import React.Basic.DOM.Events (preventDefault, targetValue)
 import React.Basic.Events (handler, handler_)
+import React.Basic.Hooks as React
 import Record as Record
 
 data Action
@@ -38,7 +41,7 @@ mkLoginPage =
   init =
     { email: pure ""
     , password: pure ""
-    , error: false
+    , submitResponse: RemoteData.NotAsked
     }
 
   update self = case _ of
@@ -51,9 +54,10 @@ mkLoginPage =
         case toEither (validate state) of
           Left _ -> self.setState (const state)
           Right validated -> do
+            self.setState _ { submitResponse = RemoteData.Loading }
             res <- Request.makeRequest (Apiary.Route :: Login) Apiary.none Apiary.none { user: validated }
             case res of
-              Left err -> self.setState _ { error = true }
+              Left _ -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown" []) }
               Right success -> do
                 success
                   # Variant.match
@@ -61,6 +65,9 @@ mkLoginPage =
                           \{ user } -> do
                             login user.token $ Record.delete (SProxy :: _ "token") user
                             navigate Home
+                      , unprocessableEntity:
+                          \{ errors } ->
+                            self.setState _ { submitResponse = RemoteData.Failure errors }
                       }
 
   render store props =
@@ -84,14 +91,15 @@ mkLoginPage =
                     }
                 ]
             }
-        , guard store.state.error
-            $ R.div
+        , case store.state.submitResponse of
+            RemoteData.Failure submissionErrors ->
+              R.ul
                 { className: "error-messages"
                 , children:
-                    [ R.div_
-                        [ R.text "Email or password is invalid" ]
-                    ]
+                    submissionErrors
+                      # Object.foldMap \key value -> value <#> \error -> R.li_ [ R.text $ key <> " " <> error ]
                 }
+            _ -> React.empty
         , R.form
             { children:
                 [ R.fieldset_
