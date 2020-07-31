@@ -13,6 +13,7 @@
     , "remotedata"
     , "routing"
     , "routing-duplex"
+    , "unicode"
     , "web-uievents"
     , "wire"
     ]

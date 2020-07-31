@@ -7,6 +7,7 @@ import Data.Maybe (Maybe(..))
 import Data.Time.Duration (class Duration, Milliseconds)
 import Effect (Effect)
 import Foreign.Generic (class Decode, class Encode, ForeignError(..), decode, encode)
+import Simple.JSON (class ReadForeign, readImpl)
 
 foreign import data Moment :: Type
 
@@ -45,3 +46,10 @@ instance encodeMoment :: Encode Moment where
 instance durationMoment :: Duration Moment where
   fromDuration = toMilliseconds
   toDuration = fromMilliseconds
+
+instance readForeignMoment :: ReadForeign Moment where
+  readImpl =
+    readImpl >=> fromUTCString
+      >>> case _ of
+          Nothing -> throwError $ pure $ ForeignError "Invalid datetime format (expecting UTC)"
+          Just moment -> pure moment

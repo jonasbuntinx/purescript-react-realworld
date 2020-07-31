@@ -1,6 +1,8 @@
 module Conduit.Data.Validation where
 
 import Prelude
+import Conduit.Data.Username (Username)
+import Conduit.Data.Username as Username
 import Control.Comonad (class Comonad, class Extend)
 import Data.Bifunctor (lmap)
 import Data.Either (fromRight)
@@ -124,3 +126,9 @@ validateMaximunLength :: Int -> String -> V (Array String) String
 validateMaximunLength validLength input
   | String.length input > validLength = V.invalid $ pure "is too long"
   | otherwise = V $ pure input
+
+-- | Username validator
+validateUsernameFormat :: String -> V (Array String) Username
+validateUsernameFormat input = case Username.parse input of
+  Nothing -> V.invalid $ pure "is invalid"
+  Just username -> V $ pure username

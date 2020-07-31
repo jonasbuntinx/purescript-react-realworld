@@ -28,11 +28,8 @@ type Auth
     , updated :: Moment
     }
 
-type User
-  = Tuple (Maybe Auth) (Maybe Profile)
-
 type UserSignal
-  = Selector.Selector User
+  = Selector.Selector (Tuple (Maybe Auth) (Maybe Profile))
 
 create :: Effect UserSignal
 create = do

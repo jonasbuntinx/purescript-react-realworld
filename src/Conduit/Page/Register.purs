@@ -7,6 +7,8 @@ import Conduit.Api.Request as Request
 import Conduit.Api.User (Register)
 import Conduit.Component.App as App
 import Conduit.Data.Route (Route(..))
+import Conduit.Data.Username (Username)
+import Conduit.Data.Validation (validateUsernameFormat)
 import Conduit.Data.Validation as V
 import Conduit.Effects.Routing (navigate, redirect)
 import Conduit.Env (Env)
@@ -206,7 +208,7 @@ type ValidationErrors
     }
 
 type ValidatedValues
-  = { username :: String
+  = { username :: Username
     , email :: String
     , password :: String
     }
@@ -218,8 +220,7 @@ validate values = ado
       # V.validate (V.toRecord (LR.prop (SProxy :: _ "username"))) \username -> do
           V.validateNonEmpty username
             `andThen`
-              ( V.validateMinimumLength 3 *> V.validateMaximunLength 20
-              )
+              validateUsernameFormat
   email <-
     values.email
       # V.validate (V.toRecord (LR.prop (SProxy :: _ "email"))) \email -> do

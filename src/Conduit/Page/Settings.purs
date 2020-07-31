@@ -4,12 +4,13 @@ import Prelude
 import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
 import Conduit.Api.Request as Request
-import Conduit.Api.User (PutUser, GetUser)
+import Conduit.Api.User (UpdateUser, GetUser)
 import Conduit.Component.App as App
-import Conduit.Components.Toast as Toast
 import Conduit.Data.Route (Route(..))
+import Conduit.Data.Username (Username)
+import Conduit.Data.Username as Username
 import Conduit.Data.Validation as V
-import Conduit.Effects.Routing (redirect)
+import Conduit.Effects.Routing (navigate, redirect)
 import Conduit.Env (Env)
 import Conduit.Env.User (logout, updateProfile)
 import Control.Comonad (extract)
@@ -73,7 +74,7 @@ mkSettingsPage =
                         _
                           { profile = RemoteData.Success profile
                           , image = profile.image
-                          , username = pure profile.username
+                          , username = pure $ Username.toString profile.username
                           , bio = profile.bio
                           , email = pure profile.email
                           }
@@ -91,7 +92,7 @@ mkSettingsPage =
           Left _ -> self.setState (const state)
           Right validated -> do
             self.setState _ { submitResponse = RemoteData.Loading }
-            res <- Request.makeSecureRequest (Apiary.Route :: PutUser) Apiary.none Apiary.none { user: validated }
+            res <- Request.makeSecureRequest (Apiary.Route :: UpdateUser) Apiary.none Apiary.none { user: validated }
             case res of
               Left _ -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown error:" [ "request failed" ]) }
               Right response ->
@@ -101,7 +102,7 @@ mkSettingsPage =
                           \{ user } -> do
                             self.setState _ { submitResponse = RemoteData.Success unit }
                             updateProfile $ Record.delete (SProxy :: _ "token") user
-                            Toast.enqueueToast "Settings saved"
+                            navigate Home
                       , unprocessableEntity:
                           \{ errors } ->
                             self.setState _ { submitResponse = RemoteData.Failure errors }
@@ -266,7 +267,7 @@ type ValidationErrors
 
 type ValidatedValues
   = { image :: Maybe String
-    , username :: String
+    , username :: Username
     , bio :: Maybe String
     , email :: String
     , password :: String
@@ -279,8 +280,7 @@ validate values = ado
       # V.validate (V.toRecord (LR.prop (SProxy :: _ "username"))) \username -> do
           V.validateNonEmpty username
             `andThen`
-              ( V.validateMinimumLength 3 *> V.validateMaximunLength 20
-              )
+              V.validateUsernameFormat
   email <-
     values.email
       # V.validate (V.toRecord (LR.prop (SProxy :: _ "email"))) \email -> do

@@ -11,6 +11,7 @@ import Conduit.Env (Env)
 import Conduit.Env.User (UserSignal)
 import Conduit.Hook.Routing (useRoute)
 import Conduit.Hook.User (useUser)
+import Conduit.Page.Editor (mkEditorPage)
 import Conduit.Page.Home (mkHomePage)
 import Conduit.Page.Login (mkLoginPage)
 import Conduit.Page.Register (mkRegisterPage)
@@ -32,6 +33,7 @@ mkRoot = do
   loginPage <- mkLoginPage
   registerPage <- mkRegisterPage
   settingsPage <- mkSettingsPage
+  editor <- mkEditorPage
   App.component' "Root" \env props -> React.do
     user <- useUser env
     route <- useRoute env
@@ -48,6 +50,12 @@ mkRoot = do
                 registerPage unit
               Settings -> do
                 settingsPage unit
+              CreateArticle -> do
+                editor { slug: Nothing }
+              UpdateArticle slug -> do
+                editor { slug: Just slug }
+              ViewArticle slug -> do
+                React.empty
               Error -> do
                 R.text "Error"
               _ -> do
@@ -64,6 +72,8 @@ onNavigate userSignal route = Ix.do
     Register, Just _ -> do
       redirect Home
     Settings, Nothing -> do
+      redirect Home
+    CreateArticle, Nothing -> do
       redirect Home
     _, _ -> do
       continue

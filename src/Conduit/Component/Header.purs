@@ -1,9 +1,11 @@
 module Conduit.Component.Header where
 
 import Prelude
+import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
+import Conduit.Data.Username as Username
 import Conduit.Effects.Routing (navigate)
-import Conduit.Env.User (User)
+import Conduit.Env.User (Auth)
 import Data.Maybe (Maybe(..), isJust, isNothing, maybe)
 import Data.Monoid (guard)
 import Data.Tuple (Tuple(..))
@@ -12,7 +14,7 @@ import React.Basic.DOM.Events (preventDefault)
 import React.Basic.Events (handler)
 import React.Basic.Hooks as React
 
-header :: User -> Route -> React.JSX
+header :: Tuple (Maybe Auth) (Maybe Profile) -> Route -> React.JSX
 header (Tuple auth profile) route =
   R.nav
     { className: "navbar navbar-light"
@@ -32,7 +34,7 @@ header (Tuple auth profile) route =
                         [ navItem Home [ R.text "Home" ]
                         , guard (isNothing auth) navItem Login [ R.text "Sign in" ]
                         , guard (isNothing auth) navItem Register [ R.text "Sign up" ]
-                        , guard (isJust auth) navItem Editor
+                        , guard (isJust auth) navItem CreateArticle
                             [ R.i { className: "ion-compose", children: [] }
                             , R.text " New Article"
                             ]
@@ -50,7 +52,7 @@ header (Tuple auth profile) route =
                                             Nothing -> "https://static.productionready.io/images/smiley-cyrus.jpg"
                                             Just url -> url
                                       }
-                                  , R.text $ " " <> username
+                                  , R.text $ " " <> Username.toString username
                                   ]
                         ]
                     }
