@@ -4,8 +4,9 @@ import Prelude
 import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
 import Conduit.Api.Request as Request
-import Conduit.Api.User (UpdateUser, GetUser)
+import Conduit.Api.User (UpdateUser)
 import Conduit.Component.App as App
+import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
@@ -13,12 +14,13 @@ import Conduit.Data.Validation as V
 import Conduit.Effects.Routing (navigate, redirect)
 import Conduit.Env (Env)
 import Conduit.Env.User (logout, updateProfile)
+import Conduit.Hook.User (useProfile)
 import Control.Comonad (extract)
 import Data.Array as Array
 import Data.Either (Either(..))
-import Data.Foldable (traverse_)
+import Data.Foldable (for_, traverse_)
 import Data.Lens.Record as LR
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Monoid (guard)
 import Data.Symbol (SProxy(..))
 import Data.Validation.Semigroup (V, andThen, toEither, unV)
@@ -32,7 +34,7 @@ import React.Basic.Hooks as React
 import Record as Record
 
 data Action
-  = Initialize
+  = Initialize Profile
   | UpdateImage String
   | UpdateUsername String
   | UpdateBio String
@@ -44,13 +46,14 @@ data Action
 mkSettingsPage :: App.Component Env Unit
 mkSettingsPage =
   App.component "SettingsPage" { init, update } \env store props -> React.do
-    React.useEffectOnce do
-      store.dispatch Initialize
+    profile <- useProfile env
+    React.useEffect profile do
+      for_ profile $ store.dispatch <<< Initialize
       mempty
     pure $ render store props
   where
   init =
-    { profile: RemoteData.NotAsked
+    { profile: Nothing
     , image: Nothing
     , username: pure ""
     , bio: Nothing
@@ -60,25 +63,15 @@ mkSettingsPage =
     }
 
   update self = case _ of
-    Initialize -> do
-      self.setState _ { profile = RemoteData.Loading }
-      res <- Request.makeSecureRequest (Apiary.Route :: GetUser) Apiary.none Apiary.none Apiary.none
-      case res of
-        Left error -> self.setState _ { profile = RemoteData.Failure error }
-        Right response ->
-          response
-            # Variant.match
-                { ok:
-                    \{ user: profile } -> do
-                      self.setState
-                        _
-                          { profile = RemoteData.Success profile
-                          , image = profile.image
-                          , username = pure $ Username.toString profile.username
-                          , bio = profile.bio
-                          , email = pure profile.email
-                          }
-                }
+    Initialize profile -> do
+      self.setState
+        _
+          { profile = Just profile
+          , image = profile.image
+          , username = pure $ Username.toString profile.username
+          , bio = profile.bio
+          , email = pure profile.email
+          }
     UpdateImage image -> self.setState _ { image = Just image }
     UpdateUsername username -> self.setState _ { username = V.Modified username }
     UpdateBio bio -> self.setState _ { bio = Just bio }
@@ -115,7 +108,7 @@ mkSettingsPage =
     let
       errors = validate store.state # unV identity (const mempty)
     in
-      guard (RemoteData.isSuccess store.state.profile)
+      guard (isJust store.state.profile)
         $ container
             [ R.h1
                 { className: "text-xs-center"
