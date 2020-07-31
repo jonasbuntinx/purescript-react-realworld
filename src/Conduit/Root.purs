@@ -13,6 +13,7 @@ import Conduit.Hook.Routing (useRoute)
 import Conduit.Hook.User (useUser)
 import Conduit.Page.Home (mkHomePage)
 import Conduit.Page.Login (mkLoginPage)
+import Conduit.Page.Register (mkRegisterPage)
 import Conduit.Page.Settings (mkSettingsPage)
 import Control.Monad.Indexed.Qualified as Ix
 import Data.Foldable (traverse_)
@@ -29,6 +30,7 @@ mkRoot :: App.Component Env Unit
 mkRoot = do
   homePage <- mkHomePage
   loginPage <- mkLoginPage
+  registerPage <- mkRegisterPage
   settingsPage <- mkSettingsPage
   App.component' "Root" \env props -> React.do
     user <- useUser env
@@ -42,6 +44,8 @@ mkRoot = do
                 homePage unit
               Login -> do
                 loginPage unit
+              Register -> do
+                registerPage unit
               Settings -> do
                 settingsPage unit
               Error -> do
@@ -56,6 +60,8 @@ onNavigate userSignal route = Ix.do
   auth <- (liftEffect :: _ -> _ Pending Pending _) $ fst <$> Wire.read userSignal
   case route, auth of
     Login, Just _ -> do
+      redirect Home
+    Register, Just _ -> do
       redirect Home
     Settings, Nothing -> do
       redirect Home

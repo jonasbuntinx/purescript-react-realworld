@@ -1,10 +1,10 @@
-module Conduit.Page.Login where
+module Conduit.Page.Register where
 
 import Prelude
 import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
 import Conduit.Api.Request as Request
-import Conduit.Api.User (Login)
+import Conduit.Api.User (Register)
 import Conduit.Component.App as App
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Validation as V
@@ -29,22 +29,25 @@ import React.Basic.Hooks as React
 import Record as Record
 
 data Action
-  = UpdateEmail String
+  = UpdateUsername String
+  | UpdateEmail String
   | UpdatePassword String
   | Submit
 
-mkLoginPage :: App.Component Env Unit
-mkLoginPage =
-  App.component "LoginPage" { init, update } \_ store props -> React.do
+mkRegisterPage :: App.Component Env Unit
+mkRegisterPage =
+  App.component "RegisterPage" { init, update } \_ store props -> React.do
     pure $ render store props
   where
   init =
-    { email: pure ""
+    { username: pure ""
+    , email: pure ""
     , password: pure ""
     , submitResponse: RemoteData.NotAsked
     }
 
   update self = case _ of
+    UpdateUsername username -> self.setState _ { username = V.Modified username }
     UpdateEmail email -> self.setState _ { email = V.Modified email }
     UpdatePassword password -> self.setState _ { password = V.Modified password }
     Submit ->
@@ -55,11 +58,12 @@ mkLoginPage =
           Left _ -> self.setState (const state)
           Right validated -> do
             self.setState _ { submitResponse = RemoteData.Loading }
-            res <- Request.makeRequest (Apiary.Route :: Login) Apiary.none Apiary.none { user: validated }
+            res <- Request.makeRequest (Apiary.Route :: Register) Apiary.none Apiary.none { user: validated }
             case res of
-              Left _ -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown error:" [ "request failed" ]) }
-              Right success -> do
-                success
+              Left _ -> do
+                self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown error:" [ "request failed" ]) }
+              Right response ->
+                response
                   # Variant.match
                       { ok:
                           \{ user } -> do
@@ -79,7 +83,7 @@ mkLoginPage =
         [ R.h1
             { className: "text-xs-center"
             , children:
-                [ R.text "Sign in"
+                [ R.text "Sign up"
                 ]
             }
         , R.p
@@ -87,8 +91,8 @@ mkLoginPage =
             , children:
                 [ R.a
                     { href: "#"
-                    , onClick: handler preventDefault $ const $ navigate Register
-                    , children: [ R.text "Need an account?" ]
+                    , onClick: handler preventDefault $ const $ navigate Login
+                    , children: [ R.text "Already have an account?" ]
                     }
                 ]
             }
@@ -105,6 +109,23 @@ mkLoginPage =
             { children:
                 [ R.fieldset_
                     [ R.fieldset
+                        { className: "form-group"
+                        , children:
+                            [ R.input
+                                { className: "form-control form-control-lg"
+                                , type: "text"
+                                , value: extract store.state.username
+                                , placeholder: "Your name"
+                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateUsername
+                                }
+                            , guard (not $ Array.null errors.username)
+                                $ R.div
+                                    { className: "error-messages"
+                                    , children: errors.username <#> \error -> R.div_ [ R.text $ "Name " <> error ]
+                                    }
+                            ]
+                        }
+                    , R.fieldset
                         { className: "form-group"
                         , children:
                             [ R.input
@@ -131,7 +152,7 @@ mkLoginPage =
                                 , placeholder: "Password"
                                 , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdatePassword
                                 }
-                            , guard (not $ Array.null errors.email)
+                            , guard (not $ Array.null errors.password)
                                 $ R.div
                                     { className: "error-messages"
                                     , children: errors.password <#> \error -> R.div_ [ R.text $ "Password " <> error ]
@@ -142,7 +163,7 @@ mkLoginPage =
                         { className: "btn btn-lg btn-primary pull-xs-right"
                         , type: "button"
                         , onClick: handler_ $ store.dispatch Submit
-                        , children: [ R.text "Sign in" ]
+                        , children: [ R.text "Sign up" ]
                         }
                     ]
                 ]
@@ -172,23 +193,33 @@ mkLoginPage =
 
 -- | Validation
 type ValidationValues r
-  = { email :: V.Validated String
+  = { username :: V.Validated String
+    , email :: V.Validated String
     , password :: V.Validated String
     | r
     }
 
 type ValidationErrors
-  = { email :: Array String
+  = { username :: Array String
+    , email :: Array String
     , password :: Array String
     }
 
 type ValidatedValues
-  = { email :: String
+  = { username :: String
+    , email :: String
     , password :: String
     }
 
 validate :: forall r. ValidationValues r -> V ValidationErrors ValidatedValues
 validate values = ado
+  username <-
+    values.username
+      # V.validate (V.toRecord (LR.prop (SProxy :: _ "username"))) \username -> do
+          V.validateNonEmpty username
+            `andThen`
+              ( V.validateMinimumLength 3 *> V.validateMaximunLength 20
+              )
   email <-
     values.email
       # V.validate (V.toRecord (LR.prop (SProxy :: _ "email"))) \email -> do
@@ -200,4 +231,4 @@ validate values = ado
             `andThen`
               ( V.validateMinimumLength 3 *> V.validateMaximunLength 20
               )
-  in { email, password }
+  in { username, email, password }

@@ -1,18 +1,19 @@
 module Conduit.Api.Request where
 
 import Prelude
+import Apiary.Client (Error(..))
 import Apiary.Client (Error, makeRequest) as Apiary
 import Apiary.Client.Request (class BuildRequest) as Apiary
 import Apiary.Client.Response (class DecodeResponse) as Apiary
 import Conduit.Api.Utils (addBaseUrl, addToken)
 import Conduit.Env (Env)
 import Control.Monad.Reader (class MonadAsk, ask)
-import Data.Either (Either)
-import Data.Maybe (maybe')
+import Data.Either (Either(..))
+import Data.Maybe (Maybe(..))
 import Data.Tuple (fst)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (liftEffect)
-import Effect.Exception (throw)
+import Effect.Exception (error)
 import Wire.React.Class (read)
 
 makeRequest ::
@@ -40,5 +41,7 @@ makeSecureRequest ::
   m (Either Apiary.Error response)
 makeSecureRequest route path query body = do
   env <- ask
-  { token } <- liftEffect $ (fst <$> read env.userSignal) >>= maybe' (const $ throw "Token not available") pure
-  liftAff $ Apiary.makeRequest route (addBaseUrl <<< addToken token) path query body
+  auth <- liftEffect $ (fst <$> read env.userSignal)
+  case auth of
+    Nothing -> pure $ Left $ RuntimeError $ error "Token not available"
+    Just { token } -> liftAff $ Apiary.makeRequest route (addBaseUrl <<< addToken token) path query body

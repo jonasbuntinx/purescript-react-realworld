@@ -24,6 +24,26 @@ type Login
           }
       }
 
+type Register
+  = POST "/api/users"
+      { body ::
+          JSON
+            { user ::
+                { username :: String
+                , email :: String
+                , password :: String
+                }
+            }
+      , response ::
+          { ok ::
+              JSON
+                { user :: { | ProfileRep ( email :: String, token :: String ) }
+                }
+          , unprocessableEntity ::
+              JSON { errors :: Object (Array String) }
+          }
+      }
+
 type GetUser
   = GET "/api/user"
       { response ::

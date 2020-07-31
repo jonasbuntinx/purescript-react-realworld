@@ -9,7 +9,7 @@ import Conduit.Component.App as App
 import Conduit.Components.Toast as Toast
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Validation as V
-import Conduit.Effects.Routing (navigate)
+import Conduit.Effects.Routing (redirect)
 import Conduit.Env (Env)
 import Conduit.Env.User (logout, updateProfile)
 import Control.Comonad (extract)
@@ -93,7 +93,7 @@ mkSettingsPage =
             self.setState _ { submitResponse = RemoteData.Loading }
             res <- Request.makeSecureRequest (Apiary.Route :: PutUser) Apiary.none Apiary.none { user: validated }
             case res of
-              Left _ -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown" []) }
+              Left _ -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown error:" [ "request failed" ]) }
               Right response ->
                 response
                   # Variant.match
@@ -108,7 +108,7 @@ mkSettingsPage =
                       }
     Logout -> do
       logout
-      navigate Home
+      redirect Home
 
   render store props =
     let
