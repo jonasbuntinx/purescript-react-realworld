@@ -6,7 +6,7 @@ import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username as Username
 import Conduit.Effects.Routing (navigate)
-import Conduit.Env.User (Auth)
+import Conduit.Env.User (Auth, unpack)
 import Data.Maybe (Maybe, isJust, isNothing, maybe)
 import Data.Monoid (guard)
 import Data.Tuple (Tuple(..))
@@ -43,12 +43,12 @@ header (Tuple auth profile) route =
                             [ R.i { className: "ion-gear-a", children: [] }
                             , R.text " Settings"
                             ]
-                        , profile
-                            # maybe React.empty \{ username, image } ->
+                        , auth >>= unpack
+                            # maybe React.empty \{ username } ->
                                 navItem (Profile username)
                                   [ R.img
                                       { className: "user-pic"
-                                      , src: Avatar.toString $ Avatar.withDefault image
+                                      , src: maybe "" (Avatar.toString <<< Avatar.withDefault <<< _.image) profile
                                       }
                                   , R.text $ " " <> Username.toString username
                                   ]

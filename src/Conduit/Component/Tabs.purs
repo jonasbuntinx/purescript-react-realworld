@@ -19,6 +19,7 @@ derive instance newtypeTabId :: Newtype TabId _
 
 derive instance eqTabId :: Eq TabId
 
+-- | Component
 type Props
   = { className :: String
     , selectedTab :: Maybe TabId

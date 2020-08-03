@@ -28,3 +28,7 @@ exports.format = function (format) {
     return m.format(format);
   };
 };
+
+exports.unix = function (s) {
+  return moment.unix(s);
+};

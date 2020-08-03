@@ -6,17 +6,20 @@ import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
 import Conduit.Api.User (GetUser)
 import Conduit.Api.Utils (addBaseUrl, addToken)
+import Conduit.Data.Jwt as Jwt
 import Conduit.Data.Profile (Profile)
+import Conduit.Data.Username (Username)
 import Conduit.Effects.LocalStorage as LocalStorage
 import Control.Monad.Reader (class MonadAsk, ask)
 import Data.Either (hush)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Symbol (SProxy(..))
+import Data.Time.Duration (Seconds(..))
 import Data.Tuple (Tuple(..))
 import Data.Variant as Variant
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
-import Foreign.Moment (Moment, now)
+import Foreign.Moment (Moment, now, unix)
 import Record as Record
 import Wire.React.Async as Async
 import Wire.React.Class as Wire
@@ -123,3 +126,8 @@ updateProfile ::
 updateProfile profile = do
   { userSignal } <- ask
   liftEffect $ Wire.modify userSignal \(Tuple auth _) -> Tuple auth (Just profile)
+
+unpack :: Auth -> Maybe { updated :: Moment, expirationTime :: Moment, username :: Username }
+unpack { token, updated } = do
+  { exp, username } <- hush $ Jwt.decode token
+  pure { updated, expirationTime: unix $ Seconds exp, username }

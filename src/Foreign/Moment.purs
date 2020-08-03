@@ -4,7 +4,7 @@ import Prelude
 import Control.Monad.Error.Class (throwError)
 import Data.Function.Uncurried (Fn3, runFn3)
 import Data.Maybe (Maybe(..))
-import Data.Time.Duration (class Duration, Milliseconds)
+import Data.Time.Duration (class Duration, Milliseconds, Seconds)
 import Effect (Effect)
 import Foreign.Generic (class Decode, class Encode, ForeignError(..), decode, encode)
 import Simple.JSON (class ReadForeign, readImpl)
@@ -25,6 +25,8 @@ foreign import toMilliseconds :: Moment -> Milliseconds
 foreign import now :: Effect Moment
 
 foreign import format :: Format -> Moment -> String
+
+foreign import unix :: Seconds -> Moment
 
 newtype Format
   = Format String
