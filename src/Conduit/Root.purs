@@ -4,6 +4,7 @@ import Prelude
 import Conduit.Component.App as App
 import Conduit.Component.Footer as Footer
 import Conduit.Component.Header as Header
+import Conduit.Component.Toast as Toast
 import Conduit.Control.Routing (Completed, Pending, Routing, continue, redirect)
 import Conduit.Data.Route (Route(..))
 import Conduit.Env (Env)
@@ -37,7 +38,8 @@ mkRoot = do
     route <- useRoute env
     pure
       $ React.fragment
-          [ Header.header user route
+          [ Toast.toastManager
+          , Header.header user route
           , case route of
               Home -> do
                 homePage unit

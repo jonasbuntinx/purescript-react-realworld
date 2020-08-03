@@ -1,10 +1,10 @@
 module Main where
 
 import Prelude
+import Conduit.Component.Routing as Routing
+import Conduit.Component.Toast as Toast
+import Conduit.Component.User as User
 import Conduit.Data.Route (routeCodec)
-import Conduit.HOC.Routing as Routing
-import Conduit.HOC.Toast as Toast
-import Conduit.HOC.User as User
 import Conduit.Root as Root
 import Control.Monad.Reader as Reader
 import Data.Foldable (traverse_)
@@ -28,14 +28,11 @@ main = do
     Just c -> do
       userSignal /\ userManager <- User.mkUserManager
       routingSignal /\ routingManager <- Routing.mkRoutingManager routeCodec (Root.onNavigate userSignal)
-      toastSignal /\ toastManager <- Toast.mkToastManager
-      root <- Reader.runReaderT Root.mkRoot { userSignal, routingSignal, toastSignal }
+      root <- Reader.runReaderT Root.mkRoot { userSignal, routingSignal }
       render
         ( userManager
             ( routingManager
-                ( toastManager
-                    (root unit)
-                )
+                (root unit)
             )
         )
         c

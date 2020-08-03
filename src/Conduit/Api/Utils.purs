@@ -2,11 +2,10 @@ module Conduit.Api.Utils where
 
 import Prelude
 import Apiary.Client (Error(..)) as Apiary
+import Conduit.Component.Toast (enqueueToast)
 import Conduit.Data.Config as Config
 import Conduit.Effects.Debug as Debug
-import Conduit.Env.Toast (ToastSignal, enqueueToast)
 import Control.Comonad (extract)
-import Control.Monad.Reader (class MonadAsk)
 import Data.Foldable (foldl)
 import Data.List.NonEmpty as NonEmptyList
 import Effect.Aff (message)
@@ -22,8 +21,7 @@ addToken :: forall r. String -> { headers :: Object.Object String | r } -> { hea
 addToken token request@{ headers } = request { headers = Object.insert "Authorization" ("Token " <> token) headers }
 
 onError ::
-  forall m r.
-  MonadAsk { toastSignal :: ToastSignal | r } m =>
+  forall m.
   MonadEffect m =>
   Apiary.Error ->
   m Unit

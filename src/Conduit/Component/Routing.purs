@@ -1,4 +1,4 @@
-module Conduit.HOC.Routing where
+module Conduit.Component.Routing where
 
 import Prelude
 import Conduit.Control.Routing (Command(..), Completed, Pending, Routing)
