@@ -16,7 +16,6 @@ import Data.Either (either)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Variant as Variant
 import Network.RemoteData as RemoteData
-import Network.RemoteData as RemoteDate
 import React.Basic.DOM as R
 import React.Basic.Hooks as React
 
@@ -50,61 +49,60 @@ mkProfilePage =
     ChangeTab selectedTab -> self.setState _ { selectedTab = Just selectedTab }
 
   render store props =
-    container (userInfo store props)
-      [ Tabs.tabs
-          { className: "articles-toggle"
-          , selectedTab: store.state.selectedTab
-          , tabs:
-              [ { id: Tabs.TabId "Articles"
-                , label: "My Articles"
-                , content:
-                    R.div_
-                      [ articleList { articles: store.state.articles }
-                      ]
-                }
-              , { id: Tabs.TabId "Favorites"
-                , label: "My Favorites"
-                , content:
-                    R.div_
-                      [ articleList { articles: store.state.articles }
-                      ]
-                }
-              ]
-          , onChange: store.dispatch <<< ChangeTab
-          }
-      ]
-
-  userInfo store props =
-    let
-      profile = RemoteDate.toMaybe store.state.profile
-    in
-      R.div
-        { className: "user-info"
-        , children:
-            [ R.div
-                { className: "container"
-                , children:
-                    [ R.div
-                        { className: "row"
-                        , children:
-                            [ R.div
-                                { className: "col-xs-12 col-md-10 offset-md-1"
-                                , children:
-                                    [ R.img
-                                        { className: "user-img"
-                                        , src: Avatar.toString $ Avatar.withDefault $ _.image =<< profile
-                                        }
-                                    , R.h4_ [ R.text $ Username.toString props.username ]
-                                    , profile >>= _.bio # maybe React.empty \bio -> R.p_ [ R.text bio ]
-                                    , profile # maybe React.empty followButton
-                                    ]
-                                }
+    store.state.profile
+      # RemoteData.maybe React.empty \profile ->
+          container (userInfo profile)
+            [ Tabs.tabs
+                { className: "articles-toggle"
+                , selectedTab: store.state.selectedTab
+                , tabs:
+                    [ { id: Tabs.TabId "Articles"
+                      , label: "My Articles"
+                      , content:
+                          R.div_
+                            [ articleList { articles: store.state.articles }
                             ]
-                        }
+                      }
+                    , { id: Tabs.TabId "Favorites"
+                      , label: "My Favorites"
+                      , content:
+                          R.div_
+                            [ articleList { articles: store.state.articles }
+                            ]
+                      }
                     ]
+                , onChange: store.dispatch <<< ChangeTab
                 }
             ]
-        }
+
+  userInfo profile =
+    R.div
+      { className: "user-info"
+      , children:
+          [ R.div
+              { className: "container"
+              , children:
+                  [ R.div
+                      { className: "row"
+                      , children:
+                          [ R.div
+                              { className: "col-xs-12 col-md-10 offset-md-1"
+                              , children:
+                                  [ R.img
+                                      { className: "user-img"
+                                      , src: Avatar.toString $ Avatar.withDefault $ profile.image
+                                      }
+                                  , R.h4_ [ R.text $ Username.toString profile.username ]
+                                  , profile.bio # maybe React.empty \bio -> R.p_ [ R.text bio ]
+                                  , followButton profile
+                                  ]
+                              }
+                          ]
+                      }
+                  ]
+              }
+          ]
+      }
 
   followButton profile =
     if profile.following then
