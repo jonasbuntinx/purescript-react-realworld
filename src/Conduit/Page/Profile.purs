@@ -63,7 +63,7 @@ mkProfilePage =
                       ]
                 }
               , { id: Tabs.TabId "Favorites"
-                , label: "Favorites Articles"
+                , label: "My Favorites"
                 , content:
                     R.div_
                       [ articleList { articles: store.state.articles }
