@@ -43,7 +43,6 @@ mkProfilePage =
 
   update self = case _ of
     Initialize -> do
-      self.setState _ { profile = RemoteData.Loading }
       res <- Request.makeRequest (Apiary.Route :: GetProfile) { username: self.props.username } Apiary.none Apiary.none
       self.setState _ { profile = res # either RemoteData.Failure (Variant.match { ok: RemoteData.Success <<< _.profile }) }
     ChangeTab selectedTab -> self.setState _ { selectedTab = Just selectedTab }
