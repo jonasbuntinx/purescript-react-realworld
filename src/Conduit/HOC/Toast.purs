@@ -1,50 +1,49 @@
-module Conduit.Components.Toast where
+module Conduit.HOC.Toast where
 
 import Prelude
-import Conduit.Components.Portal as Portal
-import Data.Array (drop, head, snoc)
+import Conduit.Component.Portal as Portal
+import Conduit.Env.Toast (ToastSignal, create)
+import Data.Array (drop, head)
 import Data.Maybe (Maybe(..), maybe)
+import Data.Tuple (Tuple(..))
 import Data.Tuple.Nested ((/\))
+import Effect (Effect)
 import Effect.Aff (Milliseconds(..), delay, launchAff_)
-import Effect.Class (class MonadEffect, liftEffect)
-import Effect.Ref (Ref, modify, new, read, write)
-import Effect.Unsafe (unsafePerformEffect)
+import Effect.Class (liftEffect)
 import Foreign.JSS (JSS, jss)
 import React.Basic.DOM as R
 import React.Basic.Hooks as React
+import Wire.React.Class (modify, read)
 
--- | Ref
-toastQueue :: Ref (Array { message :: String, duration :: Milliseconds })
-toastQueue = unsafePerformEffect do new []
+data ToastStatus
+  = Empty
+  | Visible
+  | Expired
 
-enqueueToast :: forall m. MonadEffect m => String -> m Unit
-enqueueToast message =
-  liftEffect
-    $ void do
-        modify (_ `snoc` { message, duration: toastDuration }) toastQueue
+transitionDuration :: Milliseconds
+transitionDuration = Milliseconds 150.0
 
--- | Toast Manager
-toastManager :: React.JSX
-toastManager = unsafePerformEffect mkToastManager unit
-
-mkToastManager :: React.Component Unit
+mkToastManager :: Effect (Tuple ToastSignal (React.JSX -> React.JSX))
 mkToastManager = do
-  Portal.portal "ToastManager" \props -> React.do
-    state /\ setState <- React.useState { toast: Nothing, status: Empty }
-    React.useEffectOnce do
-      readQueue state setState
-      mempty
-    pure $ render state
+  toastSignal <- create
+  component <-
+    Portal.portal "ToastManager" \content -> React.do
+      state /\ setState <- React.useState { toast: Nothing, status: Empty }
+      React.useEffectOnce do
+        readQueue toastSignal state setState
+        mempty
+      pure $ render state content
+  pure $ Tuple toastSignal component
   where
-  readQueue state setState =
+  readQueue toastSignal state setState =
     launchAff_ do
-      q <- liftEffect $ read toastQueue
-      liftEffect $ write (drop 1 q) toastQueue
+      q <- liftEffect $ read toastSignal
+      liftEffect $ modify toastSignal $ const $ (drop 1 q)
       delay transitionDuration
       case head q of
         Nothing -> do
           delay $ Milliseconds 500.0
-          liftEffect $ readQueue state setState
+          liftEffect $ readQueue toastSignal state setState
         Just m -> do
           liftEffect $ newMessage state setState m
           delay transitionDuration
@@ -54,7 +53,7 @@ mkToastManager = do
           delay transitionDuration
           liftEffect $ setState reset
           delay transitionDuration
-          liftEffect $ readQueue state setState
+          liftEffect $ readQueue toastSignal state setState
 
   newMessage state setState m = do
     unless (Just m == state.toast) do
@@ -66,41 +65,34 @@ mkToastManager = do
 
   reset = _ { toast = Nothing, status = Empty }
 
-  render state =
-    state.toast
-      # maybe React.empty \{ message } ->
-          R.div
-            { className: "toast-anchor"
-            , children:
-                [ R.div
-                    { className:
-                        "toast-wrapper "
-                          <> case state.status of
-                              Empty -> "empty"
-                              Visible -> "visible"
-                              Expired -> "expired"
-                    , children:
-                        [ R.div
-                            { className: "toast-bubble"
-                            , children:
-                                [ R.text message ]
-                            }
-                        ]
-                    }
-                ]
-            }
+  render state content =
+    React.fragment
+      [ state.toast
+          # maybe React.empty \{ message } ->
+              R.div
+                { className: "toast-anchor"
+                , children:
+                    [ R.div
+                        { className:
+                            "toast-wrapper "
+                              <> case state.status of
+                                  Empty -> "empty"
+                                  Visible -> "visible"
+                                  Expired -> "expired"
+                        , children:
+                            [ R.div
+                                { className: "toast-bubble"
+                                , children:
+                                    [ R.text message ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+      , content
+      ]
 
-data ToastStatus
-  = Empty
-  | Visible
-  | Expired
-
-toastDuration :: Milliseconds
-toastDuration = Milliseconds 4000.0
-
-transitionDuration :: Milliseconds
-transitionDuration = Milliseconds 150.0
-
+-- | Style
 styles :: JSS
 styles =
   jss

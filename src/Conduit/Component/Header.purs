@@ -1,12 +1,13 @@
 module Conduit.Component.Header where
 
 import Prelude
+import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username as Username
 import Conduit.Effects.Routing (navigate)
 import Conduit.Env.User (Auth)
-import Data.Maybe (Maybe(..), isJust, isNothing, maybe)
+import Data.Maybe (Maybe, isJust, isNothing, maybe)
 import Data.Monoid (guard)
 import Data.Tuple (Tuple(..))
 import React.Basic.DOM as R
@@ -47,10 +48,7 @@ header (Tuple auth profile) route =
                                 navItem (Profile username)
                                   [ R.img
                                       { className: "user-pic"
-                                      , src:
-                                          case image of
-                                            Nothing -> "https://static.productionready.io/images/smiley-cyrus.jpg"
-                                            Just url -> url
+                                      , src: Avatar.toString $ Avatar.withDefault image
                                       }
                                   , R.text $ " " <> Username.toString username
                                   ]

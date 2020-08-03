@@ -19,6 +19,7 @@ import Wire.React.Class (read)
 makeRequest ::
   forall m route path query body rep response.
   MonadAff m =>
+  MonadAsk Env m =>
   Apiary.BuildRequest route path query body rep =>
   Apiary.DecodeResponse rep response =>
   route ->

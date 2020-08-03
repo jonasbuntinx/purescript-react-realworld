@@ -24,6 +24,11 @@ foreign import toMilliseconds :: Moment -> Milliseconds
 
 foreign import now :: Effect Moment
 
+foreign import format :: Format -> Moment -> String
+
+newtype Format
+  = Format String
+
 instance eqMoment :: Eq Moment where
   eq a b = eq (toMilliseconds a) (toMilliseconds b)
 

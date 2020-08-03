@@ -22,3 +22,9 @@ exports.toMilliseconds = function (m) {
 exports.now = function () {
   return moment().local();
 };
+
+exports.format = function (format) {
+  return function (m) {
+    return m.format(format);
+  };
+};

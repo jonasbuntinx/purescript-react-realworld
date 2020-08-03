@@ -1,4 +1,4 @@
-module Conduit.Components.Portal (portal) where
+module Conduit.Component.Portal (portal) where
 
 import Prelude
 import Data.Foldable (traverse_)

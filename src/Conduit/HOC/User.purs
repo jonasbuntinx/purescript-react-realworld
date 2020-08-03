@@ -1,4 +1,4 @@
-module Conduit.Component.User where
+module Conduit.HOC.User where
 
 import Prelude
 import Apiary.Client (makeRequest) as Apiary
