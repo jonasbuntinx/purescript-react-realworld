@@ -21,6 +21,7 @@ data Route
   | UpdateArticle Slug
   | ViewArticle Slug
   | Profile Username
+  | Favorites Username
   | Error
 
 derive instance genericRoute :: Generic Route _
@@ -43,6 +44,7 @@ routeCodec =
         , "UpdateArticle": "editor" / slug segment
         , "ViewArticle": "article" / slug segment
         , "Profile": "profile" / username segment
+        , "Favorites": "profile" / username segment / "favorites"
         , "Error": "error" / noArgs
         }
 

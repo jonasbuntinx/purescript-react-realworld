@@ -5,34 +5,26 @@ import Control.Alt ((<|>))
 import Data.Array as Array
 import Data.Maybe (Maybe, maybe)
 import Data.Monoid (guard)
-import Data.Newtype (class Newtype)
 import Effect (Effect)
 import React.Basic.DOM as R
 import React.Basic.DOM.Events (preventDefault)
 import React.Basic.Events (handler)
 import React.Basic.Hooks as React
 
-newtype TabId
-  = TabId String
-
-derive instance newtypeTabId :: Newtype TabId _
-
-derive instance eqTabId :: Eq TabId
-
 -- | Component
-type Props
+type Props a
   = { className :: String
-    , selectedTab :: Maybe TabId
+    , selectedTab :: Maybe a
     , tabs ::
         Array
-          { id :: TabId
+          { id :: a
           , label :: String
           , content :: React.JSX
           }
-    , onChange :: TabId -> Effect Unit
+    , onChange :: a -> Effect Unit
     }
 
-tabs :: Props -> React.JSX
+tabs :: forall a. Eq a => Props a -> React.JSX
 tabs props =
   React.fragment
     [ R.div

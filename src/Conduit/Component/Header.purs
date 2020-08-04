@@ -48,7 +48,7 @@ header (Tuple auth profile) route =
                                 navItem (Profile username)
                                   [ R.img
                                       { className: "user-pic"
-                                      , src: maybe "" (Avatar.toString <<< Avatar.withDefault <<< _.image) profile
+                                      , src: Avatar.toString $ maybe Avatar.blank (Avatar.withDefault <<< _.image) profile
                                       }
                                   , R.text $ " " <> Username.toString username
                                   ]

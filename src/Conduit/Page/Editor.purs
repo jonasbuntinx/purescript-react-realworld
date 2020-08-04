@@ -60,6 +60,7 @@ mkEditorPage =
   update self = case _ of
     Initialize ->
       for_ self.props.slug \slug -> do
+        self.setState _ { article = RemoteData.Loading }
         res <- Request.makeSecureRequest (Apiary.Route :: GetArticle) { slug } Apiary.none Apiary.none
         case res of
           Left error -> self.setState _ { article = RemoteData.Failure error }
@@ -76,6 +77,7 @@ mkEditorPage =
                             , body = pure article.body
                             , tagList = article.tagList
                             }
+                  , notFound: \_ -> do navigate Home
                   }
     UpdateTitle title -> self.setState _ { title = V.Modified title }
     UpdateDescription description -> self.setState _ { description = V.Modified description }

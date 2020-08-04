@@ -2,45 +2,64 @@ module Conduit.Component.ArticleList where
 
 import Prelude
 import Apiary.Types as Apiary
+import Conduit.Component.Buttons (ButtonSize(..), favoriteButton)
 import Conduit.Data.Article (Article)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username as Username
 import Conduit.Effects.Routing (navigate)
 import Data.Array as Array
+import Effect (Effect)
 import Foreign.Moment (Format(..), format)
 import Network.RemoteData (RemoteData(..))
 import React.Basic.DOM as R
 import React.Basic.DOM.Events (preventDefault)
-import React.Basic.Events (handler)
+import React.Basic.Events (handler, handler_)
 import React.Basic.Hooks as React
 
 -- | Article List
 type ArticleListProps
   = { articles :: RemoteData Apiary.Error (Array Article)
+    , onFavoriteToggle :: Int -> Effect Unit
     }
 
 articleList :: ArticleListProps -> React.JSX
-articleList props =
-  R.div
-    { className: "article-preview"
-    , children:
-        case props.articles of
-          NotAsked -> [ R.text "Articles not yet loaded" ]
-          Loading -> [ R.text "Loading..." ]
-          Failure _ -> [ R.text "Error loading articles " ]
-          Success articles
-            | Array.null articles -> [ R.text "No articles are here...yet!" ]
-          Success articles -> articles <#> \article -> acticlePreview { article }
-    }
+articleList props = case props.articles of
+  NotAsked ->
+    R.div
+      { className: "article-preview"
+      , children: [ R.text "Articles not yet loaded" ]
+      }
+  Loading ->
+    R.div
+      { className: "article-preview"
+      , children: [ R.text "Loading..." ]
+      }
+  Failure _ ->
+    R.div
+      { className: "article-preview"
+      , children: [ R.text "Error loading articles " ]
+      }
+  Success articles
+    | Array.null articles ->
+      R.div
+        { className: "article-preview"
+        , children: [ R.text "No articles are here...yet!" ]
+        }
+  Success articles ->
+    React.fragment $ articles
+      # Array.mapWithIndex \ix article ->
+          acticlePreview
+            { article, onFavoriteToggle: props.onFavoriteToggle ix }
 
 -- | Article Preview
 type ArticlePreviewProps
   = { article :: Article
+    , onFavoriteToggle :: Effect Unit
     }
 
 acticlePreview :: ArticlePreviewProps -> React.JSX
-acticlePreview { article } =
+acticlePreview { article, onFavoriteToggle } =
   R.div
     { className: "article-preview"
     , children:
@@ -62,6 +81,7 @@ acticlePreview { article } =
                     , children:
                         [ R.a
                             { className: "author"
+                            , href: "#"
                             , onClick: handler preventDefault $ const $ navigate $ Profile article.author.username
                             , children: [ R.text $ Username.toString article.author.username ]
                             }
@@ -73,14 +93,21 @@ acticlePreview { article } =
                     }
                 , R.div
                     { className: "pull-xs-right"
-                    , children: [ favoriteButton { size: Icon, article } ]
+                    , children:
+                        [ favoriteButton
+                            { size: Icon
+                            , favorited: article.favorited
+                            , count: article.favoritesCount
+                            , onClick: handler_ $ onFavoriteToggle
+                            }
+                        ]
                     }
                 ]
             }
         , R.a
             { className: "preview-link"
             , href: "#"
-            , onClick: handler preventDefault $ const $ navigate Home
+            , onClick: handler preventDefault $ const $ navigate $ ViewArticle article.slug
             , children:
                 [ R.h1_
                     [ R.text article.title ]
@@ -98,46 +125,6 @@ acticlePreview { article } =
                                 , children: [ R.text tag ]
                                 }
                     }
-                ]
-            }
-        ]
-    }
-
--- | Buttons
-data ButtonSize
-  = Icon
-  | Medium
-
-derive instance eqButtonSize :: Eq ButtonSize
-
-type FavoriteButtonProps
-  = { size :: ButtonSize
-    , article :: Article
-    }
-
-favoriteButton :: FavoriteButtonProps -> React.JSX
-favoriteButton { size, article } =
-  R.button
-    { className: "btn btn-sm " <> if article.favorited then "btn-primary" else "btn-outline-primary"
-    , children:
-        [ R.i
-            { className: "ion-heart"
-            , children: []
-            }
-        , R.span_
-            [ R.text
-                $ case article.favorited, size of
-                    true, Medium -> " Unfavorite Article"
-                    _, Medium -> " Favorite Article"
-                    _, _ -> " "
-            ]
-        , R.span
-            { className: "counter"
-            , children:
-                [ R.text
-                    $ case size of
-                        Icon -> " " <> show article.favoritesCount
-                        _ -> " (" <> show article.favoritesCount <> ")"
                 ]
             }
         ]

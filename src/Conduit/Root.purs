@@ -11,17 +11,17 @@ import Conduit.Env (Env)
 import Conduit.Env.User (UserSignal)
 import Conduit.Hook.Routing (useRoute)
 import Conduit.Hook.User (useUser)
+import Conduit.Page.Article (mkArticlePage)
 import Conduit.Page.Editor (mkEditorPage)
 import Conduit.Page.Home (mkHomePage)
 import Conduit.Page.Login (mkLoginPage)
-import Conduit.Page.Profile (mkProfilePage)
+import Conduit.Page.Profile (Tab(..), mkProfilePage)
 import Conduit.Page.Register (mkRegisterPage)
 import Conduit.Page.Settings (mkSettingsPage)
 import Control.Monad.Indexed.Qualified as Ix
 import Data.Maybe (Maybe(..))
 import Data.Tuple (fst)
 import Effect.Class (liftEffect)
-import React.Basic.DOM as R
 import React.Basic.Hooks as React
 import Wire.React.Class (read) as Wire
 
@@ -31,8 +31,9 @@ mkRoot = do
   loginPage <- mkLoginPage
   registerPage <- mkRegisterPage
   settingsPage <- mkSettingsPage
-  editor <- mkEditorPage
-  profile <- mkProfilePage
+  editorPage <- mkEditorPage
+  articlePage <- mkArticlePage
+  profilePage <- mkProfilePage
   App.component' "Root" \env props -> React.do
     user <- useUser env
     route <- useRoute env
@@ -50,15 +51,17 @@ mkRoot = do
               Settings -> do
                 settingsPage unit
               CreateArticle -> do
-                editor { slug: Nothing }
+                editorPage { slug: Nothing }
               UpdateArticle slug -> do
-                editor { slug: Just slug }
+                editorPage { slug: Just slug }
               ViewArticle slug -> do
-                React.empty
+                articlePage unit
               Profile username -> do
-                profile { username }
+                profilePage { username, tab: PublishedTab }
+              Favorites username -> do
+                profilePage { username, tab: FavoritedTab }
               Error -> do
-                R.text "Error"
+                React.empty
           , Footer.footer
           ]
 
@@ -73,6 +76,16 @@ onNavigate userSignal route = Ix.do
     Settings, Nothing -> do
       redirect Home
     CreateArticle, Nothing -> do
+      redirect Home
+    UpdateArticle _, Nothing -> do
+      redirect Home
+    ViewArticle _, Nothing -> do
+      redirect Home
+    Profile _, Nothing -> do
+      redirect Home
+    Favorites _, Nothing -> do
+      redirect Home
+    Error, _ -> do
       redirect Home
     _, _ -> do
       continue

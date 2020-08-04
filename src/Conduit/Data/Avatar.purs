@@ -4,6 +4,7 @@ module Conduit.Data.Avatar
   , toString
   , withDefault
   , default
+  , blank
   ) where
 
 import Prelude
@@ -47,3 +48,6 @@ withDefault Nothing = default
 
 default :: Avatar
 default = fromString "https://static.productionready.io/images/smiley-cyrus.jpg"
+
+blank :: Avatar
+blank = fromString "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
