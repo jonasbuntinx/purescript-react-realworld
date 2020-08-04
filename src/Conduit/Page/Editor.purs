@@ -18,6 +18,7 @@ import Data.Foldable (for_, traverse_)
 import Data.Lens.Record as LR
 import Data.Maybe (Maybe(..))
 import Data.Monoid (guard)
+import Data.String as String
 import Data.Symbol (SProxy(..))
 import Data.Validation.Semigroup (V, andThen, toEither, unV)
 import Data.Variant as Variant
@@ -177,18 +178,18 @@ mkEditorPage =
                                         }
                                 ]
                             }
-                        -- , R.fieldset
-                        --     { className: "form-group"
-                        --     , children:
-                        --         [ R.input
-                        --             { className: "form-control"
-                        --             , type: "text"
-                        --             , value: fromMaybe "" store.state.tagList
-                        --             , placeholder: "Enter tags"
-                        --             , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateTagList
-                        --             }
-                        --         ]
-                        --     }
+                        , R.fieldset
+                            { className: "form-group"
+                            , children:
+                                [ R.input
+                                    { className: "form-control"
+                                    , type: "text"
+                                    , value: Array.intercalate " " store.state.tagList
+                                    , placeholder: "Enter tags"
+                                    , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateTagList <<< String.split (String.Pattern " ")
+                                    }
+                                ]
+                            }
                         , R.button
                             { className: "btn btn-primary pull-xs-right"
                             , type: "button"
