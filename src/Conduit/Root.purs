@@ -4,8 +4,8 @@ import Prelude
 import Conduit.Component.App as App
 import Conduit.Component.Footer as Footer
 import Conduit.Component.Header as Header
+import Conduit.Component.Routing (Completed, Pending, Routing, continue, redirect)
 import Conduit.Component.Toast as Toast
-import Conduit.Control.Routing (Completed, Pending, Routing, continue, redirect)
 import Conduit.Data.Route (Route(..))
 import Conduit.Env (Env)
 import Conduit.Env.Auth (AuthSignal)
