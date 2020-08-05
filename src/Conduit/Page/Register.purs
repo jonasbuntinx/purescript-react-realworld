@@ -6,11 +6,12 @@ import Apiary.Types (none) as Apiary
 import Conduit.Api.Request as Request
 import Conduit.Api.User (Register)
 import Conduit.Component.App as App
+import Conduit.Component.Link as Link
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username (Username)
 import Conduit.Data.Validation (validateUsernameFormat)
 import Conduit.Data.Validation as V
-import Conduit.Effects.Routing (navigate, redirect)
+import Conduit.Effects.Routing (redirect)
 import Conduit.Env (Env)
 import Conduit.Env.Auth (login)
 import Control.Comonad (extract)
@@ -25,7 +26,7 @@ import Data.Variant as Variant
 import Foreign.Object as Object
 import Network.RemoteData as RemoteData
 import React.Basic.DOM as R
-import React.Basic.DOM.Events (preventDefault, targetValue)
+import React.Basic.DOM.Events (targetValue)
 import React.Basic.Events (handler, handler_)
 import React.Basic.Hooks as React
 import Record as Record
@@ -91,9 +92,9 @@ mkRegisterPage =
         , R.p
             { className: "text-xs-center"
             , children:
-                [ R.a
-                    { href: "#"
-                    , onClick: handler preventDefault $ const $ navigate Login
+                [ Link.link
+                    { className: ""
+                    , route: Login
                     , children: [ R.text "Already have an account?" ]
                     }
                 ]

@@ -1,4 +1,4 @@
-module Conduit.Components.Pagination where
+module Conduit.Component.Pagination where
 
 import Prelude
 import Data.Array as Array

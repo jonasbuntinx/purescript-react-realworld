@@ -3,18 +3,17 @@ module Conduit.Component.ArticleList where
 import Prelude
 import Apiary.Types as Apiary
 import Conduit.Component.Buttons (ButtonSize(..), favoriteButton)
+import Conduit.Component.Link as Link
 import Conduit.Data.Article (Article)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username as Username
-import Conduit.Effects.Routing (navigate)
 import Data.Array as Array
 import Effect (Effect)
 import Foreign.Moment (Format(..), format)
 import Network.RemoteData (RemoteData(..))
 import React.Basic.DOM as R
-import React.Basic.DOM.Events (preventDefault)
-import React.Basic.Events (handler, handler_)
+import React.Basic.Events (handler_)
 import React.Basic.Hooks as React
 
 -- | Article List
@@ -66,9 +65,9 @@ acticlePreview { article, onFavoriteToggle } =
         [ R.div
             { className: "article-meta"
             , children:
-                [ R.a
-                    { href: "#"
-                    , onClick: handler preventDefault $ const $ navigate $ Profile article.author.username
+                [ Link.link
+                    { className: ""
+                    , route: Profile article.author.username
                     , children:
                         [ R.img
                             { src: Avatar.toString $ Avatar.withDefault article.author.image
@@ -79,10 +78,9 @@ acticlePreview { article, onFavoriteToggle } =
                 , R.div
                     { className: "info"
                     , children:
-                        [ R.a
+                        [ Link.link
                             { className: "author"
-                            , href: "#"
-                            , onClick: handler preventDefault $ const $ navigate $ Profile article.author.username
+                            , route: Profile article.author.username
                             , children: [ R.text $ Username.toString article.author.username ]
                             }
                         , R.span
@@ -104,10 +102,9 @@ acticlePreview { article, onFavoriteToggle } =
                     }
                 ]
             }
-        , R.a
+        , Link.link
             { className: "preview-link"
-            , href: "#"
-            , onClick: handler preventDefault $ const $ navigate $ ViewArticle article.slug
+            , route: ViewArticle article.slug
             , children:
                 [ R.h1_
                     [ R.text article.title ]

@@ -8,6 +8,7 @@ import Conduit.Api.Profile (UnfollowProfile, FollowProfile)
 import Conduit.Api.Request as Request
 import Conduit.Component.App as App
 import Conduit.Component.Buttons (ButtonSize(..), favoriteButton, followButton)
+import Conduit.Component.Link as Link
 import Conduit.Data.Article (Article)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Comment (CommentId)
@@ -243,9 +244,9 @@ mkArticlePage =
     R.div
       { className: "article-meta"
       , children:
-          [ R.a
-              { href: "#"
-              , onClick: handler preventDefault $ const $ navigate $ Profile article.author.username
+          [ Link.link
+              { className: ""
+              , route: Profile article.author.username
               , children:
                   [ R.img
                       { src: Avatar.toString $ Avatar.withDefault article.author.image
@@ -256,10 +257,9 @@ mkArticlePage =
           , R.div
               { className: "info"
               , children:
-                  [ R.a
+                  [ Link.link
                       { className: "author"
-                      , href: "#"
-                      , onClick: handler preventDefault $ const $ navigate $ Profile article.author.username
+                      , route: Profile article.author.username
                       , children: [ R.text $ Username.toString article.author.username ]
                       }
                   , R.span
@@ -274,10 +274,9 @@ mkArticlePage =
               Just username
                 | username == article.author.username ->
                   R.span_
-                    [ R.a
+                    [ Link.link
                         { className: "btn btn-outline-secondary btn-sm"
-                        , href: "#"
-                        , onClick: handler preventDefault $ const $ navigate $ UpdateArticle article.slug
+                        , route: UpdateArticle article.slug
                         , children:
                             [ R.i
                                 { className: "ion-edit"
@@ -334,10 +333,9 @@ mkArticlePage =
             , R.div
                 { className: "card-footer"
                 , children:
-                    [ R.a
+                    [ Link.link
                         { className: "comment-author"
-                        , href: "#"
-                        , onClick: handler preventDefault $ const $ navigate $ Profile comment.author.username
+                        , route: Profile comment.author.username
                         , children:
                             [ R.img
                                 { className: "comment-author-img"
@@ -346,10 +344,9 @@ mkArticlePage =
                             ]
                         }
                     , R.text " "
-                    , R.a
+                    , Link.link
                         { className: "comment-author"
-                        , href: "#"
-                        , onClick: handler preventDefault $ const $ navigate $ Profile comment.author.username
+                        , route: Profile comment.author.username
                         , children:
                             [ R.text $ Username.toString comment.author.username ]
                         }

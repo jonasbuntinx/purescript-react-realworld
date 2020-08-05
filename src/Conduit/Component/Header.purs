@@ -1,16 +1,14 @@
 module Conduit.Component.Header where
 
 import Prelude
+import Conduit.Component.Link as Link
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username as Username
-import Conduit.Effects.Routing (navigate)
 import Conduit.Env.Auth (Auth)
 import Data.Maybe (Maybe, isJust, isNothing, maybe)
 import Data.Monoid (guard)
 import React.Basic.DOM as R
-import React.Basic.DOM.Events (preventDefault)
-import React.Basic.Events (handler)
 import React.Basic.Hooks as React
 
 header :: Maybe Auth -> Route -> React.JSX
@@ -21,10 +19,9 @@ header auth route =
         [ R.div
             { className: "container"
             , children:
-                [ R.a
+                [ Link.link
                     { className: "navbar-brand"
-                    , href: "#"
-                    , onClick: handler preventDefault $ const $ navigate Home
+                    , route: Home
                     , children: [ R.text "conduit" ]
                     }
                 , R.ul
@@ -61,10 +58,9 @@ header auth route =
     R.li
       { className: "nav-item"
       , children:
-          [ R.a
+          [ Link.link
               { className: "nav-link" <> guard (route == r) " active"
-              , href: "#"
-              , onClick: handler preventDefault $ const $ navigate r
+              , route: r
               , children
               }
           ]

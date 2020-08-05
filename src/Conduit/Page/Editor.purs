@@ -6,6 +6,7 @@ import Apiary.Types (none) as Apiary
 import Conduit.Api.Article (GetArticle, UpdateArticle, CreateArticle)
 import Conduit.Api.Request as Request
 import Conduit.Component.App as App
+import Conduit.Component.TagInput (tagInput)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Slug (Slug)
 import Conduit.Data.Validation as V
@@ -18,7 +19,8 @@ import Data.Foldable (for_, traverse_)
 import Data.Lens.Record as LR
 import Data.Maybe (Maybe(..))
 import Data.Monoid (guard)
-import Data.String as String
+import Data.Set (Set)
+import Data.Set as Set
 import Data.Symbol (SProxy(..))
 import Data.Validation.Semigroup (V, andThen, toEither, unV)
 import Data.Variant as Variant
@@ -38,7 +40,7 @@ data Action
   | UpdateTitle String
   | UpdateDescription String
   | UpdateBody String
-  | UpdateTagList (Array String)
+  | UpdateTagList (Set String)
   | Submit
 
 mkEditorPage :: App.Component Env Props
@@ -54,7 +56,7 @@ mkEditorPage =
     , title: pure ""
     , description: pure ""
     , body: pure ""
-    , tagList: []
+    , tagList: Set.empty
     , submitResponse: RemoteData.NotAsked
     }
 
@@ -76,7 +78,7 @@ mkEditorPage =
                             , title = pure article.title
                             , description = pure article.description
                             , body = pure article.body
-                            , tagList = article.tagList
+                            , tagList = Set.fromFoldable article.tagList
                             }
                   , notFound: \_ -> do navigate Home
                   }
@@ -178,18 +180,11 @@ mkEditorPage =
                                         }
                                 ]
                             }
-                        , R.fieldset
-                            { className: "form-group"
-                            , children:
-                                [ R.input
-                                    { className: "form-control"
-                                    , type: "text"
-                                    , value: Array.intercalate " " store.state.tagList
-                                    , placeholder: "Enter tags"
-                                    , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateTagList <<< String.split (String.Pattern " ")
-                                    }
-                                ]
-                            }
+                        , tagInput
+                            _
+                              { tags = store.state.tagList
+                              , onChange = store.dispatch <<< UpdateTagList
+                              }
                         , R.button
                             { className: "btn btn-primary pull-xs-right"
                             , type: "button"
@@ -227,7 +222,7 @@ type ValidationValues r
   = { title :: V.Validated String
     , description :: V.Validated String
     , body :: V.Validated String
-    , tagList :: Array String
+    , tagList :: Set String
     | r
     }
 
@@ -260,4 +255,4 @@ validate values = ado
           V.validateNonEmpty body
             `andThen`
               V.validateMinimumLength 3
-  in { title, description, body, tagList: values.tagList }
+  in { title, description, body, tagList: Set.toUnfoldable values.tagList }

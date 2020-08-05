@@ -10,7 +10,7 @@ import Conduit.Component.App as App
 import Conduit.Component.ArticleList (articleList)
 import Conduit.Component.Buttons (followButton)
 import Conduit.Component.Tabs as Tabs
-import Conduit.Components.Pagination (pagination)
+import Conduit.Component.Pagination (pagination)
 import Conduit.Data.Article (Article)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Profile (Author)
