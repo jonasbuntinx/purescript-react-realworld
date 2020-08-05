@@ -2,7 +2,9 @@ module Conduit.Api.Article where
 
 import Apiary.Media (JSON)
 import Apiary.Route (GET, POST, PUT, DELETE)
+import Apiary.Types (None)
 import Conduit.Data.Article (Article, ArticleRep)
+import Conduit.Data.Comment (Comment, CommentId)
 import Conduit.Data.Slug (Slug)
 import Conduit.Data.Username (Username)
 import Data.Maybe (Maybe(..))
@@ -73,6 +75,17 @@ type UpdateArticle
           }
       }
 
+type DeleteArticle
+  = DELETE "/api/articles/:slug"
+      { path ::
+          { slug :: Slug
+          }
+      , response ::
+          { ok :: None
+          }
+      }
+
+-- | Favorite
 type FavoriteArticle
   = POST "/api/articles/:slug/favorite"
       { path ::
@@ -96,6 +109,50 @@ type UnfavoriteArticle
               JSON
                 { article :: Article
                 }
+          }
+      }
+
+-- | Comment
+type ListComments
+  = GET "/api/articles/:slug/comments"
+      { path ::
+          { slug :: Slug
+          }
+      , response ::
+          { ok ::
+              JSON
+                { comments :: Array Comment
+                }
+          }
+      }
+
+type CreateComment
+  = POST "/api/articles/:slug/comments"
+      { path ::
+          { slug :: Slug
+          }
+      , body ::
+          JSON
+            { comment ::
+                { body :: String
+                }
+            }
+      , response ::
+          { ok ::
+              JSON
+                { comment :: Comment
+                }
+          }
+      }
+
+type DeleteComment
+  = DELETE "/api/articles/:slug/comments/:id"
+      { path ::
+          { slug :: Slug
+          , id :: CommentId
+          }
+      , response ::
+          { ok :: None
           }
       }
 

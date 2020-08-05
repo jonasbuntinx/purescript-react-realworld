@@ -19,8 +19,7 @@ import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
 import Conduit.Effects.Routing (navigate)
 import Conduit.Env (Env)
-import Conduit.Env.User (unpack)
-import Conduit.Hook.User (useAuth)
+import Conduit.Hook.Auth (useAuth)
 import Data.Either (Either(..), either)
 import Data.Foldable (for_)
 import Data.Lens (Traversal', preview, set)
@@ -63,7 +62,7 @@ mkProfilePage =
     React.useEffect (props.username /\ props.tab) do
       store.dispatch $ LoadArticles init.pagination
       mempty
-    pure $ render (Just props.username == map _.username (unpack =<< auth)) store props
+    pure $ render auth store props
   where
   init =
     { selectedTab: Nothing
@@ -111,17 +110,17 @@ mkProfilePage =
             Request.makeSecureRequest (Apiary.Route :: FavoriteArticle) { slug } Apiary.none Apiary.none
         for_ res $ Variant.match { ok: \{ article } -> self.setState $ set (_article ix) article }
     ToggleFollow -> do
-      for_ (preview _author self.state) \{ following } -> do
+      for_ (preview _author self.state) \{ username, following } -> do
         res <-
           if following then
-            Request.makeSecureRequest (Apiary.Route :: UnfollowProfile) { username: self.props.username } Apiary.none Apiary.none
+            Request.makeSecureRequest (Apiary.Route :: UnfollowProfile) { username } Apiary.none Apiary.none
           else
-            Request.makeSecureRequest (Apiary.Route :: FollowProfile) { username: self.props.username } Apiary.none Apiary.none
+            Request.makeSecureRequest (Apiary.Route :: FollowProfile) { username } Apiary.none Apiary.none
         for_ res $ Variant.match { ok: \{ profile } -> self.setState $ set _author profile }
 
-  render isSelf store props =
+  render auth store props =
     guard (not $ RemoteData.isLoading store.state.author)
-      $ container (userInfo isSelf store props)
+      $ container (userInfo auth store props)
           [ Tabs.tabs
               { className: "articles-toggle"
               , selectedTab: Just props.tab
@@ -172,7 +171,7 @@ mkProfilePage =
               }
           ]
 
-  userInfo isSelf store props =
+  userInfo auth store props =
     R.div
       { className: "user-info"
       , children:
@@ -191,7 +190,7 @@ mkProfilePage =
                                       }
                                   , R.h4_ [ R.text $ Username.toString props.username ]
                                   , maybe React.empty (\bio -> R.p_ [ R.text bio ]) (RemoteData.toMaybe store.state.author >>= _.bio)
-                                  , if isSelf then
+                                  , if (Just props.username == map _.username auth) then
                                       R.button
                                         { className: "btn btn-sm action-btn btn-outline-secondary"
                                         , onClick: handler_ $ navigate Settings

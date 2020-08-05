@@ -12,7 +12,7 @@ import Conduit.Data.Validation (validateUsernameFormat)
 import Conduit.Data.Validation as V
 import Conduit.Effects.Routing (navigate, redirect)
 import Conduit.Env (Env)
-import Conduit.Env.User (login)
+import Conduit.Env.Auth (login)
 import Control.Comonad (extract)
 import Data.Array as Array
 import Data.Either (Either(..))

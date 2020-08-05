@@ -28,20 +28,20 @@ jss :: forall styles. { | styles } -> JSS
 jss = unsafeCoerce
 
 createInstance :: Effect JSSConfig -> Effect JSSInstance
-createInstance = runEffectFn1 createInstance_
+createInstance = runEffectFn1 _createInstance
 
-foreign import createInstance_ :: EffectFn1 (Effect JSSConfig) JSSInstance
+foreign import _createInstance :: EffectFn1 (Effect JSSConfig) JSSInstance
 
 foreign import preset :: Effect JSSConfig
 
 createStyleSheet :: JSSInstance -> JSS -> Effect JSSStyleSheet
-createStyleSheet = runEffectFn2 createStyleSheet_
+createStyleSheet = runEffectFn2 _createStyleSheet
 
-foreign import createStyleSheet_ :: EffectFn2 JSSInstance JSS JSSStyleSheet
+foreign import _createStyleSheet :: EffectFn2 JSSInstance JSS JSSStyleSheet
 
 globalAttachStyleSheet :: JSSStyleSheet -> Effect Unit
-globalAttachStyleSheet = runEffectFn1 globalAttachStyleSheet_
+globalAttachStyleSheet = runEffectFn1 _globalAttachStyleSheet
 
-foreign import globalAttachStyleSheet_ :: EffectFn1 JSSStyleSheet Unit
+foreign import _globalAttachStyleSheet :: EffectFn1 JSSStyleSheet Unit
 
 foreign import toStringStyleSheet :: JSSStyleSheet -> String

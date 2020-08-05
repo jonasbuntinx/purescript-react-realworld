@@ -8,9 +8,9 @@ import Conduit.Component.Toast as Toast
 import Conduit.Control.Routing (Completed, Pending, Routing, continue, redirect)
 import Conduit.Data.Route (Route(..))
 import Conduit.Env (Env)
-import Conduit.Env.User (UserSignal)
+import Conduit.Env.Auth (AuthSignal)
+import Conduit.Hook.Auth (useAuth)
 import Conduit.Hook.Routing (useRoute)
-import Conduit.Hook.User (useUser)
 import Conduit.Page.Article (mkArticlePage)
 import Conduit.Page.Editor (mkEditorPage)
 import Conduit.Page.Home (mkHomePage)
@@ -20,7 +20,6 @@ import Conduit.Page.Register (mkRegisterPage)
 import Conduit.Page.Settings (mkSettingsPage)
 import Control.Monad.Indexed.Qualified as Ix
 import Data.Maybe (Maybe(..))
-import Data.Tuple (fst)
 import Effect.Class (liftEffect)
 import React.Basic.Hooks as React
 import Wire.React.Class (read) as Wire
@@ -35,12 +34,12 @@ mkRoot = do
   articlePage <- mkArticlePage
   profilePage <- mkProfilePage
   App.component' "Root" \env props -> React.do
-    user <- useUser env
+    auth <- useAuth env
     route <- useRoute env
     pure
       $ React.fragment
           [ Toast.toastManager
-          , Header.header user route
+          , Header.header auth route
           , case route of
               Home -> do
                 homePage unit
@@ -55,7 +54,7 @@ mkRoot = do
               UpdateArticle slug -> do
                 editorPage { slug: Just slug }
               ViewArticle slug -> do
-                articlePage unit
+                articlePage { slug }
               Profile username -> do
                 profilePage { username, tab: PublishedTab }
               Favorites username -> do
@@ -65,9 +64,9 @@ mkRoot = do
           , Footer.footer
           ]
 
-onNavigate :: UserSignal -> Route -> Routing Pending Completed Unit
-onNavigate userSignal route = Ix.do
-  auth <- (liftEffect :: _ -> _ Pending Pending _) $ fst <$> Wire.read userSignal
+onNavigate :: AuthSignal -> Route -> Routing Pending Completed Unit
+onNavigate authSignal route = Ix.do
+  auth <- (liftEffect :: _ -> _ Pending Pending _) $ Wire.read authSignal
   case route, auth of
     Login, Just _ -> do
       redirect Home

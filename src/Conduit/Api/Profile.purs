@@ -23,6 +23,7 @@ type GetProfile
           }
       }
 
+-- | Follow
 type FollowProfile
   = POST "/api/profiles/:username/follow"
       { path ::

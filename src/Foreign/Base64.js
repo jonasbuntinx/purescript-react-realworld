@@ -1,6 +1,6 @@
 "use strict";
 
-function atobImpl (Left, Right, str) {
+exports._atob = function (Left, Right, str) {
   var result;
 
   try {
@@ -13,7 +13,7 @@ function atobImpl (Left, Right, str) {
   return result;
 };
 
-function btoaImpl (Left, Right, str) {
+exports._btoa = function (Left, Right, str) {
   var result;
 
   try {
@@ -25,6 +25,3 @@ function btoaImpl (Left, Right, str) {
 
   return result;
 };
-
-exports.atobImpl = atobImpl;
-exports.btoaImpl = btoaImpl;

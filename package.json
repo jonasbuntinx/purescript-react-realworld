@@ -33,6 +33,7 @@
   "dependencies": {
     "jss": "^10.3.0",
     "jss-preset-default": "^10.3.0",
+    "marked": "^1.1.1",
     "moment": "^2.27.0",
     "react": "^16.13.1",
     "react-dom": "^16.13.1"

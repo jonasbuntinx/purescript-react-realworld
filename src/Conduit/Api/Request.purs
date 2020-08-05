@@ -10,7 +10,6 @@ import Control.Monad.Reader (class MonadAsk, ask)
 import Data.Bitraversable (lfor)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
-import Data.Tuple (fst)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (liftEffect)
 import Effect.Exception (error)
@@ -45,7 +44,7 @@ makeSecureRequest ::
   m (Either Apiary.Error response)
 makeSecureRequest route path query body = do
   env <- ask
-  auth <- liftEffect $ (fst <$> read env.userSignal)
+  auth <- liftEffect $ read env.authSignal
   res <- case auth of
     Nothing -> pure $ Left $ Apiary.RuntimeError $ error "Token not available"
     Just { token } -> liftAff $ Apiary.makeRequest route (addBaseUrl <<< addToken token) path query body

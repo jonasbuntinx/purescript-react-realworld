@@ -15,8 +15,8 @@ import Conduit.Data.Username as Username
 import Conduit.Data.Validation as V
 import Conduit.Effects.Routing (navigate, redirect)
 import Conduit.Env (Env)
-import Conduit.Env.User (logout, updateProfile)
-import Conduit.Hook.User (useProfile)
+import Conduit.Env.Auth (logout, updateProfile)
+import Conduit.Hook.Auth (useProfile)
 import Control.Comonad (extract)
 import Data.Array as Array
 import Data.Either (Either(..))

@@ -2,21 +2,19 @@ module Conduit.Component.Header where
 
 import Prelude
 import Conduit.Data.Avatar as Avatar
-import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username as Username
 import Conduit.Effects.Routing (navigate)
-import Conduit.Env.User (Auth, unpack)
+import Conduit.Env.Auth (Auth)
 import Data.Maybe (Maybe, isJust, isNothing, maybe)
 import Data.Monoid (guard)
-import Data.Tuple (Tuple(..))
 import React.Basic.DOM as R
 import React.Basic.DOM.Events (preventDefault)
 import React.Basic.Events (handler)
 import React.Basic.Hooks as React
 
-header :: Tuple (Maybe Auth) (Maybe Profile) -> Route -> React.JSX
-header (Tuple auth profile) route =
+header :: Maybe Auth -> Route -> React.JSX
+header auth route =
   R.nav
     { className: "navbar navbar-light"
     , children:
@@ -43,8 +41,8 @@ header (Tuple auth profile) route =
                             [ R.i { className: "ion-gear-a", children: [] }
                             , R.text " Settings"
                             ]
-                        , auth >>= unpack
-                            # maybe React.empty \{ username } ->
+                        , auth
+                            # maybe React.empty \{ username, profile } ->
                                 navItem (Profile username)
                                   [ R.img
                                       { className: "user-pic"
