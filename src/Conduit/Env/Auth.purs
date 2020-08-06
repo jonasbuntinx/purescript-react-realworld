@@ -4,8 +4,8 @@ import Prelude
 import Apiary.Client (makeRequest) as Apiary
 import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
+import Conduit.Api.Request (addBaseUrl, addToken)
 import Conduit.Api.User (GetUser)
-import Conduit.Api.Utils (addBaseUrl, addToken)
 import Conduit.Data.Jwt as Jwt
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Username (Username)

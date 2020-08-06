@@ -5,7 +5,7 @@ import Apiary.Client (makeRequest) as Apiary
 import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
 import Conduit.Api.User (GetUser)
-import Conduit.Api.Utils (addBaseUrl, addToken)
+import Conduit.Api.Request (addBaseUrl, addToken)
 import Conduit.Data.Route (Route(..))
 import Conduit.Effects.Routing (redirect)
 import Conduit.Env.Auth (AuthSignal, create, logout', refreshToken')
