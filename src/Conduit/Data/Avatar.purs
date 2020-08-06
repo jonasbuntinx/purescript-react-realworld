@@ -8,7 +8,6 @@ module Conduit.Data.Avatar
   ) where
 
 import Prelude
-import Apiary.Url as Url
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(..))
@@ -30,8 +29,6 @@ instance showAvatar :: Show Avatar where
 derive newtype instance writeForeignAvatar :: WriteForeign Avatar
 
 derive newtype instance readForeignAvatar :: ReadForeign Avatar
-
-derive newtype instance encodeParamAvatar :: Url.EncodeParam Avatar
 
 fromString :: String -> Avatar
 fromString str = Avatar str
