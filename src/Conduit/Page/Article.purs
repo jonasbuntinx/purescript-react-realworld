@@ -16,10 +16,10 @@ import Conduit.Data.Profile (Author)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Slug (Slug)
 import Conduit.Data.Username as Username
-import Conduit.Data.Validation as V
 import Conduit.Effects.Routing (navigate)
 import Conduit.Env (Env)
-import Conduit.Form.Validation as F
+import Conduit.Form.Validated as V
+import Conduit.Form.Validator as F
 import Conduit.Hook.Auth (useAuth)
 import Control.Comonad (extract)
 import Data.Either (Either(..), either)
@@ -428,6 +428,6 @@ validate :: forall r. ValidationValues r -> V ValidationErrors ValidatedValues
 validate values = ado
   body <-
     values.body
-      # V.validate (LR.prop (SProxy :: _ "body")) \body -> do
-          F.validateNonEmpty body
+      # V.validated (LR.prop (SProxy :: _ "body")) \body -> do
+          F.nonEmpty body
   in { body }

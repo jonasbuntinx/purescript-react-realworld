@@ -9,10 +9,10 @@ import Conduit.Component.App as App
 import Conduit.Component.TagInput (tagInput)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Slug (Slug)
-import Conduit.Data.Validation as V
 import Conduit.Effects.Routing (navigate)
 import Conduit.Env (Env)
-import Conduit.Form.Validation as F
+import Conduit.Form.Validated as V
+import Conduit.Form.Validator as F
 import Control.Comonad (extract)
 import Data.Array as Array
 import Data.Either (Either(..))
@@ -244,16 +244,14 @@ validate :: forall r. ValidationValues r -> V ValidationErrors ValidatedValues
 validate values = ado
   title <-
     values.title
-      # V.validate (LR.prop (SProxy :: _ "title")) \title -> do
-          F.validateNonEmpty title
+      # V.validated (LR.prop (SProxy :: _ "title")) \title -> do
+          F.nonEmpty title
   description <-
     values.description
-      # V.validate (LR.prop (SProxy :: _ "description")) \description -> do
-          F.validateNonEmpty description
+      # V.validated (LR.prop (SProxy :: _ "description")) \description -> do
+          F.nonEmpty description
   body <-
     values.body
-      # V.validate (LR.prop (SProxy :: _ "body")) \body -> do
-          F.validateNonEmpty body
-            `andThen`
-              F.validateMinimumLength 3
+      # V.validated (LR.prop (SProxy :: _ "body")) \body -> do
+          F.nonEmpty body `andThen` F.minimumLength 3
   in { title, description, body, tagList: Set.toUnfoldable values.tagList }

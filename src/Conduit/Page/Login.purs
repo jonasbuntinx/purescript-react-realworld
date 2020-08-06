@@ -8,11 +8,11 @@ import Conduit.Api.Utils as Utils
 import Conduit.Component.App as App
 import Conduit.Component.Link as Link
 import Conduit.Data.Route (Route(..))
-import Conduit.Data.Validation as V
 import Conduit.Effects.Routing (redirect)
 import Conduit.Env (Env)
 import Conduit.Env.Auth (login)
-import Conduit.Form.Validation as F
+import Conduit.Form.Validated as V
+import Conduit.Form.Validator as F
 import Control.Comonad (extract)
 import Data.Array as Array
 import Data.Either (Either(..))
@@ -193,13 +193,13 @@ validate :: forall r. ValidationValues r -> V ValidationErrors ValidatedValues
 validate values = ado
   email <-
     values.email
-      # V.validate (LR.prop (SProxy :: _ "email")) \email -> do
-          F.validateNonEmpty email `andThen` F.validateEmailFormat
+      # V.validated (LR.prop (SProxy :: _ "email")) \email -> do
+          F.nonEmpty email `andThen` F.validEmail
   password <-
     values.password
-      # V.validate (LR.prop (SProxy :: _ "password")) \password -> do
-          F.validateNonEmpty password
+      # V.validated (LR.prop (SProxy :: _ "password")) \password -> do
+          F.nonEmpty password
             `andThen`
-              ( F.validateMinimumLength 3 *> F.validateMaximunLength 20
+              ( F.minimumLength 3 *> F.maximunLength 20
               )
   in { email, password }

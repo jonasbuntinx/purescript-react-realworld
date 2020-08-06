@@ -1,4 +1,4 @@
-module Conduit.Data.Validation where
+module Conduit.Form.Validated where
 
 import Prelude
 import Control.Comonad (class Comonad, class Extend)
@@ -70,14 +70,14 @@ setModified :: forall i o. HMap ModifyValidated i o => i -> o
 setModified = hmap (ModifyValidated (Modified <<< view _Validated))
 
 -- | Helpers
-validate ::
-  forall value err errs result.
+validated ::
+  forall result err errs valid.
   Monoid { | errs } =>
   Lens' { | errs } err ->
-  (value -> V err result) ->
-  Validated value ->
-  V { | errs } result
-validate lens validateF input =
+  (result -> V err valid) ->
+  Validated result ->
+  V { | errs } valid
+validated lens validateF input =
   if L.is _Modified input then
     lmap (\err -> L.set lens err mempty) (validateF value)
   else
