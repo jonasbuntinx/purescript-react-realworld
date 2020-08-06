@@ -6,21 +6,12 @@ import Conduit.Effects.Logger.Class (class Loggable, toLogMessage)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Class.Console as Console
 import Foreign.Moment (Format(..), format, now)
-import Simple.JSON (class WriteForeign, writeImpl)
 
 data LogLevel
   = Error
   | Warn
   | Info
   | Debug
-
-instance writeForeignLogLevel :: WriteForeign LogLevel where
-  writeImpl level =
-    writeImpl case level of
-      Error -> "error"
-      Warn -> "warn"
-      Info -> "info"
-      Debug -> "debug"
 
 log :: forall m a. MonadEffect m => Loggable a => LogLevel -> a -> m Unit
 log level a = do
