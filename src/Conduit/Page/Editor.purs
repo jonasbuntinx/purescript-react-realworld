@@ -12,6 +12,7 @@ import Conduit.Data.Slug (Slug)
 import Conduit.Data.Validation as V
 import Conduit.Effects.Routing (navigate)
 import Conduit.Env (Env)
+import Conduit.Form.Validation as F
 import Control.Comonad (extract)
 import Data.Array as Array
 import Data.Either (Either(..))
@@ -243,16 +244,16 @@ validate :: forall r. ValidationValues r -> V ValidationErrors ValidatedValues
 validate values = ado
   title <-
     values.title
-      # V.validate (V.toRecord (LR.prop (SProxy :: _ "title"))) \title -> do
-          V.validateNonEmpty title
+      # V.validate (LR.prop (SProxy :: _ "title")) \title -> do
+          F.validateNonEmpty title
   description <-
     values.description
-      # V.validate (V.toRecord (LR.prop (SProxy :: _ "description"))) \description -> do
-          V.validateNonEmpty description
+      # V.validate (LR.prop (SProxy :: _ "description")) \description -> do
+          F.validateNonEmpty description
   body <-
     values.body
-      # V.validate (V.toRecord (LR.prop (SProxy :: _ "body"))) \body -> do
-          V.validateNonEmpty body
+      # V.validate (LR.prop (SProxy :: _ "body")) \body -> do
+          F.validateNonEmpty body
             `andThen`
-              V.validateMinimumLength 3
+              F.validateMinimumLength 3
   in { title, description, body, tagList: Set.toUnfoldable values.tagList }

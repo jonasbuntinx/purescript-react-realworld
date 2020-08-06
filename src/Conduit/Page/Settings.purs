@@ -16,6 +16,7 @@ import Conduit.Data.Validation as V
 import Conduit.Effects.Routing (navigate, redirect)
 import Conduit.Env (Env)
 import Conduit.Env.Auth (logout, updateProfile)
+import Conduit.Form.Validation as F
 import Conduit.Hook.Auth (useProfile)
 import Control.Comonad (extract)
 import Data.Array as Array
@@ -272,19 +273,19 @@ validate :: forall r. ValidationValues r -> V ValidationErrors ValidatedValues
 validate values = ado
   username <-
     values.username
-      # V.validate (V.toRecord (LR.prop (SProxy :: _ "username"))) \username -> do
-          V.validateNonEmpty username
+      # V.validate (LR.prop (SProxy :: _ "username")) \username -> do
+          F.validateNonEmpty username
             `andThen`
-              V.validateUsernameFormat
+              F.validateUsernameFormat
   email <-
     values.email
-      # V.validate (V.toRecord (LR.prop (SProxy :: _ "email"))) \email -> do
-          V.validateNonEmpty email `andThen` V.validateEmailFormat
+      # V.validate (LR.prop (SProxy :: _ "email")) \email -> do
+          F.validateNonEmpty email `andThen` F.validateEmailFormat
   password <-
     values.password
-      # V.validate (V.toRecord (LR.prop (SProxy :: _ "password"))) \password -> do
-          V.validateNonEmpty password
+      # V.validate (LR.prop (SProxy :: _ "password")) \password -> do
+          F.validateNonEmpty password
             `andThen`
-              ( V.validateMinimumLength 3 *> V.validateMaximunLength 20
+              ( F.validateMinimumLength 3 *> F.validateMaximunLength 20
               )
   in { image: Avatar.fromString <$> values.image, username, bio: values.bio, email, password }
