@@ -4,7 +4,7 @@ import Prelude
 import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
 import Conduit.Api.Article (GetArticle, UpdateArticle, CreateArticle)
-import Conduit.Api.Request as Request
+import Conduit.Api.Utils as Utils
 import Conduit.Component.App as App
 import Conduit.Component.TagInput (tagInput)
 import Conduit.Data.Route (Route(..))
@@ -64,7 +64,7 @@ mkEditorPage =
     Initialize ->
       for_ self.props.slug \slug -> do
         self.setState _ { article = RemoteData.Loading }
-        res <- Request.makeSecureRequest (Apiary.Route :: GetArticle) { slug } Apiary.none Apiary.none
+        res <- Utils.makeSecureRequest (Apiary.Route :: GetArticle) { slug } Apiary.none Apiary.none
         case res of
           Left error -> self.setState _ { article = RemoteData.Failure error }
           Right response ->
@@ -95,8 +95,8 @@ mkEditorPage =
           Right validated -> do
             self.setState _ { submitResponse = RemoteData.Loading }
             res <- case self.props.slug of
-              Nothing -> map Variant.expand <$> Request.makeSecureRequest (Apiary.Route :: CreateArticle) Apiary.none Apiary.none { article: validated }
-              Just slug -> map Variant.expand <$> Request.makeSecureRequest (Apiary.Route :: UpdateArticle) { slug } Apiary.none { article: validated }
+              Nothing -> map Variant.expand <$> Utils.makeSecureRequest (Apiary.Route :: CreateArticle) Apiary.none Apiary.none { article: validated }
+              Just slug -> map Variant.expand <$> Utils.makeSecureRequest (Apiary.Route :: UpdateArticle) { slug } Apiary.none { article: validated }
             case res of
               Left _ -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown error:" [ "request failed" ]) }
               Right response ->

@@ -3,8 +3,8 @@ module Conduit.Page.Settings where
 import Prelude
 import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
-import Conduit.Api.Request as Request
 import Conduit.Api.User (UpdateUser)
+import Conduit.Api.Utils as Utils
 import Conduit.Component.App as App
 import Conduit.Data.Avatar (Avatar)
 import Conduit.Data.Avatar as Avatar
@@ -87,7 +87,7 @@ mkSettingsPage =
           Left _ -> self.setState (const state)
           Right validated -> do
             self.setState _ { submitResponse = RemoteData.Loading }
-            res <- Request.makeSecureRequest (Apiary.Route :: UpdateUser) Apiary.none Apiary.none { user: validated }
+            res <- Utils.makeSecureRequest (Apiary.Route :: UpdateUser) Apiary.none Apiary.none { user: validated }
             case res of
               Left _ -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown error:" [ "request failed" ]) }
               Right response ->

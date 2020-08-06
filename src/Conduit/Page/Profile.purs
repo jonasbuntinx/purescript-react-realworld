@@ -5,7 +5,7 @@ import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (Error, none) as Apiary
 import Conduit.Api.Article (ListArticles, UnfavoriteArticle, FavoriteArticle, defaultArticlesQuery)
 import Conduit.Api.Profile (GetProfile, UnfollowProfile, FollowProfile)
-import Conduit.Api.Request as Request
+import Conduit.Api.Utils as Utils
 import Conduit.Component.App as App
 import Conduit.Component.ArticleList (articleList)
 import Conduit.Component.Buttons (followButton)
@@ -74,7 +74,7 @@ mkProfilePage =
   update self = case _ of
     Initialize -> do
       self.setState _ { author = RemoteData.Loading }
-      res <- Request.makeSecureRequest (Apiary.Route :: GetProfile) { username: self.props.username } Apiary.none Apiary.none
+      res <- Utils.makeSecureRequest (Apiary.Route :: GetProfile) { username: self.props.username } Apiary.none Apiary.none
       case res of
         Left error -> self.setState _ { author = RemoteData.Failure error }
         Right response ->
@@ -99,23 +99,23 @@ mkProfilePage =
               , limit = Just pagination.limit
               }
       self.setState _ { articles = RemoteData.Loading, pagination = pagination }
-      res <- Request.makeSecureRequest (Apiary.Route :: ListArticles) Apiary.none query Apiary.none
+      res <- Utils.makeSecureRequest (Apiary.Route :: ListArticles) Apiary.none query Apiary.none
       self.setState _ { articles = res # either RemoteData.Failure (Variant.match { ok: RemoteData.Success }) }
     ToggleFavorite ix -> do
       for_ (preview (_article ix) self.state) \{ slug, favorited } -> do
         res <-
           if favorited then
-            Request.makeSecureRequest (Apiary.Route :: UnfavoriteArticle) { slug } Apiary.none Apiary.none
+            Utils.makeSecureRequest (Apiary.Route :: UnfavoriteArticle) { slug } Apiary.none Apiary.none
           else
-            Request.makeSecureRequest (Apiary.Route :: FavoriteArticle) { slug } Apiary.none Apiary.none
+            Utils.makeSecureRequest (Apiary.Route :: FavoriteArticle) { slug } Apiary.none Apiary.none
         for_ res $ Variant.match { ok: \{ article } -> self.setState $ set (_article ix) article }
     ToggleFollow -> do
       for_ (preview _author self.state) \{ username, following } -> do
         res <-
           if following then
-            Request.makeSecureRequest (Apiary.Route :: UnfollowProfile) { username } Apiary.none Apiary.none
+            Utils.makeSecureRequest (Apiary.Route :: UnfollowProfile) { username } Apiary.none Apiary.none
           else
-            Request.makeSecureRequest (Apiary.Route :: FollowProfile) { username } Apiary.none Apiary.none
+            Utils.makeSecureRequest (Apiary.Route :: FollowProfile) { username } Apiary.none Apiary.none
         for_ res $ Variant.match { ok: \{ profile } -> self.setState $ set _author profile }
 
   render auth store props =

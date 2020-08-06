@@ -1,4 +1,4 @@
-module Conduit.Api.Request where
+module Conduit.Api.Utils where
 
 import Prelude
 import Apiary.Client (Error(..), makeRequest) as Apiary
@@ -57,7 +57,6 @@ makeSecureRequest route path query body = do
   void $ lfor res onError
   pure res
 
--- | Helpers
 addBaseUrl :: forall r. { url :: Milkis.URL | r } -> { url :: Milkis.URL | r }
 addBaseUrl request@{ url: Milkis.URL url } = request { url = Milkis.URL (Config.apiEndpoint <> url) }
 

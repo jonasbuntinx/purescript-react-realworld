@@ -3,8 +3,8 @@ module Conduit.Page.Login where
 import Prelude
 import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
-import Conduit.Api.Request as Request
 import Conduit.Api.User (Login)
+import Conduit.Api.Utils as Utils
 import Conduit.Component.App as App
 import Conduit.Component.Link as Link
 import Conduit.Data.Route (Route(..))
@@ -56,7 +56,7 @@ mkLoginPage =
           Left _ -> self.setState (const state)
           Right validated -> do
             self.setState _ { submitResponse = RemoteData.Loading }
-            res <- Request.makeRequest (Apiary.Route :: Login) Apiary.none Apiary.none { user: validated }
+            res <- Utils.makeRequest (Apiary.Route :: Login) Apiary.none Apiary.none { user: validated }
             case res of
               Left _ -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown error:" [ "request failed" ]) }
               Right success -> do

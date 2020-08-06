@@ -5,7 +5,7 @@ import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (Error, none) as Apiary
 import Conduit.Api.Article (DeleteArticle, DeleteComment, FavoriteArticle, GetArticle, ListComments, UnfavoriteArticle, CreateComment)
 import Conduit.Api.Profile (UnfollowProfile, FollowProfile)
-import Conduit.Api.Request as Request
+import Conduit.Api.Utils as Utils
 import Conduit.Component.App as App
 import Conduit.Component.Buttons (ButtonSize(..), favoriteButton, followButton)
 import Conduit.Component.Link as Link
@@ -74,7 +74,7 @@ mkArticlePage =
   update self = case _ of
     Initialize -> do
       self.setState _ { article = RemoteData.Loading }
-      res <- Request.makeSecureRequest (Apiary.Route :: GetArticle) { slug: self.props.slug } Apiary.none Apiary.none
+      res <- Utils.makeSecureRequest (Apiary.Route :: GetArticle) { slug: self.props.slug } Apiary.none Apiary.none
       case res of
         Left error -> self.setState _ { article = RemoteData.Failure error }
         Right response ->
@@ -88,7 +88,7 @@ mkArticlePage =
       loadComments self
     DeleteArticle -> do
       self.setState _ { submitResponse = RemoteData.Loading }
-      res <- Request.makeSecureRequest (Apiary.Route :: DeleteArticle) { slug: self.props.slug } Apiary.none Apiary.none
+      res <- Utils.makeSecureRequest (Apiary.Route :: DeleteArticle) { slug: self.props.slug } Apiary.none Apiary.none
       case res of
         Left error -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown error:" [ "request failed" ]) }
         Right response ->
@@ -103,22 +103,22 @@ mkArticlePage =
       for_ (preview _author self.state) \{ username, following } -> do
         res <-
           if following then
-            Request.makeSecureRequest (Apiary.Route :: UnfollowProfile) { username } Apiary.none Apiary.none
+            Utils.makeSecureRequest (Apiary.Route :: UnfollowProfile) { username } Apiary.none Apiary.none
           else
-            Request.makeSecureRequest (Apiary.Route :: FollowProfile) { username } Apiary.none Apiary.none
+            Utils.makeSecureRequest (Apiary.Route :: FollowProfile) { username } Apiary.none Apiary.none
         for_ res $ Variant.match { ok: \{ profile } -> self.setState $ set _author profile }
     ToggleFavorite -> do
       for_ (preview _article self.state) \{ slug, favorited } -> do
         res <-
           if favorited then
-            Request.makeSecureRequest (Apiary.Route :: UnfavoriteArticle) { slug } Apiary.none Apiary.none
+            Utils.makeSecureRequest (Apiary.Route :: UnfavoriteArticle) { slug } Apiary.none Apiary.none
           else
-            Request.makeSecureRequest (Apiary.Route :: FavoriteArticle) { slug } Apiary.none Apiary.none
+            Utils.makeSecureRequest (Apiary.Route :: FavoriteArticle) { slug } Apiary.none Apiary.none
         for_ res $ Variant.match { ok: \{ article } -> self.setState $ set _article article }
     UpdateBody body -> self.setState _ { body = V.Modified body }
     DeleteComment id -> do
       self.setState _ { submitResponse = RemoteData.Loading }
-      res <- Request.makeSecureRequest (Apiary.Route :: DeleteComment) { slug: self.props.slug, id } Apiary.none Apiary.none
+      res <- Utils.makeSecureRequest (Apiary.Route :: DeleteComment) { slug: self.props.slug, id } Apiary.none Apiary.none
       case res of
         Left error -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown error:" [ "request failed" ]) }
         Right response ->
@@ -137,7 +137,7 @@ mkArticlePage =
           Left _ -> self.setState (const state)
           Right validated -> do
             self.setState _ { submitResponse = RemoteData.Loading }
-            res <- Request.makeSecureRequest (Apiary.Route :: CreateComment) { slug: self.props.slug } Apiary.none { comment: validated }
+            res <- Utils.makeSecureRequest (Apiary.Route :: CreateComment) { slug: self.props.slug } Apiary.none { comment: validated }
             case res of
               Left _ -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown error:" [ "request failed" ]) }
               Right response ->
@@ -154,7 +154,7 @@ mkArticlePage =
                       }
 
   loadComments self = do
-    res <- Request.makeSecureRequest (Apiary.Route :: ListComments) { slug: self.props.slug } Apiary.none Apiary.none
+    res <- Utils.makeSecureRequest (Apiary.Route :: ListComments) { slug: self.props.slug } Apiary.none Apiary.none
     self.setState _ { comments = res # either RemoteData.Failure (Variant.match { ok: RemoteData.Success <<< _.comments }) }
 
   render auth store props =
