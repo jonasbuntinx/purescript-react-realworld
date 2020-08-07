@@ -78,7 +78,7 @@ mkArticlePage =
   update self = case _ of
     Initialize -> do
       self.setState _ { article = RemoteData.Loading }
-      res <- Utils.makeSecureRequest (Apiary.Route :: GetArticle) { slug: self.props.slug } Apiary.none Apiary.none
+      res <- Utils.makeRequest (Apiary.Route :: GetArticle) { slug: self.props.slug } Apiary.none Apiary.none
       case res of
         Left error -> self.setState _ { article = RemoteData.Failure error }
         Right response ->
@@ -206,38 +206,55 @@ mkArticlePage =
                           [ R.div
                               { className: "col-xs-12 col-md-8 offset-md-2"
                               , children:
-                                  [ R.form
-                                      { className: "card comment-form"
-                                      , onSubmit: handler preventDefault $ const $ store.dispatch SubmitComment
-                                      , children:
-                                          [ R.div
-                                              { className: "card-block"
-                                              , children:
-                                                  [ R.textarea
-                                                      { className: "form-control"
-                                                      , rows: 3
-                                                      , value: extract store.state.body
-                                                      , placeholder: "Write a comment..."
-                                                      , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateBody
-                                                      }
-                                                  ]
+                                  [ case auth of
+                                      Just _ ->
+                                        R.form
+                                          { className: "card comment-form"
+                                          , onSubmit: handler preventDefault $ const $ store.dispatch SubmitComment
+                                          , children:
+                                              [ R.div
+                                                  { className: "card-block"
+                                                  , children:
+                                                      [ R.textarea
+                                                          { className: "form-control"
+                                                          , rows: 3
+                                                          , value: extract store.state.body
+                                                          , placeholder: "Write a comment..."
+                                                          , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateBody
+                                                          }
+                                                      ]
+                                                  }
+                                              , R.div
+                                                  { className: "card-footer"
+                                                  , children:
+                                                      [ R.img
+                                                          { className: "comment-author-img"
+                                                          , src: Avatar.toString $ maybe Avatar.blank (Avatar.withDefault <<< _.image) (_.profile =<< auth)
+                                                          }
+                                                      , R.button
+                                                          { className: "btn btn-sm btn-primary"
+                                                          , type: "submit"
+                                                          , children: [ R.text "Post Comment" ]
+                                                          }
+                                                      ]
+                                                  }
+                                              ]
+                                          }
+                                      Nothing ->
+                                        R.p_
+                                          [ Link.link
+                                              { className: ""
+                                              , route: Login
+                                              , children: [ R.text "Sign in" ]
                                               }
-                                          , R.div
-                                              { className: "card-footer"
-                                              , children:
-                                                  [ R.img
-                                                      { className: "comment-author-img"
-                                                      , src: Avatar.toString $ maybe Avatar.blank (Avatar.withDefault <<< _.image) (_.profile =<< auth)
-                                                      }
-                                                  , R.button
-                                                      { className: "btn btn-sm btn-primary"
-                                                      , type: "submit"
-                                                      , children: [ R.text "Post Comment" ]
-                                                      }
-                                                  ]
+                                          , R.text " or "
+                                          , Link.link
+                                              { className: ""
+                                              , route: Register
+                                              , children: [ R.text "sign up" ]
                                               }
+                                          , R.text " to add comments on this article."
                                           ]
-                                      }
                                   , (preview _Success store.state.comments)
                                       # maybe React.empty (React.fragment <<< commentList auth store)
                                   ]

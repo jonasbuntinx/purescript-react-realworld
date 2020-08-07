@@ -18,7 +18,8 @@ type Props a
     , tabs ::
         Array
           { id :: a
-          , label :: String
+          , label :: React.JSX
+          , disabled :: Boolean
           , content :: React.JSX
           }
     , onChange :: a -> Effect Unit
@@ -34,18 +35,19 @@ tabs props =
                 { className: "nav nav-pills outline-active"
                 , children:
                     props.tabs
-                      <#> \{ id, label } ->
-                          R.li
-                            { className: "nav-item"
-                            , children:
-                                [ R.a
-                                    { className: "nav-link" <> guard (isActive id) " active"
-                                    , href: "#"
-                                    , onClick: handler preventDefault $ const $ props.onChange id
-                                    , children: [ R.text label ]
-                                    }
-                                ]
-                            }
+                      <#> \{ id, label, disabled } ->
+                          guard (not disabled)
+                            $ R.li
+                                { className: "nav-item"
+                                , children:
+                                    [ R.a
+                                        { className: "nav-link" <> guard (isActive id) " active"
+                                        , href: "#"
+                                        , onClick: handler preventDefault $ const $ props.onChange id
+                                        , children: [ label ]
+                                        }
+                                    ]
+                                }
                 }
             ]
         }
@@ -56,6 +58,6 @@ tabs props =
 
   activeTab = selectedTab <|> firstTab
 
-  selectedTab = props.selectedTab >>= \id -> Array.find (eq id <<< _.id) props.tabs
+  selectedTab = props.selectedTab >>= \seletedTab -> Array.find (\{ id, disabled } -> (not disabled) && (eq seletedTab id)) props.tabs
 
   firstTab = Array.head props.tabs

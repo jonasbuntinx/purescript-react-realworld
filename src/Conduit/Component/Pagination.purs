@@ -37,26 +37,27 @@ pagination =
 
 pagination' :: Props -> JSX
 pagination' props =
-  R.ul
-    { className: "pagination"
-    , children:
-        Array.fold
-          [ guard (rangeMin > 0)
-              [ pageButtons 0 (min (rangeMin - 1) leftMargin)
+  guard (pageCount > 1)
+    $ R.ul
+        { className: "pagination"
+        , children:
+            Array.fold
+              [ guard (rangeMin > 0)
+                  [ pageButtons 0 (min (rangeMin - 1) leftMargin)
+                  ]
+              , guard (rangeMin > leftMargin + 1)
+                  [ separator
+                  ]
+              , [ pageButtons rangeMin rangeMax
+                ]
+              , guard (rangeMax < rightMargin - 1)
+                  [ separator
+                  ]
+              , guard (rangeMax < pageCount - 1)
+                  [ pageButtons (max (rangeMax + 1) rightMargin) (pageCount - 1)
+                  ]
               ]
-          , guard (rangeMin > leftMargin + 1)
-              [ separator
-              ]
-          , [ pageButtons rangeMin rangeMax
-            ]
-          , guard (rangeMax < rightMargin - 1)
-              [ separator
-              ]
-          , guard (rangeMax < pageCount - 1)
-              [ pageButtons (max (rangeMax + 1) rightMargin) (pageCount - 1)
-              ]
-          ]
-    }
+        }
   where
   currentPage = props.offset / props.limit
 

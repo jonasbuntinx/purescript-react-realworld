@@ -9,8 +9,8 @@ import Conduit.Api.Utils as Utils
 import Conduit.Component.App as App
 import Conduit.Component.ArticleList (articleList)
 import Conduit.Component.Buttons (followButton)
-import Conduit.Component.Tabs as Tabs
 import Conduit.Component.Pagination (pagination)
+import Conduit.Component.Tabs as Tabs
 import Conduit.Data.Article (Article)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Profile (Author)
@@ -41,8 +41,8 @@ type Props
     }
 
 data Tab
-  = PublishedTab
-  | FavoritedTab
+  = Published
+  | Favorited
 
 derive instance eqTab :: Eq Tab
 
@@ -74,7 +74,7 @@ mkProfilePage =
   update self = case _ of
     Initialize -> do
       self.setState _ { author = RemoteData.Loading }
-      res <- Utils.makeSecureRequest (Apiary.Route :: GetProfile) { username: self.props.username } Apiary.none Apiary.none
+      res <- Utils.makeRequest (Apiary.Route :: GetProfile) { username: self.props.username } Apiary.none Apiary.none
       case res of
         Left error -> self.setState _ { author = RemoteData.Failure error }
         Right response ->
@@ -86,20 +86,20 @@ mkProfilePage =
     LoadArticles pagination -> do
       let
         query = case self.props.tab of
-          PublishedTab ->
+          Published ->
             defaultArticlesQuery
               { author = Just self.props.username
               , offset = Just pagination.offset
               , limit = Just pagination.limit
               }
-          FavoritedTab ->
+          Favorited ->
             defaultArticlesQuery
               { favorited = Just self.props.username
               , offset = Just pagination.offset
               , limit = Just pagination.limit
               }
       self.setState _ { articles = RemoteData.Loading, pagination = pagination }
-      res <- Utils.makeSecureRequest (Apiary.Route :: ListArticles) Apiary.none query Apiary.none
+      res <- Utils.makeRequest (Apiary.Route :: ListArticles) Apiary.none query Apiary.none
       self.setState _ { articles = res # either RemoteData.Failure (Variant.match { ok: RemoteData.Success }) }
     ToggleFavorite ix -> do
       for_ (preview (_article ix) self.state) \{ slug, favorited } -> do
@@ -125,51 +125,40 @@ mkProfilePage =
               { className: "articles-toggle"
               , selectedTab: Just props.tab
               , tabs:
-                  [ { id: PublishedTab
-                    , label: "Published Articles"
-                    , content:
-                        R.div_
-                          [ articleList
-                              { articles: store.state.articles <#> _.articles
-                              , onFavoriteToggle: store.dispatch <<< ToggleFavorite
-                              }
-                          , store.state.articles
-                              # RemoteData.maybe React.empty \{ articlesCount } ->
-                                  pagination
-                                    _
-                                      { offset = store.state.pagination.offset
-                                      , limit = store.state.pagination.limit
-                                      , totalCount = articlesCount
-                                      , onChange = store.dispatch <<< LoadArticles
-                                      }
-                          ]
+                  [ { id: Published
+                    , label: R.text "Published Articles"
+                    , disabled: false
+                    , content: tabContent store
                     }
-                  , { id: FavoritedTab
-                    , label: "Favorited Articles"
-                    , content:
-                        R.div_
-                          [ articleList
-                              { articles: store.state.articles <#> _.articles
-                              , onFavoriteToggle: store.dispatch <<< ToggleFavorite
-                              }
-                          , store.state.articles
-                              # RemoteData.maybe React.empty \{ articlesCount } ->
-                                  pagination
-                                    _
-                                      { offset = store.state.pagination.offset
-                                      , limit = store.state.pagination.limit
-                                      , totalCount = articlesCount
-                                      , onChange = store.dispatch <<< LoadArticles
-                                      }
-                          ]
+                  , { id: Favorited
+                    , label: R.text "Favorited Articles"
+                    , disabled: false
+                    , content: tabContent store
                     }
                   ]
               , onChange:
                   case _ of
-                    PublishedTab -> navigate $ Profile props.username
-                    FavoritedTab -> navigate $ Favorites props.username
+                    Published -> navigate $ Profile props.username
+                    Favorited -> navigate $ Favorites props.username
               }
           ]
+
+  tabContent store =
+    R.div_
+      [ articleList
+          { articles: store.state.articles <#> _.articles
+          , onFavoriteToggle: store.dispatch <<< ToggleFavorite
+          }
+      , store.state.articles
+          # RemoteData.maybe React.empty \{ articlesCount } ->
+              pagination
+                _
+                  { offset = store.state.pagination.offset
+                  , limit = store.state.pagination.limit
+                  , totalCount = articlesCount
+                  , onChange = store.dispatch <<< LoadArticles
+                  }
+      ]
 
   userInfo auth store props =
     R.div

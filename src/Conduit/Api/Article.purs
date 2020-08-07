@@ -22,6 +22,18 @@ type ListArticles
           }
       }
 
+type ListFeed
+  = GET "/api/articles/feed"
+      { query :: ArticlesQuery
+      , response ::
+          { ok ::
+              JSON
+                { articles :: Array Article
+                , articlesCount :: Int
+                }
+          }
+      }
+
 type GetArticle
   = GET "/api/articles/:slug"
       { path ::

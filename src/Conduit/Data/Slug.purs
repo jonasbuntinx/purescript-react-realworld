@@ -9,6 +9,7 @@ module Conduit.Data.Slug
 import Prelude
 import Apiary.Url as Url
 import Control.Monad.Error.Class (throwError)
+import Data.Array (mapWithIndex)
 import Data.Array as Array
 import Data.Char.Unicode (isAlphaNum, isLatin1)
 import Data.Generic.Rep (class Generic)
@@ -41,7 +42,7 @@ instance readForgeignSlug :: ReadForeign Slug where
     readImpl
       >=> parse
       >>> case _ of
-          Just username -> pure username
+          Just slug -> pure slug
           Nothing -> throwError $ pure $ ForeignError "Failed to decode slug"
 
 derive newtype instance encodeParamSlug :: Url.EncodeParam Slug
@@ -59,7 +60,7 @@ generate s = do
 
   onlyAlphaNum =
     fromCharArray
-      <<< map (\x -> if isAlphaNum x && isLatin1 x then x else ' ')
+      <<< mapWithIndex (\ix x -> if (ix == 0 && x == '-') || x == '_' || (isAlphaNum x && isLatin1 x) then x else ' ')
       <<< toCharArray
 
   words = Array.filter (not String.null) <<< String.split (Pattern " ")

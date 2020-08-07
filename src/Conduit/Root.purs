@@ -54,9 +54,9 @@ mkRoot = do
               ViewArticle slug -> do
                 articlePage { slug }
               Profile username -> do
-                profilePage { username, tab: PublishedTab }
+                profilePage { username, tab: Published }
               Favorites username -> do
-                profilePage { username, tab: FavoritedTab }
+                profilePage { username, tab: Favorited }
               Error -> do
                 React.empty
           , Footer.footer
@@ -75,12 +75,6 @@ onNavigate authSignal route = Ix.do
     CreateArticle, Nothing -> do
       redirect Home
     UpdateArticle _, Nothing -> do
-      redirect Home
-    ViewArticle _, Nothing -> do
-      redirect Home
-    Profile _, Nothing -> do
-      redirect Home
-    Favorites _, Nothing -> do
       redirect Home
     Error, _ -> do
       redirect Home
