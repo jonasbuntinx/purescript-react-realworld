@@ -1,21 +1,27 @@
 module Conduit.Api.Utils where
 
 import Prelude
-import Apiary.Client (Error(..), makeRequest) as Apiary
+import Apiary.Client (Error, makeRequest) as Apiary
 import Apiary.Client.Request (class BuildRequest) as Apiary
 import Apiary.Client.Response (class DecodeResponse) as Apiary
 import Conduit.Config as Config
+import Conduit.Data.Route (Route(..))
 import Conduit.Effects.Log as Log
+import Conduit.Effects.Routing (redirect)
 import Control.Monad.Reader (class MonadAsk, ask)
+import Data.Bifunctor (lmap)
 import Data.Bitraversable (lfor)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (liftEffect)
-import Effect.Exception (error)
 import Foreign.Object as Object
 import Milkis as Milkis
 import Wire.React.Class (class Atom, read)
+
+data Error
+  = NotAuthorized
+  | ApiaryError Apiary.Error
 
 makeRequest ::
   forall m route path query body rep response.
@@ -26,11 +32,11 @@ makeRequest ::
   path ->
   query ->
   body ->
-  m (Either Apiary.Error response)
+  m (Either Error response)
 makeRequest route path query body = do
   res <- liftAff $ Apiary.makeRequest route addBaseUrl path query body
   void $ lfor res Log.debug
-  pure res
+  pure $ lmap ApiaryError res
 
 makeSecureRequest ::
   forall m a r s rep body query path route response.
@@ -43,15 +49,18 @@ makeSecureRequest ::
   path ->
   query ->
   body ->
-  m (Either Apiary.Error response)
+  m (Either Error response)
 makeSecureRequest route path query body = do
   env <- ask
   auth <- liftEffect $ read env.authSignal
-  res <- case auth of
-    Nothing -> pure $ Left $ Apiary.RuntimeError $ error "Token not available"
-    Just { token } -> liftAff $ Apiary.makeRequest route (addBaseUrl <<< addToken token) path query body
-  void $ lfor res Log.debug
-  pure res
+  case auth of
+    Nothing -> do
+      redirect Register
+      pure $ Left $ NotAuthorized
+    Just { token } -> do
+      res <- liftAff $ Apiary.makeRequest route (addBaseUrl <<< addToken token) path query body
+      void $ lfor res Log.debug
+      pure $ lmap ApiaryError res
 
 addBaseUrl :: forall r. { url :: Milkis.URL | r } -> { url :: Milkis.URL | r }
 addBaseUrl request@{ url: Milkis.URL url } = request { url = Milkis.URL (Config.apiEndpoint <> url) }

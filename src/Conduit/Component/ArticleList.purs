@@ -1,7 +1,6 @@
 module Conduit.Component.ArticleList where
 
 import Prelude
-import Apiary.Types as Apiary
 import Conduit.Component.Buttons (ButtonSize(..), favoriteButton)
 import Conduit.Component.Link as Link
 import Conduit.Data.Article (Article)
@@ -17,12 +16,12 @@ import React.Basic.Events (handler_)
 import React.Basic.Hooks as React
 
 -- | Article List
-type Props
-  = { articles :: RemoteData Apiary.Error (Array Article)
+type Props err
+  = { articles :: RemoteData err (Array Article)
     , onFavoriteToggle :: Int -> Effect Unit
     }
 
-articleList :: Props -> React.JSX
+articleList :: forall err. Props err -> React.JSX
 articleList props = case props.articles of
   NotAsked ->
     R.div

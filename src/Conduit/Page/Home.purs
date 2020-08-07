@@ -2,7 +2,7 @@ module Conduit.Page.Home where
 
 import Prelude
 import Apiary.Route (Route(..)) as Apiary
-import Apiary.Types (Error, none) as Apiary
+import Apiary.Types (none) as Apiary
 import Conduit.Api.Article (FavoriteArticle, ListArticles, UnfavoriteArticle, ListFeed, defaultArticlesQuery)
 import Conduit.Api.Tag (ListTags)
 import Conduit.Api.Utils as Utils
@@ -211,7 +211,7 @@ mkHomePage =
           ]
       }
 
-_article :: forall r s. Int -> Traversal' { articles :: RemoteData.RemoteData Apiary.Error { articles :: Array Article | s } | r } Article
+_article :: forall err r s. Int -> Traversal' { articles :: RemoteData.RemoteData err { articles :: Array Article | s } | r } Article
 _article i =
   LR.prop (SProxy :: _ "articles")
     <<< RemoteData._Success

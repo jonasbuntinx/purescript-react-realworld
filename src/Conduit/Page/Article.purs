@@ -2,7 +2,7 @@ module Conduit.Page.Article where
 
 import Prelude
 import Apiary.Route (Route(..)) as Apiary
-import Apiary.Types (Error, none) as Apiary
+import Apiary.Types (none) as Apiary
 import Conduit.Api.Article (DeleteArticle, DeleteComment, FavoriteArticle, GetArticle, ListComments, UnfavoriteArticle, CreateComment)
 import Conduit.Api.Profile (UnfollowProfile, FollowProfile)
 import Conduit.Api.Utils as Utils
@@ -159,7 +159,7 @@ mkArticlePage =
     ToggleModal isOpen -> self.setState _ { isModalOpen = isOpen }
 
   loadComments self = do
-    res <- Utils.makeSecureRequest (Apiary.Route :: ListComments) { slug: self.props.slug } Apiary.none Apiary.none
+    res <- Utils.makeRequest (Apiary.Route :: ListComments) { slug: self.props.slug } Apiary.none Apiary.none
     self.setState _ { comments = res # either RemoteData.Failure (Variant.match { ok: RemoteData.Success <<< _.comments }) }
 
   render auth store props =
@@ -432,13 +432,13 @@ mkArticlePage =
           ]
       }
 
-_author :: forall r. Traversal' { article :: RemoteData.RemoteData Apiary.Error Article | r } Author
+_author :: forall err r. Traversal' { article :: RemoteData.RemoteData err Article | r } Author
 _author =
   LR.prop (SProxy :: _ "article")
     <<< RemoteData._Success
     <<< LR.prop (SProxy :: _ "author")
 
-_article :: forall r. Traversal' { article :: RemoteData.RemoteData Apiary.Error Article | r } Article
+_article :: forall err r. Traversal' { article :: RemoteData.RemoteData err Article | r } Article
 _article =
   LR.prop (SProxy :: _ "article")
     <<< RemoteData._Success

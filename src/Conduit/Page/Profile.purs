@@ -2,7 +2,7 @@ module Conduit.Page.Profile where
 
 import Prelude
 import Apiary.Route (Route(..)) as Apiary
-import Apiary.Types (Error, none) as Apiary
+import Apiary.Types (none) as Apiary
 import Conduit.Api.Article (ListArticles, UnfavoriteArticle, FavoriteArticle, defaultArticlesQuery)
 import Conduit.Api.Profile (GetProfile, UnfollowProfile, FollowProfile)
 import Conduit.Api.Utils as Utils
@@ -228,14 +228,14 @@ mkProfilePage =
           ]
       }
 
-_article :: forall r s. Int -> Traversal' { articles :: RemoteData.RemoteData Apiary.Error { articles :: Array Article | s } | r } Article
+_article :: forall err r s. Int -> Traversal' { articles :: RemoteData.RemoteData err { articles :: Array Article | s } | r } Article
 _article i =
   LR.prop (SProxy :: _ "articles")
     <<< RemoteData._Success
     <<< LR.prop (SProxy :: _ "articles")
     <<< LI.ix i
 
-_author :: forall r. Traversal' { author :: RemoteData.RemoteData Apiary.Error Author | r } Author
+_author :: forall err r. Traversal' { author :: RemoteData.RemoteData err Author | r } Author
 _author =
   LR.prop (SProxy :: _ "author")
     <<< RemoteData._Success
