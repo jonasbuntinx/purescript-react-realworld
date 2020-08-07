@@ -2,8 +2,8 @@ module Main where
 
 import Prelude
 import Conduit.Component.Auth as Auth
+import Conduit.Component.Modal as Modal
 import Conduit.Component.Routing as Routing
-import Conduit.Component.Toast as Toast
 import Conduit.Data.Route (routeCodec)
 import Conduit.Root as Root
 import Control.Monad.Reader as Reader
@@ -41,5 +41,4 @@ attachGlobalComponentStyles :: Effect Unit
 attachGlobalComponentStyles = do
   jssInstance <- JSS.createInstance JSS.preset
   traverse_ (JSS.globalAttachStyleSheet <=< JSS.createStyleSheet jssInstance)
-    [ Toast.styles
-    ]
+    [ Modal.styles ]

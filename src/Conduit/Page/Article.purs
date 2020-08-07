@@ -8,6 +8,7 @@ import Conduit.Api.Profile (UnfollowProfile, FollowProfile)
 import Conduit.Api.Utils as Utils
 import Conduit.Component.App as App
 import Conduit.Component.Buttons (ButtonSize(..), favoriteButton, followButton)
+import Conduit.Component.Confirm as Confirm
 import Conduit.Component.Link as Link
 import Conduit.Data.Article (Article)
 import Conduit.Data.Avatar as Avatar
@@ -54,6 +55,7 @@ data Action
   | UpdateBody String
   | DeleteComment CommentId
   | SubmitComment
+  | ToggleModal Boolean
 
 mkArticlePage :: App.Component Env Props
 mkArticlePage =
@@ -70,6 +72,7 @@ mkArticlePage =
     , comments: RemoteData.NotAsked
     , body: pure ""
     , submitResponse: RemoteData.NotAsked
+    , isModalOpen: false
     }
 
   update self = case _ of
@@ -97,7 +100,7 @@ mkArticlePage =
             # Variant.match
                 { ok:
                     \_ -> do
-                      self.setState _ { submitResponse = RemoteData.Success unit }
+                      self.setState _ { submitResponse = RemoteData.Success unit, isModalOpen = false }
                       navigate Home
                 }
     ToggleFollow -> do
@@ -153,6 +156,7 @@ mkArticlePage =
                                 }
                             loadComments self
                       }
+    ToggleModal isOpen -> self.setState _ { isModalOpen = isOpen }
 
   loadComments self = do
     res <- Utils.makeSecureRequest (Apiary.Route :: ListComments) { slug: self.props.slug } Apiary.none Apiary.none
@@ -164,81 +168,93 @@ mkArticlePage =
     in
       store.state.article
         # RemoteData.maybe React.empty \article ->
-            container (banner auth article store)
-              [ R.div
-                  { className: "row article-content"
-                  , children:
-                      [ R.div
-                          { className: "col-xs-12"
-                          , children:
-                              [ R.div
-                                  { dangerouslySetInnerHTML:
-                                      { __html: marked article.body
+            React.fragment
+              [ container (banner auth article store)
+                  [ R.div
+                      { className: "row article-content"
+                      , children:
+                          [ R.div
+                              { className: "col-xs-12"
+                              , children:
+                                  [ R.div
+                                      { dangerouslySetInnerHTML:
+                                          { __html: marked article.body
+                                          }
                                       }
-                                  }
-                              , R.ul
-                                  { className: "tag-list"
-                                  , children:
-                                      article.tagList
-                                        <#> \tag ->
-                                            R.li
-                                              { className: "tag-default tag-pill tag-outline"
-                                              , children: [ R.text tag ]
+                                  , R.ul
+                                      { className: "tag-list"
+                                      , children:
+                                          article.tagList
+                                            <#> \tag ->
+                                                R.li
+                                                  { className: "tag-default tag-pill tag-outline"
+                                                  , children: [ R.text tag ]
+                                                  }
+                                      }
+                                  ]
+                              }
+                          ]
+                      }
+                  , R.hr {}
+                  , R.div
+                      { className: "article-actions"
+                      , children: [ articleMeta auth article store ]
+                      }
+                  , R.div
+                      { className: "row"
+                      , children:
+                          [ R.div
+                              { className: "col-xs-12 col-md-8 offset-md-2"
+                              , children:
+                                  [ R.form
+                                      { className: "card comment-form"
+                                      , onSubmit: handler preventDefault $ const $ store.dispatch SubmitComment
+                                      , children:
+                                          [ R.div
+                                              { className: "card-block"
+                                              , children:
+                                                  [ R.textarea
+                                                      { className: "form-control"
+                                                      , rows: 3
+                                                      , value: extract store.state.body
+                                                      , placeholder: "Write a comment..."
+                                                      , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateBody
+                                                      }
+                                                  ]
                                               }
-                                  }
-                              ]
-                          }
+                                          , R.div
+                                              { className: "card-footer"
+                                              , children:
+                                                  [ R.img
+                                                      { className: "comment-author-img"
+                                                      , src: Avatar.toString $ maybe Avatar.blank (Avatar.withDefault <<< _.image) (_.profile =<< auth)
+                                                      }
+                                                  , R.button
+                                                      { className: "btn btn-sm btn-primary"
+                                                      , type: "submit"
+                                                      , children: [ R.text "Post Comment" ]
+                                                      }
+                                                  ]
+                                              }
+                                          ]
+                                      }
+                                  , (preview _Success store.state.comments)
+                                      # maybe React.empty (React.fragment <<< commentList auth store)
+                                  ]
+                              }
+                          ]
+                      }
+                  ]
+              , Confirm.confirm
+                  _
+                    { isOpen = store.state.isModalOpen
+                    , onCancel = store.dispatch $ ToggleModal false
+                    , title = "Delete Article"
+                    , children =
+                      [ R.text $ "Are you sure you want to delete \"" <> article.title <> "\"?"
                       ]
-                  }
-              , R.hr {}
-              , R.div
-                  { className: "article-actions"
-                  , children: [ articleMeta auth article store ]
-                  }
-              , R.div
-                  { className: "row"
-                  , children:
-                      [ R.div
-                          { className: "col-xs-12 col-md-8 offset-md-2"
-                          , children:
-                              [ R.form
-                                  { className: "card comment-form"
-                                  , onSubmit: handler preventDefault $ const $ store.dispatch SubmitComment
-                                  , children:
-                                      [ R.div
-                                          { className: "card-block"
-                                          , children:
-                                              [ R.textarea
-                                                  { className: "form-control"
-                                                  , rows: 3
-                                                  , value: extract store.state.body
-                                                  , placeholder: "Write a comment..."
-                                                  , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateBody
-                                                  }
-                                              ]
-                                          }
-                                      , R.div
-                                          { className: "card-footer"
-                                          , children:
-                                              [ R.img
-                                                  { className: "comment-author-img"
-                                                  , src: Avatar.toString $ maybe Avatar.blank (Avatar.withDefault <<< _.image) (_.profile =<< auth)
-                                                  }
-                                              , R.button
-                                                  { className: "btn btn-sm btn-primary"
-                                                  , type: "submit"
-                                                  , children: [ R.text "Post Comment" ]
-                                                  }
-                                              ]
-                                          }
-                                      ]
-                                  }
-                              , (preview _Success store.state.comments)
-                                  # maybe React.empty (React.fragment <<< commentList auth store)
-                              ]
-                          }
-                      ]
-                  }
+                    , onConfirm = store.dispatch DeleteArticle
+                    }
               ]
 
   articleMeta auth article store =
@@ -289,7 +305,7 @@ mkArticlePage =
                     , R.text " "
                     , R.button
                         { className: "btn btn-outline-danger btn-sm"
-                        , onClick: handler_ $ store.dispatch DeleteArticle
+                        , onClick: handler_ $ store.dispatch $ ToggleModal true
                         , children:
                             [ R.i
                                 { className: "ion-trash-a"
