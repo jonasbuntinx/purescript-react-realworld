@@ -2,8 +2,7 @@ module Conduit.Component.Routing where
 
 import Prelude
 import Conduit.Control.Routing (Command(..), Completed, Pending, Routing)
-import Conduit.Data.Route (Route)
-import Conduit.Data.Transition (Transition(..))
+import Conduit.Data.Route (Route, Transition(..))
 import Conduit.Effects.Routing as Routing
 import Conduit.Env.Routing (RoutingSignal, create)
 import Control.Monad.Free.Trans (runFreeT)

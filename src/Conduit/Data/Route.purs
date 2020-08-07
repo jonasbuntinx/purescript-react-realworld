@@ -7,6 +7,8 @@ import Conduit.Data.Username as Username
 import Conduit.Effects.Routing (class HasRoute)
 import Data.Either (note)
 import Data.Generic.Rep (class Generic)
+import Data.Lens (Lens', lens)
+import Data.Maybe (Maybe)
 import Prelude (class Eq, ($), (>>>))
 import Routing.Duplex (RouteDuplex', as, default, print, root, segment)
 import Routing.Duplex.Generic (noArgs, sum)
@@ -53,3 +55,21 @@ slug = as Slug.toString (Slug.parse >>> note "Bad slug")
 
 username :: RouteDuplex' String -> RouteDuplex' Username
 username = as Username.toString (Username.parse >>> note "Bad username")
+
+-- | Transition
+data Transition
+  = Loading (Maybe Route) Route
+  | Loaded (Maybe Route) Route
+
+derive instance eqTransition :: Eq Transition
+
+_Transition :: Lens' Transition Route
+_Transition = lens getter setter
+  where
+  getter = case _ of
+    Loading _ route -> route
+    Loaded _ route -> route
+
+  setter = case _ of
+    Loading previous _ -> Loading previous
+    Loaded previous _ -> Loaded previous

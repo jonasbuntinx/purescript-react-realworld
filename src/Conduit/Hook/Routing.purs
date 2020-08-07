@@ -1,8 +1,7 @@
 module Conduit.Hook.Routing where
 
 import Prelude
-import Conduit.Data.Route (Route)
-import Conduit.Data.Transition (Transition, _Transition)
+import Conduit.Data.Route (Route, Transition, _Transition)
 import Conduit.Env.Routing (RoutingSignal)
 import Data.Lens (view)
 import React.Basic.Hooks as React

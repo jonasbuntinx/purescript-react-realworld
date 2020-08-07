@@ -1,8 +1,7 @@
 module Conduit.Env.Routing where
 
 import Prelude
-import Conduit.Data.Route (Route(..))
-import Conduit.Data.Transition (Transition(..))
+import Conduit.Data.Route (Route(..), Transition(..))
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Wire.React.Pure (Pure, create) as Pure
