@@ -20,12 +20,12 @@ data Error
   | JSONDecodeError MultipleErrors
 
 decode :: String -> Either Error Jwt
-decode token =
+decode =
   let
-    payload = note MalformedToken <<< (_ `Array.index` 1) <<< String.split (String.Pattern ".") $ token
+    payload = note MalformedToken <<< (_ `Array.index` 1) <<< String.split (String.Pattern ".")
 
     decodeBase64 = map (over _Left Base64DecodeError) atob
 
     decodeJSON = map (over _Left JSONDecodeError) readJSON
   in
-    payload >>= decodeBase64 >>= decodeJSON
+    payload >=> decodeBase64 >=> decodeJSON
