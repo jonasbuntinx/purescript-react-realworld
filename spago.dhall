@@ -7,7 +7,7 @@
     , "heterogeneous"
     , "js-timers"
     , "profunctor-lenses"
-    , "react-basic"
+    , "react-basic-dom"
     , "react-basic-hooks"
     , "react-basic-hooks-store"
     , "remotedata"

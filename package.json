@@ -28,11 +28,11 @@
     "purescript": "^0.13.8",
     "purescript-psa": "^0.7.3",
     "purty": "^6.2.0",
-    "spago": "^0.15.3"
+    "spago": "^0.16.0"
   },
   "dependencies": {
-    "jss": "^10.3.0",
-    "jss-preset-default": "^10.3.0",
+    "jss": "^10.4.0",
+    "jss-preset-default": "^10.4.0",
     "marked": "^1.1.1",
     "moment": "^2.27.0",
     "react": "^16.13.1",
