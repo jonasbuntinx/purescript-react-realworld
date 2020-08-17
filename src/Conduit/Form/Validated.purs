@@ -50,7 +50,7 @@ _Modified =
     Modified a -> Just a
     _ -> Nothing
 
--- | Transformation
+-- | Mapping instance
 newtype ModifyValidated
   = ModifyValidated (Validated ~> Validated)
 
