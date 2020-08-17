@@ -51,10 +51,10 @@ create = do
       { initial: Nothing
       , load:
           do
-            maybeToken <- liftEffect $ Wire.read tokenSignal
-            maybeToken
-              # maybe (pure Nothing) \token -> do
-                  res <- hush <$> Apiary.makeRequest (Apiary.Route :: GetUser) (addBaseUrl <<< addToken token) Apiary.none Apiary.none Apiary.none
+            token <- liftEffect $ Wire.read tokenSignal
+            token
+              # maybe (pure Nothing) \t -> do
+                  res <- hush <$> Apiary.makeRequest (Apiary.Route :: GetUser) (addBaseUrl <<< addToken t) Apiary.none Apiary.none Apiary.none
                   for res (Variant.match { ok: pure <<< Record.delete (SProxy :: _ "token") <<< _.user })
       , save: const $ pure unit
       }
@@ -63,16 +63,15 @@ create = do
         do
           token <- Selector.select tokenSignal
           profile <- Selector.select profileSignal
-          pure case token of
-            Nothing -> Nothing
-            Just t -> do
-              { exp, username } <- hush $ Jwt.decode t
-              pure
-                { token: t
-                , username
-                , expirationTime: unix $ Seconds exp
-                , profile
-                }
+          pure do
+            t <- token
+            { exp, username } <- hush $ Jwt.decode t
+            pure
+              { token: t
+              , username
+              , expirationTime: unix $ Seconds exp
+              , profile
+              }
     , update:
         \auth -> do
           Selector.write tokenSignal (_.token <$> auth)
