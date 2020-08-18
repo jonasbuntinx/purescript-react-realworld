@@ -6,5 +6,7 @@
   "purescript.buildCommand": "spago build --purs-args \"--json-errors\"",
   "[purescript]": {
     "editor.formatOnSave": true
-  }
+  },
+  "liveServer.settings.root": "/dist",
+  "liveServer.settings.file": "index.html"
 }

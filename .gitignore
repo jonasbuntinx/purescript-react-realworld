@@ -2,12 +2,14 @@
 /node_modules/
 /.pulp-cache/
 /output/
+/dce-output/
 /generated-docs/
 /.psc-package/
 /.psc*
 /.purs*
 /.psa*
 /dist/
+/serve/
 /.cache/
 /.spago/
 /*.log
