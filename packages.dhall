@@ -127,6 +127,10 @@ let overrides =
           //  { repo = "https://github.com/robertdp/purescript-simple-json.git"
               , version = "v7.0.1"
               }
+      ,  react-basic-hooks =
+              upstream.react-basic-hooks
+          //  { version = "v6.1.1"
+              }
       }
 
 let additions =
