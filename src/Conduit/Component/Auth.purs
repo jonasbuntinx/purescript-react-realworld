@@ -12,8 +12,7 @@ import Conduit.Env.Routing (redirect)
 import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
 import Data.Maybe (Maybe(..))
-import Data.Tuple (Tuple(..))
-import Data.Tuple.Nested ((/\))
+import Data.Tuple.Nested (type (/\), (/\))
 import Data.Variant as Variant
 import Effect (Effect)
 import Effect.Aff (launchAff_)
@@ -24,7 +23,7 @@ import Foreign.Moment as Moment
 import React.Basic.Hooks as React
 import Wire.React.Class (read)
 
-mkAuthManager :: Effect (Tuple AuthSignal (React.JSX -> React.JSX))
+mkAuthManager :: Effect (AuthSignal /\ (React.JSX -> React.JSX))
 mkAuthManager = do
   authSignal <- create
   component <-
@@ -36,7 +35,7 @@ mkAuthManager = do
         setState _ { interval = Just authCheckInterval }
         pure $ traverse_ Timer.clearInterval state.interval
       pure content
-  pure $ Tuple authSignal component
+  pure $ authSignal /\ component
   where
   onSessionExpire = redirect Home
 

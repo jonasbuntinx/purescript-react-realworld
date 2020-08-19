@@ -3,8 +3,7 @@ module Conduit.Component.Routing where
 import Prelude
 import Conduit.Data.Route (Route)
 import Conduit.Env.Routing (RoutingSignal, create, pushStateInterface)
-import Data.Tuple (Tuple(..))
-import Data.Tuple.Nested ((/\))
+import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
 import React.Basic.Hooks as React
 import Routing.Duplex (RouteDuplex', parse)
@@ -14,16 +13,16 @@ import Wire.React.Class (modify)
 
 mkRoutingManager ::
   RouteDuplex' Route ->
-  Effect (Tuple RoutingSignal (React.JSX -> React.JSX))
+  Effect (RoutingSignal /\ (React.JSX -> React.JSX))
 mkRoutingManager routes = do
   routingSignal <- create
   component <-
     React.component "RoutingManager" \content -> React.do
       React.useEffectOnce do
-        Event.subscribe (onPushState routes) \(Tuple _ route) -> do
+        Event.subscribe (onPushState routes) \(_ /\ route) -> do
           modify routingSignal $ const $ route
       pure content
-  pure $ Tuple routingSignal component
+  pure $ routingSignal /\ component
   where
   onPushState matcher =
     Event.makeEvent \k ->
