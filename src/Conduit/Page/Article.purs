@@ -8,7 +8,6 @@ import Conduit.Api.Profile (UnfollowProfile, FollowProfile)
 import Conduit.Api.Utils as Utils
 import Conduit.Component.App as App
 import Conduit.Component.Buttons (ButtonSize(..), favoriteButton, followButton)
-import Conduit.Component.Confirm as Confirm
 import Conduit.Component.Link as Link
 import Conduit.Component.Routing (navigate)
 import Conduit.Data.Article (Article)
@@ -55,7 +54,6 @@ data Action
   | UpdateBody String
   | DeleteComment CommentId
   | SubmitComment
-  | ToggleModal Boolean
 
 mkArticlePage :: App.Component Env Props
 mkArticlePage =
@@ -156,7 +154,6 @@ mkArticlePage =
                                 }
                             loadComments self
                       }
-    ToggleModal isOpen -> self.setState _ { isModalOpen = isOpen }
 
   loadComments self = do
     res <- Utils.makeRequest (Apiary.Route :: ListComments) { slug: self.props.slug } Apiary.none Apiary.none
@@ -262,16 +259,6 @@ mkArticlePage =
                           ]
                       }
                   ]
-              , Confirm.confirm
-                  _
-                    { isOpen = store.state.isModalOpen
-                    , onCancel = store.dispatch $ ToggleModal false
-                    , title = "Delete Article"
-                    , children =
-                      [ R.text $ "Are you sure you want to delete \"" <> article.title <> "\"?"
-                      ]
-                    , onConfirm = store.dispatch DeleteArticle
-                    }
               ]
 
   articleMeta auth article store =
@@ -322,7 +309,7 @@ mkArticlePage =
                     , R.text " "
                     , R.button
                         { className: "btn btn-outline-danger btn-sm"
-                        , onClick: handler_ $ store.dispatch $ ToggleModal true
+                        , onClick: handler_ $ store.dispatch DeleteArticle
                         , children:
                             [ R.i
                                 { className: "ion-trash-a"
