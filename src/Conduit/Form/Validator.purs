@@ -28,7 +28,7 @@ maximunLength :: Int -> Validator String String
 maximunLength validLength = mustBe (\input -> String.length input <= validLength) "is too long"
 
 validUsername :: Validator String Username
-validUsername = V <<< (note (pure "is invalid") <<< Username.parse)
+validUsername = V <<< (note (pure "is invalid") <<< Username.fromString)
 
 mustBe :: forall a. (a -> Boolean) -> String -> Validator a a
 mustBe cond error value

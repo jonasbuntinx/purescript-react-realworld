@@ -1,6 +1,6 @@
 module Conduit.Data.Username
   ( Username
-  , parse
+  , fromString
   , toString
   ) where
 
@@ -30,17 +30,17 @@ derive newtype instance writeForeignUsername :: WriteForeign Username
 instance readForeignUsername :: ReadForeign Username where
   readImpl =
     readImpl
-      >=> parse
+      >=> fromString
       >>> case _ of
           Just username -> pure username
           Nothing -> throwError $ pure $ ForeignError "Failed to decode username"
 
 derive newtype instance encodeParamUsername :: Url.EncodeParam Username
 
-parse :: String -> Maybe Username
-parse "" = Nothing
+fromString :: String -> Maybe Username
+fromString "" = Nothing
 
-parse str = Just (Username str)
+fromString str = Just (Username str)
 
 toString :: Username -> String
 toString (Username str) = str

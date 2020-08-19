@@ -50,10 +50,10 @@ routeCodec =
         }
 
 slug :: RouteDuplex' String -> RouteDuplex' Slug
-slug = as Slug.toString (Slug.parse >>> note "Bad slug")
+slug = as Slug.toString (Slug.fromString >>> note "Bad slug")
 
 username :: RouteDuplex' String -> RouteDuplex' Username
-username = as Username.toString (Username.parse >>> note "Bad username")
+username = as Username.toString (Username.fromString >>> note "Bad username")
 
 -- | Transition
 data Transition
