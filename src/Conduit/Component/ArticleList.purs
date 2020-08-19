@@ -60,8 +60,6 @@ articleList props = case props.articles of
                           [ R.img
                               { src: Avatar.toString $ Avatar.withDefault article.author.image
                               , alt: Username.toString article.author.username
-                              , width: "32px"
-                              , height: "32px"
                               }
                           ]
                       }
