@@ -1,4 +1,4 @@
-module Conduit.Env.Routing where
+module Conduit.Env.Routing (RoutingSignal, create, navigate, redirect) where
 
 import Prelude
 import Conduit.Data.Route (Route(..), toRouteString)

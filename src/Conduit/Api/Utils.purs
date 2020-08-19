@@ -1,4 +1,4 @@
-module Conduit.Api.Utils where
+module Conduit.Api.Utils (Error(..), addBaseUrl, addToken, makeRequest, makeSecureRequest) where
 
 import Prelude
 import Apiary.Client (makeRequest) as Apiary

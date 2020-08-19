@@ -1,4 +1,4 @@
-module Conduit.Data.Route where
+module Conduit.Data.Route (Route(..), routeCodec, toRouteString) where
 
 import Conduit.Data.Slug (Slug)
 import Conduit.Data.Slug as Slug
