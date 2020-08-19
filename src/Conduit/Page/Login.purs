@@ -20,7 +20,7 @@ import Data.Foldable (traverse_)
 import Data.Lens.Record as LR
 import Data.Monoid (guard)
 import Data.Symbol (SProxy(..))
-import Data.Validation.Semigroup (V, andThen, toEither, unV)
+import Data.Validation.Semigroup (andThen, toEither, unV)
 import Data.Variant as Variant
 import Foreign.Object as Object
 import Network.RemoteData as RemoteData
@@ -75,7 +75,7 @@ mkLoginPage =
 
   render store props =
     let
-      errors = validate store.state # unV identity (const mempty)
+      errors = validate store.state # unV identity (const mempty) :: { email :: _, password :: _ }
     in
       container
         [ R.h1
@@ -172,34 +172,7 @@ mkLoginPage =
           ]
       }
 
--- | Validation
-type ValidationValues r
-  = { email :: V.Validated String
-    , password :: V.Validated String
-    | r
-    }
-
-type ValidationErrors
-  = { email :: Array String
-    , password :: Array String
-    }
-
-type ValidatedValues
-  = { email :: String
-    , password :: String
-    }
-
-validate :: forall r. ValidationValues r -> V ValidationErrors ValidatedValues
-validate values = ado
-  email <-
-    values.email
-      # V.validated (LR.prop (SProxy :: _ "email")) \email -> do
-          F.nonEmpty email `andThen` F.validEmail
-  password <-
-    values.password
-      # V.validated (LR.prop (SProxy :: _ "password")) \password -> do
-          F.nonEmpty password
-            `andThen`
-              ( F.minimumLength 3 *> F.maximunLength 20
-              )
-  in { email, password }
+  validate values = ado
+    email <- values.email # V.validated (LR.prop (SProxy :: _ "email")) \email -> F.nonEmpty email `andThen` F.validEmail
+    password <- values.password # V.validated (LR.prop (SProxy :: _ "password")) \password -> F.nonEmpty password `andThen` (F.minimumLength 3 *> F.maximunLength 20)
+    in { email, password }

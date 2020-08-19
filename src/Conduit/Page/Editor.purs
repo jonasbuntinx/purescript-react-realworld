@@ -23,7 +23,7 @@ import Data.Monoid (guard)
 import Data.Set (Set)
 import Data.Set as Set
 import Data.Symbol (SProxy(..))
-import Data.Validation.Semigroup (V, andThen, toEither, unV)
+import Data.Validation.Semigroup (andThen, toEither, unV)
 import Data.Variant as Variant
 import Foreign.Object as Object
 import Network.RemoteData as RemoteData
@@ -114,7 +114,7 @@ mkEditorPage =
 
   render store props =
     let
-      errors = validate store.state # unV identity (const mempty)
+      errors = validate store.state # unV identity (const mempty) :: { title :: _, description :: _, body :: _ }
     in
       guard (not $ RemoteData.isLoading store.state.article)
         $ container
@@ -218,40 +218,8 @@ mkEditorPage =
           ]
       }
 
--- | Validation
-type ValidationValues r
-  = { title :: V.Validated String
-    , description :: V.Validated String
-    , body :: V.Validated String
-    , tagList :: Set String
-    | r
-    }
-
-type ValidationErrors
-  = { title :: Array String
-    , description :: Array String
-    , body :: Array String
-    }
-
-type ValidatedValues
-  = { title :: String
-    , description :: String
-    , body :: String
-    , tagList :: Array String
-    }
-
-validate :: forall r. ValidationValues r -> V ValidationErrors ValidatedValues
-validate values = ado
-  title <-
-    values.title
-      # V.validated (LR.prop (SProxy :: _ "title")) \title -> do
-          F.nonEmpty title
-  description <-
-    values.description
-      # V.validated (LR.prop (SProxy :: _ "description")) \description -> do
-          F.nonEmpty description
-  body <-
-    values.body
-      # V.validated (LR.prop (SProxy :: _ "body")) \body -> do
-          F.nonEmpty body `andThen` F.minimumLength 3
-  in { title, description, body, tagList: Set.toUnfoldable values.tagList }
+  validate values = ado
+    title <- values.title # V.validated (LR.prop (SProxy :: _ "title")) F.nonEmpty
+    description <- values.description # V.validated (LR.prop (SProxy :: _ "description")) F.nonEmpty
+    body <- values.body # V.validated (LR.prop (SProxy :: _ "body")) \body -> F.nonEmpty body `andThen` F.minimumLength 3
+    in { title, description, body, tagList: Set.toUnfoldable values.tagList }

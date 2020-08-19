@@ -29,7 +29,7 @@ import Data.Lens.Record as LR
 import Data.Maybe (Maybe(..), maybe)
 import Data.Monoid (guard)
 import Data.Symbol (SProxy(..))
-import Data.Validation.Semigroup (V, toEither, unV)
+import Data.Validation.Semigroup (toEither, unV)
 import Data.Variant as Variant
 import Foreign.Marked (marked)
 import Foreign.Moment (Format(..), format)
@@ -161,7 +161,7 @@ mkArticlePage =
 
   render auth store props =
     let
-      errors = validate store.state # unV identity (const mempty)
+      errors = validate store.state # unV identity (const mempty) :: { body :: _ }
     in
       store.state.article
         # RemoteData.maybe React.empty \article ->
@@ -419,6 +419,10 @@ mkArticlePage =
           ]
       }
 
+  validate values = ado
+    body <- values.body # V.validated (LR.prop (SProxy :: _ "body")) F.nonEmpty
+    in { body }
+
 _author :: forall err r. Traversal' { article :: RemoteData.RemoteData err Article | r } Author
 _author =
   LR.prop (SProxy :: _ "article")
@@ -429,25 +433,3 @@ _article :: forall err r. Traversal' { article :: RemoteData.RemoteData err Arti
 _article =
   LR.prop (SProxy :: _ "article")
     <<< RemoteData._Success
-
--- | Validation
-type ValidationValues r
-  = { body :: V.Validated String
-    | r
-    }
-
-type ValidationErrors
-  = { body :: Array String
-    }
-
-type ValidatedValues
-  = { body :: String
-    }
-
-validate :: forall r. ValidationValues r -> V ValidationErrors ValidatedValues
-validate values = ado
-  body <-
-    values.body
-      # V.validated (LR.prop (SProxy :: _ "body")) \body -> do
-          F.nonEmpty body
-  in { body }

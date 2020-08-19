@@ -7,11 +7,9 @@ import Conduit.Api.User (UpdateUser)
 import Conduit.Api.Utils as Utils
 import Conduit.Component.App as App
 import Conduit.Component.Routing (navigate, redirect)
-import Conduit.Data.Avatar (Avatar)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
-import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
 import Conduit.Env (Env)
 import Conduit.Env.Auth (logout, updateProfile)
@@ -26,7 +24,7 @@ import Data.Lens.Record as LR
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Monoid (guard)
 import Data.Symbol (SProxy(..))
-import Data.Validation.Semigroup (V, andThen, toEither, unV)
+import Data.Validation.Semigroup (andThen, toEither, unV)
 import Data.Variant as Variant
 import Foreign.Object as Object
 import Network.RemoteData as RemoteData
@@ -109,7 +107,7 @@ mkSettingsPage =
 
   render store props =
     let
-      errors = validate store.state # unV identity (const mempty)
+      errors = validate store.state # unV identity (const mempty) :: { username :: _, email :: _, password :: _ }
     in
       guard (isJust store.state.profile)
         $ container
@@ -245,45 +243,8 @@ mkSettingsPage =
           ]
       }
 
--- | Validation
-type ValidationValues r
-  = { image :: Maybe String
-    , username :: V.Validated String
-    , bio :: Maybe String
-    , email :: V.Validated String
-    , password :: V.Validated String
-    | r
-    }
-
-type ValidationErrors
-  = { username :: Array String
-    , email :: Array String
-    , password :: Array String
-    }
-
-type ValidatedValues
-  = { image :: Maybe Avatar
-    , username :: Username
-    , bio :: Maybe String
-    , email :: String
-    , password :: String
-    }
-
-validate :: forall r. ValidationValues r -> V ValidationErrors ValidatedValues
-validate values = ado
-  username <-
-    values.username
-      # V.validated (LR.prop (SProxy :: _ "username")) \username -> do
-          F.nonEmpty username `andThen` F.validUsername
-  email <-
-    values.email
-      # V.validated (LR.prop (SProxy :: _ "email")) \email -> do
-          F.nonEmpty email `andThen` F.validEmail
-  password <-
-    values.password
-      # V.validated (LR.prop (SProxy :: _ "password")) \password -> do
-          F.nonEmpty password
-            `andThen`
-              ( F.minimumLength 3 *> F.maximunLength 20
-              )
-  in { image: Avatar.fromString <$> values.image, username, bio: values.bio, email, password }
+  validate values = ado
+    username <- values.username # V.validated (LR.prop (SProxy :: _ "username")) \username -> F.nonEmpty username `andThen` F.validUsername
+    email <- values.email # V.validated (LR.prop (SProxy :: _ "email")) \email -> F.nonEmpty email `andThen` F.validEmail
+    password <- values.password # V.validated (LR.prop (SProxy :: _ "password")) \password -> F.nonEmpty password `andThen` (F.minimumLength 3 *> F.maximunLength 20)
+    in { image: Avatar.fromString <$> values.image, username, bio: values.bio, email, password }
