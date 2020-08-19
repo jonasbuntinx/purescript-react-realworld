@@ -6,6 +6,8 @@
     , "foreign-generic"
     , "heterogeneous"
     , "js-timers"
+    , "now"
+    , "precise-datetime"
     , "profunctor-lenses"
     , "react-basic-dom"
     , "react-basic-hooks"

@@ -11,16 +11,18 @@ import Conduit.Data.Profile (Profile)
 import Conduit.Data.Username (Username)
 import Control.Monad.Except (runExcept)
 import Control.Monad.Reader (class MonadAsk, ask)
+import Data.DateTime (DateTime)
 import Data.Either (hush)
+import Data.Formatter.DateTime (FormatterCommand(..), unformat)
+import Data.List (fromFoldable)
 import Data.Maybe (Maybe(..), maybe)
+import Data.Number.Format (toString)
 import Data.Symbol (SProxy(..))
-import Data.Time.Duration (Seconds(..))
 import Data.Traversable (for)
 import Data.Variant as Variant
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 import Foreign.Generic (decodeJSON, encodeJSON)
-import Foreign.Moment (Moment, unix)
 import Record as Record
 import Web.HTML (window)
 import Web.HTML.Window as Window
@@ -33,7 +35,7 @@ import Wire.React.Sync as Sync
 type Auth
   = { token :: String
     , username :: Username
-    , expirationTime :: Moment
+    , expirationTime :: DateTime
     , profile :: Maybe Profile
     }
 
@@ -78,7 +80,8 @@ create = do
           pure do
             t <- token
             { exp, username } <- hush $ Jwt.decode t
-            pure { token: t, username, expirationTime: unix $ Seconds exp, profile }
+            expirationTime <- hush $ unformat (fromFoldable [ UnixTimestamp ]) $ toString exp
+            pure { token: t, username, expirationTime, profile }
     , update:
         \auth -> do
           Selector.write tokenSignal (_.token <$> auth)
@@ -93,7 +96,8 @@ login' :: AuthSignal -> String -> Profile -> Effect Unit
 login' authSignal token profile =
   Wire.modify authSignal \_ -> do
     { exp, username } <- hush $ Jwt.decode token
-    pure { token, username, expirationTime: unix $ Seconds exp, profile: Just profile }
+    expirationTime <- hush $ unformat (fromFoldable [ UnixTimestamp ]) $ toString exp
+    pure { token, username, expirationTime, profile: Just profile }
 
 refreshToken :: forall m r. MonadAsk { authSignal :: AuthSignal | r } m => MonadEffect m => String -> m Unit
 refreshToken token = ask >>= liftEffect <<< flip refreshToken' token <<< _.authSignal

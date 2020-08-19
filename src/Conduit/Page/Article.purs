@@ -11,6 +11,7 @@ import Conduit.Component.Link as Link
 import Conduit.Data.Article (Article)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Comment (CommentId)
+import Conduit.Data.PreciseDateTime as PDT
 import Conduit.Data.Profile (Author)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Slug (Slug)
@@ -31,7 +32,6 @@ import Data.Symbol (SProxy(..))
 import Data.Validation.Semigroup (toEither, unV)
 import Data.Variant as Variant
 import Foreign.Marked (marked)
-import Foreign.Moment (Format(..), format)
 import Foreign.Object as Object
 import Network.RemoteData (_Success)
 import Network.RemoteData as RemoteData
@@ -281,7 +281,7 @@ mkArticlePage =
                   , R.span
                       { className: "date"
                       , children:
-                          [ R.text $ format (Format "MMMM Do, YYYY") article.createdAt
+                          [ R.text $ PDT.toDisplay article.createdAt
                           ]
                       }
                   ]
@@ -370,7 +370,7 @@ mkArticlePage =
                     , R.span
                         { className: "date-posted"
                         , children:
-                            [ R.text $ format (Format "MMMM Do, YYYY") comment.createdAt ]
+                            [ R.text $ PDT.toDisplay comment.createdAt ]
                         }
                     , guard (Just comment.author.username == map _.username auth) R.span
                         { className: "mod-options"

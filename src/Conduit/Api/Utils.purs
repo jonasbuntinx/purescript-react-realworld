@@ -19,7 +19,6 @@ import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Class.Console as Console
 import Effect.Exception as Exception
 import Foreign (renderForeignError)
-import Foreign.Moment (Format(..), format, now)
 import Foreign.Object as Object
 import Milkis as Milkis
 import Wire.React.Class (class Atom, read)
@@ -75,9 +74,8 @@ addToken token request@{ headers } = request { headers = Object.insert "Authoriz
 
 onError :: forall m. MonadEffect m => Apiary.Error -> m Unit
 onError error = do
-  now <- liftEffect now
   when (Config.nodeEnv /= "production") do
-    Console.log $ "[" <> format (Format "YYYY-MM-DD HH:mm:ss") now <> "] " <> toLogMessage error
+    Console.log $ toLogMessage error
   where
   toLogMessage (Apiary.RuntimeError exc) = "Runtime error: " <> Exception.message exc
 

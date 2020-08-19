@@ -18,8 +18,8 @@ import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Aff.Class (liftAff)
 import Effect.Class (liftEffect)
+import Effect.Now (nowDateTime)
 import Effect.Timer as Timer
-import Foreign.Moment as Moment
 import React.Basic.Hooks as React
 import Wire.React.Class (read)
 
@@ -31,7 +31,7 @@ mkAuthManager = do
       state /\ setState <- React.useState { interval: Nothing }
       React.useEffectOnce do
         refreshToken authSignal
-        authCheckInterval <- Timer.setInterval 90_0000 (checkAuthStatus authSignal)
+        authCheckInterval <- Timer.setInterval 900_0000 (checkAuthStatus authSignal)
         setState _ { interval = Just authCheckInterval }
         pure $ traverse_ Timer.clearInterval state.interval
       pure content
@@ -52,7 +52,7 @@ mkAuthManager = do
   checkAuthStatus authSignal = do
     auth <- read authSignal
     for_ auth \{ expirationTime } -> do
-      now <- Moment.now
+      now <- nowDateTime
       if now > expirationTime then
         logout' authSignal *> onSessionExpire
       else
