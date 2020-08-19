@@ -6,8 +6,8 @@ import Data.DateTime (DateTime)
 import Data.Formatter.DateTime (FormatterCommand(..), format)
 import Data.List (List, fromFoldable)
 import Data.Maybe (Maybe(..))
-import Data.Newtype (class Newtype, unwrap, wrap)
-import Data.PreciseDateTime as PDT
+import Data.Newtype (class Newtype, unwrap)
+import Data.PreciseDateTime (PreciseDateTime, toDateTimeLossy, fromRFC3339String) as PDT
 import Data.RFC3339String (RFC3339String(..))
 import Foreign (ForeignError(..))
 import Simple.JSON (class ReadForeign, readImpl)
@@ -33,9 +33,6 @@ fromString =
 
 toDateTime :: PreciseDateTime -> DateTime
 toDateTime = unwrap >>> PDT.toDateTimeLossy
-
-fromDateTime :: DateTime -> PreciseDateTime
-fromDateTime = wrap <<< PDT.fromDateTime
 
 toDisplay :: PreciseDateTime -> String
 toDisplay = toDateTime >>> format dateFormatter

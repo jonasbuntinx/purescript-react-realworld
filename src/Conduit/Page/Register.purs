@@ -1,4 +1,4 @@
-module Conduit.Page.Register where
+module Conduit.Page.Register (mkRegisterPage) where
 
 import Prelude
 import Apiary.Route (Route(..)) as Apiary

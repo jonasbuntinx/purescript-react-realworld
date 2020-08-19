@@ -1,4 +1,4 @@
-module Conduit.Page.Settings where
+module Conduit.Page.Settings (mkSettingsPage) where
 
 import Prelude
 import Apiary.Route (Route(..)) as Apiary

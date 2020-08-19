@@ -1,4 +1,4 @@
-module Conduit.Page.Home where
+module Conduit.Page.Home (mkHomePage) where
 
 import Prelude
 import Apiary.Route (Route(..)) as Apiary

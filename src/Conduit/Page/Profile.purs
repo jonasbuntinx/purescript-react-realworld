@@ -1,4 +1,4 @@
-module Conduit.Page.Profile where
+module Conduit.Page.Profile (Props, Tab(..), mkProfilePage) where
 
 import Prelude
 import Apiary.Route (Route(..)) as Apiary

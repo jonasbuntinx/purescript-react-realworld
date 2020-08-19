@@ -1,4 +1,4 @@
-module Conduit.Page.Editor where
+module Conduit.Page.Editor (Props, mkEditorPage) where
 
 import Prelude
 import Apiary.Route (Route(..)) as Apiary

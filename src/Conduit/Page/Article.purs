@@ -1,4 +1,4 @@
-module Conduit.Page.Article where
+module Conduit.Page.Article (Props, mkArticlePage) where
 
 import Prelude
 import Apiary.Route (Route(..)) as Apiary
