@@ -29,7 +29,7 @@ derive instance ordSlug :: Ord Slug
 instance showSlug :: Show Slug where
   show = genericShow
 
-instance readForgeignSlug :: ReadForeign Slug where
+instance readForeignSlug :: ReadForeign Slug where
   readImpl =
     readImpl
       >=> fromString
