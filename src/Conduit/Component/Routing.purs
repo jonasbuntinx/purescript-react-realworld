@@ -3,7 +3,6 @@ module Conduit.Component.Routing where
 import Prelude
 import Conduit.Data.Route (Route, toRouteString)
 import Conduit.Env.Routing (RoutingSignal, create)
-import Control.Monad.Error.Class (try)
 import Data.Tuple (Tuple(..))
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
@@ -37,14 +36,8 @@ mkRoutingManager routes = do
     Event.makeEvent \k ->
       PushState.matchesWith (parse matcher) (\old new -> k (old /\ new)) pushStateInterface
 
-pushState :: String -> Effect Unit
-pushState url = void $ try $ pushStateInterface.pushState undefined url
-
-replaceState :: String -> Effect Unit
-replaceState url = void $ try $ pushStateInterface.replaceState undefined url
-
 navigate :: forall m. MonadEffect m => Route -> m Unit
-navigate = liftEffect <<< pushState <<< toRouteString
+navigate = liftEffect <<< pushStateInterface.pushState undefined <<< toRouteString
 
 redirect :: forall m. MonadEffect m => Route -> m Unit
-redirect = liftEffect <<< replaceState <<< toRouteString
+redirect = liftEffect <<< pushStateInterface.replaceState undefined <<< toRouteString
