@@ -11,8 +11,13 @@ import Data.Monoid (guard)
 import React.Basic.DOM as R
 import React.Basic.Hooks as React
 
-header :: Maybe Auth -> Route -> React.JSX
-header auth route =
+type Props
+  = { auth :: Maybe Auth
+    , currentRoute :: Route
+    }
+
+header :: Props -> React.JSX
+header { auth, currentRoute } =
   R.nav
     { className: "navbar navbar-light"
     , children:
@@ -54,13 +59,13 @@ header auth route =
         ]
     }
   where
-  navItem r children =
+  navItem route children =
     R.li
       { className: "nav-item"
       , children:
           [ Link.link
-              { className: "nav-link" <> guard (route == r) " active"
-              , route: r
+              { className: "nav-link" <> guard (currentRoute == route) " active"
+              , route
               , children
               }
           ]

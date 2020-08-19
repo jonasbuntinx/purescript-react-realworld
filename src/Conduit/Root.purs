@@ -44,7 +44,7 @@ mkRoot = do
       mempty
     pure
       $ React.fragment
-          [ Header.header auth route
+          [ Header.header { auth, currentRoute: route }
           , case route of
               Home -> homePage unit
               Login -> loginPage unit
