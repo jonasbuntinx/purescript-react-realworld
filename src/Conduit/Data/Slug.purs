@@ -1,8 +1,4 @@
-module Conduit.Data.Slug
-  ( Slug
-  , fromString
-  , toString
-  ) where
+module Conduit.Data.Slug where
 
 import Prelude
 import Apiary.Url as Url
@@ -19,8 +15,6 @@ newtype Slug
   = Slug String
 
 derive instance eqSlug :: Eq Slug
-
-derive instance ordSlug :: Ord Slug
 
 instance readForeignSlug :: ReadForeign Slug where
   readImpl =

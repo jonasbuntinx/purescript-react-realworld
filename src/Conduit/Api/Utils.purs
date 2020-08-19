@@ -5,9 +5,9 @@ import Apiary.Client (makeRequest) as Apiary
 import Apiary.Client.Request (class BuildRequest) as Apiary
 import Apiary.Client.Response (class DecodeResponse) as Apiary
 import Apiary.Types (Error(..)) as Apiary
-import Conduit.Component.Routing (redirect)
 import Conduit.Config as Config
 import Conduit.Data.Route (Route(..))
+import Conduit.Env.Routing (redirect)
 import Control.Comonad (extract)
 import Control.Monad.Reader (class MonadAsk, ask)
 import Data.Bifunctor (lmap)

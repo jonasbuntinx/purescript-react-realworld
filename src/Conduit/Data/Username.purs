@@ -1,8 +1,4 @@
-module Conduit.Data.Username
-  ( Username
-  , fromString
-  , toString
-  ) where
+module Conduit.Data.Username where
 
 import Prelude
 import Apiary.Url as Url
@@ -15,8 +11,6 @@ newtype Username
   = Username String
 
 derive instance eqUsername :: Eq Username
-
-derive instance ordUsername :: Ord Username
 
 derive newtype instance writeForeignUsername :: WriteForeign Username
 

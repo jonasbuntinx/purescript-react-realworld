@@ -3,22 +3,21 @@ module Conduit.Page.Profile where
 import Prelude
 import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
-import Conduit.Api.Article (ListArticles, UnfavoriteArticle, FavoriteArticle, defaultArticlesQuery)
-import Conduit.Api.Profile (GetProfile, UnfollowProfile, FollowProfile)
+import Conduit.Api.Endpoints (FavoriteArticle, GetProfile, ListArticles, UnfavoriteArticle, UnfollowProfile, FollowProfile)
 import Conduit.Api.Utils as Utils
 import Conduit.Component.App as App
 import Conduit.Component.ArticleList (articleList)
 import Conduit.Component.Buttons (followButton)
 import Conduit.Component.Pagination (pagination)
-import Conduit.Component.Routing (navigate)
 import Conduit.Component.Tabs as Tabs
-import Conduit.Data.Article (Article)
+import Conduit.Data.Article (Article, defaultArticlesQuery)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Profile (Author)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
 import Conduit.Env (Env)
+import Conduit.Env.Routing (navigate)
 import Conduit.Hook.Auth (useAuth)
 import Data.Either (Either(..), either)
 import Data.Foldable (for_)
@@ -80,8 +79,8 @@ mkProfilePage =
         Right response ->
           response
             # Variant.match
-                { ok: \{ profile } -> do self.setState _ { author = RemoteData.Success profile }
-                , notFound: \_ -> do navigate Home
+                { ok: \{ profile } -> self.setState _ { author = RemoteData.Success profile }
+                , notFound: \_ -> navigate Home
                 }
     LoadArticles pagination -> do
       let
@@ -101,15 +100,15 @@ mkProfilePage =
       self.setState _ { articles = RemoteData.Loading, pagination = pagination }
       res <- Utils.makeRequest (Apiary.Route :: ListArticles) Apiary.none query Apiary.none
       self.setState _ { articles = res # either RemoteData.Failure (Variant.match { ok: RemoteData.Success }) }
-    ToggleFavorite ix -> do
-      for_ (preview (_article ix) self.state) \{ slug, favorited } -> do
+    ToggleFavorite ix ->
+      for_ (preview (_articles ix) self.state) \{ slug, favorited } -> do
         res <-
           if favorited then
             Utils.makeSecureRequest (Apiary.Route :: UnfavoriteArticle) { slug } Apiary.none Apiary.none
           else
             Utils.makeSecureRequest (Apiary.Route :: FavoriteArticle) { slug } Apiary.none Apiary.none
-        for_ res $ Variant.match { ok: \{ article } -> self.setState $ set (_article ix) article }
-    ToggleFollow -> do
+        for_ res $ Variant.match { ok: \{ article } -> self.setState $ set (_articles ix) article }
+    ToggleFollow ->
       for_ (preview _author self.state) \{ username, following } -> do
         res <-
           if following then
@@ -119,29 +118,28 @@ mkProfilePage =
         for_ res $ Variant.match { ok: \{ profile } -> self.setState $ set _author profile }
 
   render auth store props =
-    guard (not $ RemoteData.isLoading store.state.author)
-      $ container (userInfo auth store props)
-          [ Tabs.tabs
-              { className: "articles-toggle"
-              , selectedTab: Just props.tab
-              , tabs:
-                  [ { id: Published
-                    , label: R.text "Published Articles"
-                    , disabled: false
-                    , content: tabContent store
-                    }
-                  , { id: Favorited
-                    , label: R.text "Favorited Articles"
-                    , disabled: false
-                    , content: tabContent store
-                    }
-                  ]
-              , onChange:
-                  case _ of
-                    Published -> navigate $ Profile props.username
-                    Favorited -> navigate $ Favorites props.username
-              }
-          ]
+    guard (not $ RemoteData.isLoading store.state.author) container (userInfo auth store props)
+      [ Tabs.tabs
+          { className: "articles-toggle"
+          , selectedTab: Just props.tab
+          , tabs:
+              [ { id: Published
+                , label: R.text "Published Articles"
+                , disabled: false
+                , content: tabContent store
+                }
+              , { id: Favorited
+                , label: R.text "Favorited Articles"
+                , disabled: false
+                , content: tabContent store
+                }
+              ]
+          , onChange:
+              case _ of
+                Published -> navigate $ Profile props.username
+                Favorited -> navigate $ Favorites props.username
+          }
+      ]
 
   tabContent store =
     R.div_
@@ -152,12 +150,13 @@ mkProfilePage =
       , store.state.articles
           # RemoteData.maybe React.empty \{ articlesCount } ->
               pagination
-                _
-                  { offset = store.state.pagination.offset
-                  , limit = store.state.pagination.limit
-                  , totalCount = articlesCount
-                  , onChange = store.dispatch <<< LoadArticles
-                  }
+                { offset: store.state.pagination.offset
+                , limit: store.state.pagination.limit
+                , totalCount: articlesCount
+                , onChange: store.dispatch <<< LoadArticles
+                , focusWindow: 3
+                , marginPages: 1
+                }
       ]
 
   userInfo auth store props =
@@ -228,14 +227,8 @@ mkProfilePage =
           ]
       }
 
-_article :: forall err r s. Int -> Traversal' { articles :: RemoteData.RemoteData err { articles :: Array Article | s } | r } Article
-_article i =
-  LR.prop (SProxy :: _ "articles")
-    <<< RemoteData._Success
-    <<< LR.prop (SProxy :: _ "articles")
-    <<< LI.ix i
+_articles :: forall err r s. Int -> Traversal' { articles :: RemoteData.RemoteData err { articles :: Array Article | s } | r } Article
+_articles i = LR.prop (SProxy :: _ "articles") <<< RemoteData._Success <<< LR.prop (SProxy :: _ "articles") <<< LI.ix i
 
 _author :: forall err r. Traversal' { author :: RemoteData.RemoteData err Author | r } Author
-_author =
-  LR.prop (SProxy :: _ "author")
-    <<< RemoteData._Success
+_author = LR.prop (SProxy :: _ "author") <<< RemoteData._Success

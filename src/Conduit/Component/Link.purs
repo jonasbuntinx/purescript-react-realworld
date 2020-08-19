@@ -1,8 +1,8 @@
 module Conduit.Component.Link where
 
 import Prelude
-import Conduit.Component.Routing (navigate)
 import Conduit.Data.Route (Route, toRouteString)
+import Conduit.Env.Routing (navigate)
 import Data.Maybe (Maybe(..))
 import Effect.Uncurried (runEffectFn1)
 import React.Basic.DOM as R

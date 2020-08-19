@@ -25,10 +25,4 @@ main = do
       authSignal /\ authManager <- Auth.mkAuthManager
       routingSignal /\ routingManager <- Routing.mkRoutingManager routeCodec
       root <- Reader.runReaderT Root.mkRoot { authSignal, routingSignal }
-      render
-        ( authManager
-            ( routingManager
-                (root unit)
-            )
-        )
-        c
+      render (authManager (routingManager (root unit))) c

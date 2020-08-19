@@ -1,14 +1,8 @@
-"use strict";
-
 var moment = require("moment");
 
 exports._fromUTCString = function (nothing, just, str) {
   var m = moment.utc(str).local();
   return m.isValid() ? just(m) : nothing;
-};
-
-exports.toUTCString = function (m) {
-  return m.clone().utc().format();
 };
 
 exports.fromMilliseconds = function (ms) {

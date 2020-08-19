@@ -1,7 +1,4 @@
-module Foreign.Base64
-  ( atob
-  , btoa
-  ) where
+module Foreign.Base64 (atob, btoa) where
 
 import Data.Either (Either(..))
 import Data.Function.Uncurried (Fn3, runFn3)

@@ -19,17 +19,8 @@ type Props
     , onChange :: Set String -> Effect Unit
     }
 
-tagInput :: (Props -> Props) -> React.JSX
-tagInput =
-  let
-    defaultProps =
-      { tags: Set.empty
-      , onChange: const $ pure unit
-      }
-
-    component = unsafePerformEffect mkTagInput
-  in
-    \fn -> component (fn defaultProps)
+tagInput :: Props -> React.JSX
+tagInput = unsafePerformEffect mkTagInput
 
 mkTagInput :: React.Component Props
 mkTagInput = do

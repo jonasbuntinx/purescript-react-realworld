@@ -4,7 +4,7 @@ import Prelude
 import Apiary.Client (makeRequest) as Apiary
 import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
-import Conduit.Api.User (GetUser)
+import Conduit.Api.Endpoints (GetUser)
 import Conduit.Api.Utils (addBaseUrl, addToken)
 import Conduit.Data.Jwt as Jwt
 import Conduit.Data.Profile (Profile)
@@ -78,12 +78,7 @@ create = do
           pure do
             t <- token
             { exp, username } <- hush $ Jwt.decode t
-            pure
-              { token: t
-              , username
-              , expirationTime: unix $ Seconds exp
-              , profile
-              }
+            pure { token: t, username, expirationTime: unix $ Seconds exp, profile }
     , update:
         \auth -> do
           Selector.write tokenSignal (_.token <$> auth)
@@ -91,60 +86,26 @@ create = do
     }
 
 -- | Helpers
-login ::
-  forall m r.
-  MonadAsk { authSignal :: AuthSignal | r } m =>
-  MonadEffect m =>
-  String ->
-  Profile ->
-  m Unit
-login token profile = do
-  { authSignal } <- ask
-  liftEffect $ login' authSignal token profile
+login :: forall m r. MonadAsk { authSignal :: AuthSignal | r } m => MonadEffect m => String -> Profile -> m Unit
+login token profile = ask >>= liftEffect <<< flip (flip login' token) profile <<< _.authSignal
 
 login' :: AuthSignal -> String -> Profile -> Effect Unit
 login' authSignal token profile =
   Wire.modify authSignal \_ -> do
     { exp, username } <- hush $ Jwt.decode token
-    pure
-      { token
-      , username
-      , expirationTime: unix $ Seconds exp
-      , profile: Just profile
-      }
+    pure { token, username, expirationTime: unix $ Seconds exp, profile: Just profile }
 
-refreshToken ::
-  forall m r.
-  MonadAsk { authSignal :: AuthSignal | r } m =>
-  MonadEffect m =>
-  String ->
-  m Unit
-refreshToken token = do
-  { authSignal } <- ask
-  liftEffect $ refreshToken' authSignal token
+refreshToken :: forall m r. MonadAsk { authSignal :: AuthSignal | r } m => MonadEffect m => String -> m Unit
+refreshToken token = ask >>= liftEffect <<< flip refreshToken' token <<< _.authSignal
 
 refreshToken' :: AuthSignal -> String -> Effect Unit
 refreshToken' authSignal token = Wire.modify authSignal $ map $ _ { token = token }
 
-logout ::
-  forall m r.
-  MonadAsk { authSignal :: AuthSignal | r } m =>
-  MonadEffect m =>
-  m Unit
-logout = do
-  { authSignal } <- ask
-  liftEffect $ logout' authSignal
+logout :: forall m r. MonadAsk { authSignal :: AuthSignal | r } m => MonadEffect m => m Unit
+logout = ask >>= liftEffect <<< logout' <<< _.authSignal
 
 logout' :: AuthSignal -> Effect Unit
-logout' authSignal = do
-  Wire.modify authSignal $ const Nothing
+logout' authSignal = Wire.modify authSignal $ const Nothing
 
-updateProfile ::
-  forall m r.
-  MonadAsk { authSignal :: AuthSignal | r } m =>
-  MonadEffect m =>
-  Profile ->
-  m Unit
-updateProfile profile = do
-  { authSignal } <- ask
-  liftEffect $ Wire.modify authSignal $ map $ _ { profile = Just profile }
+updateProfile :: forall m r. MonadAsk { authSignal :: AuthSignal | r } m => MonadEffect m => Profile -> m Unit
+updateProfile profile = ask >>= liftEffect <<< flip Wire.modify (map $ _ { profile = Just profile }) <<< _.authSignal

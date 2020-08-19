@@ -1,11 +1,4 @@
-module Conduit.Data.Avatar
-  ( Avatar
-  , fromString
-  , toString
-  , withDefault
-  , default
-  , blank
-  ) where
+module Conduit.Data.Avatar where
 
 import Prelude
 import Data.Maybe (Maybe(..))
@@ -16,8 +9,6 @@ newtype Avatar
   = Avatar String
 
 derive instance eqAvatar :: Eq Avatar
-
-derive instance ordAvatar :: Ord Avatar
 
 derive newtype instance writeForeignAvatar :: WriteForeign Avatar
 

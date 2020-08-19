@@ -3,14 +3,13 @@ module Conduit.Page.Home where
 import Prelude
 import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
-import Conduit.Api.Article (FavoriteArticle, ListArticles, UnfavoriteArticle, ListFeed, defaultArticlesQuery)
-import Conduit.Api.Tag (ListTags)
+import Conduit.Api.Endpoints (FavoriteArticle, ListArticles, ListFeed, UnfavoriteArticle, ListTags)
 import Conduit.Api.Utils as Utils
 import Conduit.Component.App as App
 import Conduit.Component.ArticleList (articleList)
 import Conduit.Component.Pagination (pagination)
 import Conduit.Component.Tabs as Tabs
-import Conduit.Data.Article (Article)
+import Conduit.Data.Article (Article, defaultArticlesQuery)
 import Conduit.Env (Env)
 import Conduit.Hook.Auth (useAuth)
 import Data.Either (either)
@@ -74,14 +73,14 @@ mkHomePage =
         Global -> Utils.makeRequest (Apiary.Route :: ListArticles) Apiary.none query Apiary.none
         Tag tag -> Utils.makeRequest (Apiary.Route :: ListArticles) Apiary.none (query { tag = Just tag }) Apiary.none
       self.setState _ { articles = res # either RemoteData.Failure (Variant.match { ok: RemoteData.Success }) }
-    ToggleFavorite ix -> do
-      for_ (preview (_article ix) self.state) \{ slug, favorited } -> do
+    ToggleFavorite ix ->
+      for_ (preview (_articles ix) self.state) \{ slug, favorited } -> do
         res <-
           if favorited then
             Utils.makeSecureRequest (Apiary.Route :: UnfavoriteArticle) { slug } Apiary.none Apiary.none
           else
             Utils.makeSecureRequest (Apiary.Route :: FavoriteArticle) { slug } Apiary.none Apiary.none
-        for_ res $ Variant.match { ok: \{ article } -> self.setState $ set (_article ix) article }
+        for_ res $ Variant.match { ok: \{ article } -> self.setState $ set (_articles ix) article }
 
   render auth store props =
     container (guard (isNothing auth) banner)
@@ -149,23 +148,20 @@ mkHomePage =
       , store.state.articles
           # RemoteData.maybe React.empty \{ articlesCount } ->
               pagination
-                _
-                  { offset = store.state.pagination.offset
-                  , limit = store.state.pagination.limit
-                  , totalCount = articlesCount
-                  , onChange = store.dispatch <<< (LoadArticles store.state.tab)
-                  }
+                { offset: store.state.pagination.offset
+                , limit: store.state.pagination.limit
+                , totalCount: articlesCount
+                , onChange: store.dispatch <<< (LoadArticles store.state.tab)
+                , focusWindow: 3
+                , marginPages: 1
+                }
       ]
 
   renderTags store = case store.state.tags of
     NotAsked -> R.div_ [ R.text "Tags not loaded" ]
     Loading -> R.div_ [ R.text "Loading Tags" ]
     Failure err -> R.div_ [ R.text $ "Failed loading tags" ]
-    Success loadedTags ->
-      R.div
-        { className: "tag-list"
-        , children: map (renderTag store) loadedTags
-        }
+    Success loadedTags -> R.div { className: "tag-list", children: map (renderTag store) loadedTags }
 
   renderTag store tag =
     R.a
@@ -180,8 +176,7 @@ mkHomePage =
       { className: "banner"
       , children:
           [ R.div
-              { className:
-                  "container"
+              { className: "container"
               , children:
                   [ R.h1
                       { className: "logo-font"
@@ -211,9 +206,5 @@ mkHomePage =
           ]
       }
 
-_article :: forall err r s. Int -> Traversal' { articles :: RemoteData.RemoteData err { articles :: Array Article | s } | r } Article
-_article i =
-  LR.prop (SProxy :: _ "articles")
-    <<< RemoteData._Success
-    <<< LR.prop (SProxy :: _ "articles")
-    <<< LI.ix i
+_articles :: forall err r s. Int -> Traversal' { articles :: RemoteData.RemoteData err { articles :: Array Article | s } | r } Article
+_articles i = LR.prop (SProxy :: _ "articles") <<< RemoteData._Success <<< LR.prop (SProxy :: _ "articles") <<< LI.ix i

@@ -12,7 +12,9 @@ import Foreign.Base64 (atob)
 import Simple.JSON (readJSON)
 
 type Jwt
-  = { username :: Username, exp :: Number }
+  = { username :: Username
+    , exp :: Number
+    }
 
 data Error
   = MalformedToken

@@ -94,12 +94,9 @@ articleList props = case props.articles of
               { className: "preview-link"
               , route: ViewArticle article.slug
               , children:
-                  [ R.h1_
-                      [ R.text article.title ]
-                  , R.p_
-                      [ R.text article.description ]
-                  , R.span_
-                      [ R.text "Read more..." ]
+                  [ R.h1_ [ R.text article.title ]
+                  , R.p_ [ R.text article.description ]
+                  , R.span_ [ R.text "Read more..." ]
                   , R.ul
                       { className: "tag-list"
                       , children:

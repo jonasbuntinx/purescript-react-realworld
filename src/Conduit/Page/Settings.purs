@@ -3,16 +3,17 @@ module Conduit.Page.Settings where
 import Prelude
 import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
-import Conduit.Api.User (UpdateUser)
+import Conduit.Api.Endpoints (UpdateUser)
 import Conduit.Api.Utils as Utils
 import Conduit.Component.App as App
-import Conduit.Component.Routing (navigate, redirect)
+import Conduit.Component.ReponseError (responseErrors)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username as Username
 import Conduit.Env (Env)
 import Conduit.Env.Auth (logout, updateProfile)
+import Conduit.Env.Routing (navigate, redirect)
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Conduit.Hook.Auth (useProfile)
@@ -64,7 +65,7 @@ mkSettingsPage =
     }
 
   update self = case _ of
-    Initialize profile -> do
+    Initialize profile ->
       self.setState
         _
           { profile = Just profile
@@ -78,149 +79,130 @@ mkSettingsPage =
     UpdateBio bio -> self.setState _ { bio = Just bio }
     UpdateEmail email -> self.setState _ { email = V.Modified email }
     UpdatePassword password -> self.setState _ { password = V.Modified password }
-    Submit ->
+    Submit -> do
       let
         state = V.setModified self.state
-      in
-        case toEither (validate state) of
-          Left _ -> self.setState (const state)
-          Right validated -> do
-            self.setState _ { submitResponse = RemoteData.Loading }
-            res <- Utils.makeSecureRequest (Apiary.Route :: UpdateUser) Apiary.none Apiary.none { user: validated }
-            case res of
-              Left _ -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown error:" [ "request failed" ]) }
-              Right response ->
-                response
-                  # Variant.match
-                      { ok:
-                          \{ user } -> do
-                            self.setState _ { submitResponse = RemoteData.Success unit }
-                            updateProfile $ Record.delete (SProxy :: _ "token") user
-                            navigate Home
-                      , unprocessableEntity:
-                          \{ errors } ->
-                            self.setState _ { submitResponse = RemoteData.Failure errors }
-                      }
-    Logout -> do
-      logout
-      redirect Home
+      case toEither (validate state) of
+        Left _ -> self.setState (const state)
+        Right validated -> do
+          self.setState _ { submitResponse = RemoteData.Loading }
+          res <- Utils.makeSecureRequest (Apiary.Route :: UpdateUser) Apiary.none Apiary.none { user: validated }
+          case res of
+            Left _ -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown error:" [ "request failed" ]) }
+            Right response ->
+              response
+                # Variant.match
+                    { ok:
+                        \{ user } -> do
+                          self.setState _ { submitResponse = RemoteData.Success unit }
+                          updateProfile $ Record.delete (SProxy :: _ "token") user
+                          navigate Home
+                    , unprocessableEntity: \{ errors } -> self.setState _ { submitResponse = RemoteData.Failure errors }
+                    }
+    Logout -> logout *> redirect Home
 
   render store props =
     let
       errors = validate store.state # unV identity (const mempty) :: { username :: _, email :: _, password :: _ }
     in
-      guard (isJust store.state.profile)
-        $ container
-            [ R.h1
-                { className: "text-xs-center"
-                , children:
-                    [ R.text "Your Settings"
+      guard (isJust store.state.profile) container
+        [ R.h1
+            { className: "text-xs-center"
+            , children: [ R.text "Your Settings" ]
+            }
+        , responseErrors store.state.submitResponse
+        , R.form
+            { children:
+                [ R.fieldset_
+                    [ R.fieldset
+                        { className: "form-group"
+                        , children:
+                            [ R.input
+                                { className: "form-control"
+                                , type: "text"
+                                , value: fromMaybe "" store.state.image
+                                , placeholder: "URL of profile picture"
+                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateImage
+                                }
+                            ]
+                        }
+                    , R.fieldset
+                        { className: "form-group"
+                        , children:
+                            [ R.input
+                                { className: "form-control"
+                                , type: "text"
+                                , value: extract store.state.username
+                                , placeholder: "Your name"
+                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateUsername
+                                }
+                            , guard (not $ Array.null errors.username) R.div
+                                { className: "error-messages"
+                                , children: errors.username <#> \error -> R.div_ [ R.text $ "Name " <> error ]
+                                }
+                            ]
+                        }
+                    , R.fieldset
+                        { className: "form-group"
+                        , children:
+                            [ R.textarea
+                                { className: "form-control"
+                                , rows: 8
+                                , value: fromMaybe "" store.state.bio
+                                , placeholder: "Short bio about you"
+                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateBio
+                                }
+                            ]
+                        }
+                    , R.fieldset
+                        { className: "form-group"
+                        , children:
+                            [ R.input
+                                { className: "form-control"
+                                , type: "email"
+                                , value: extract store.state.email
+                                , placeholder: "Email"
+                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateEmail
+                                }
+                            , guard (not $ Array.null errors.email) R.div
+                                { className: "error-messages"
+                                , children: errors.email <#> \error -> R.div_ [ R.text $ "Email " <> error ]
+                                }
+                            ]
+                        }
+                    , R.fieldset
+                        { className: "form-group"
+                        , children:
+                            [ R.input
+                                { className: "form-control"
+                                , type: "password"
+                                , value: extract store.state.password
+                                , placeholder: "Password"
+                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdatePassword
+                                }
+                            , guard (not $ Array.null errors.password) R.div
+                                { className: "error-messages"
+                                , children: errors.password <#> \error -> R.div_ [ R.text $ "Password " <> error ]
+                                }
+                            ]
+                        }
+                    , R.button
+                        { className: "btn btn-primary pull-xs-right"
+                        , type: "button"
+                        , onClick: handler_ $ store.dispatch Submit
+                        , children: [ R.text "Update settings" ]
+                        }
                     ]
-                }
-            , case store.state.submitResponse of
-                RemoteData.Failure submissionErrors ->
-                  R.ul
-                    { className: "error-messages"
-                    , children:
-                        submissionErrors
-                          # Object.foldMap \key value -> value <#> \error -> R.li_ [ R.text $ key <> " " <> error ]
-                    }
-                _ -> React.empty
-            , R.form
-                { children:
-                    [ R.fieldset_
-                        [ R.fieldset
-                            { className: "form-group"
-                            , children:
-                                [ R.input
-                                    { className: "form-control"
-                                    , type: "text"
-                                    , value: fromMaybe "" store.state.image
-                                    , placeholder: "URL of profile picture"
-                                    , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateImage
-                                    }
-                                ]
-                            }
-                        , R.fieldset
-                            { className: "form-group"
-                            , children:
-                                [ R.input
-                                    { className: "form-control"
-                                    , type: "text"
-                                    , value: extract store.state.username
-                                    , placeholder: "Your name"
-                                    , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateUsername
-                                    }
-                                , guard (not $ Array.null errors.username)
-                                    $ R.div
-                                        { className: "error-messages"
-                                        , children: errors.username <#> \error -> R.div_ [ R.text $ "Name " <> error ]
-                                        }
-                                ]
-                            }
-                        , R.fieldset
-                            { className: "form-group"
-                            , children:
-                                [ R.textarea
-                                    { className: "form-control"
-                                    , rows: 8
-                                    , value: fromMaybe "" store.state.bio
-                                    , placeholder: "Short bio about you"
-                                    , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateBio
-                                    }
-                                ]
-                            }
-                        , R.fieldset
-                            { className: "form-group"
-                            , children:
-                                [ R.input
-                                    { className: "form-control"
-                                    , type: "email"
-                                    , value: extract store.state.email
-                                    , placeholder: "Email"
-                                    , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateEmail
-                                    }
-                                , guard (not $ Array.null errors.email)
-                                    $ R.div
-                                        { className: "error-messages"
-                                        , children: errors.email <#> \error -> R.div_ [ R.text $ "Email " <> error ]
-                                        }
-                                ]
-                            }
-                        , R.fieldset
-                            { className: "form-group"
-                            , children:
-                                [ R.input
-                                    { className: "form-control"
-                                    , type: "password"
-                                    , value: extract store.state.password
-                                    , placeholder: "Password"
-                                    , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdatePassword
-                                    }
-                                , guard (not $ Array.null errors.password)
-                                    $ R.div
-                                        { className: "error-messages"
-                                        , children: errors.password <#> \error -> R.div_ [ R.text $ "Password " <> error ]
-                                        }
-                                ]
-                            }
-                        , R.button
-                            { className: "btn btn-primary pull-xs-right"
-                            , type: "button"
-                            , onClick: handler_ $ store.dispatch Submit
-                            , children: [ R.text "Update settings" ]
-                            }
-                        ]
-                    ]
-                }
-            , R.hr {}
-            , R.button
-                { className: "btn btn-outline-danger"
-                , type: "button"
-                , onClick: handler_ $ store.dispatch Logout
-                , children: [ R.text "Log out" ]
-                }
-            ]
+                ]
+            }
+        , R.hr {}
+        , R.button
+            { className: "btn btn-outline-danger"
+            , type: "button"
+            , onClick: handler_ $ store.dispatch Logout
+            , children: [ R.text "Log out" ]
+            }
+        ]
 
   container children =
     R.div

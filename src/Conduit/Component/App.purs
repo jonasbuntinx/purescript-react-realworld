@@ -22,13 +22,7 @@ component name { init, update } renderFn = do
   env <- ask
   lift
     $ React.component name \props -> React.do
-        store <-
-          useStore
-            { init
-            , props
-            , update
-            , launch: flip runReaderT env
-            }
+        store <- useStore { init, props, update, launch: flip runReaderT env }
         renderFn env store props
 
 component' ::

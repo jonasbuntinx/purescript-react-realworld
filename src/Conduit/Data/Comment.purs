@@ -22,8 +22,6 @@ derive instance newtypeCommentId :: Newtype CommentId _
 
 derive newtype instance eqCommentId :: Eq CommentId
 
-derive newtype instance ordCommentId :: Ord CommentId
-
 instance readForeignCommentId :: ReadForeign CommentId where
   readImpl = readImpl >>> map wrap
 

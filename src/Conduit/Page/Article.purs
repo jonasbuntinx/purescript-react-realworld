@@ -3,13 +3,11 @@ module Conduit.Page.Article where
 import Prelude
 import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
-import Conduit.Api.Article (DeleteArticle, DeleteComment, FavoriteArticle, GetArticle, ListComments, UnfavoriteArticle, CreateComment)
-import Conduit.Api.Profile (UnfollowProfile, FollowProfile)
+import Conduit.Api.Endpoints (CreateComment, DeleteArticle, DeleteComment, FavoriteArticle, GetArticle, ListComments, UnfavoriteArticle, UnfollowProfile, FollowProfile)
 import Conduit.Api.Utils as Utils
 import Conduit.Component.App as App
 import Conduit.Component.Buttons (ButtonSize(..), favoriteButton, followButton)
 import Conduit.Component.Link as Link
-import Conduit.Component.Routing (navigate)
 import Conduit.Data.Article (Article)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Comment (CommentId)
@@ -18,6 +16,7 @@ import Conduit.Data.Route (Route(..))
 import Conduit.Data.Slug (Slug)
 import Conduit.Data.Username as Username
 import Conduit.Env (Env)
+import Conduit.Env.Routing (navigate)
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Conduit.Hook.Auth (useAuth)
@@ -82,8 +81,8 @@ mkArticlePage =
         Right response ->
           response
             # Variant.match
-                { ok: \{ article } -> do self.setState _ { article = RemoteData.Success article }
-                , notFound: \_ -> do navigate Home
+                { ok: \{ article } -> self.setState _ { article = RemoteData.Success article }
+                , notFound: \_ -> navigate Home
                 }
     LoadComments -> do
       self.setState _ { comments = RemoteData.Loading }
@@ -109,7 +108,7 @@ mkArticlePage =
           else
             Utils.makeSecureRequest (Apiary.Route :: FollowProfile) { username } Apiary.none Apiary.none
         for_ res $ Variant.match { ok: \{ profile } -> self.setState $ set _author profile }
-    ToggleFavorite -> do
+    ToggleFavorite ->
       for_ (preview _article self.state) \{ slug, favorited } -> do
         res <-
           if favorited then
@@ -173,11 +172,7 @@ mkArticlePage =
                           [ R.div
                               { className: "col-xs-12"
                               , children:
-                                  [ R.div
-                                      { dangerouslySetInnerHTML:
-                                          { __html: marked article.body
-                                          }
-                                      }
+                                  [ R.div { dangerouslySetInnerHTML: { __html: marked article.body } }
                                   , R.ul
                                       { className: "tag-list"
                                       , children:
@@ -399,8 +394,7 @@ mkArticlePage =
           [ R.div
               { className: "container"
               , children:
-                  [ R.h1_
-                      [ R.text article.title ]
+                  [ R.h1_ [ R.text article.title ]
                   , articleMeta auth article store
                   ]
               }
@@ -424,12 +418,7 @@ mkArticlePage =
     in { body }
 
 _author :: forall err r. Traversal' { article :: RemoteData.RemoteData err Article | r } Author
-_author =
-  LR.prop (SProxy :: _ "article")
-    <<< RemoteData._Success
-    <<< LR.prop (SProxy :: _ "author")
+_author = LR.prop (SProxy :: _ "article") <<< RemoteData._Success <<< LR.prop (SProxy :: _ "author")
 
 _article :: forall err r. Traversal' { article :: RemoteData.RemoteData err Article | r } Article
-_article =
-  LR.prop (SProxy :: _ "article")
-    <<< RemoteData._Success
+_article = LR.prop (SProxy :: _ "article") <<< RemoteData._Success

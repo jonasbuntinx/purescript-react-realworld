@@ -4,11 +4,11 @@ import Prelude
 import Apiary.Client (makeRequest) as Apiary
 import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
-import Conduit.Api.User (GetUser)
+import Conduit.Api.Endpoints (GetUser)
 import Conduit.Api.Utils (addBaseUrl, addToken)
-import Conduit.Component.Routing (redirect)
 import Conduit.Data.Route (Route(..))
 import Conduit.Env.Auth (AuthSignal, create, logout', refreshToken')
+import Conduit.Env.Routing (redirect)
 import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
 import Data.Maybe (Maybe(..))
@@ -32,14 +32,12 @@ mkAuthManager = do
       state /\ setState <- React.useState { interval: Nothing }
       React.useEffectOnce do
         refreshToken authSignal
-        authCheckInterval <- Timer.setInterval tokenRefreshInterval (checkAuthStatus authSignal)
+        authCheckInterval <- Timer.setInterval 90_0000 (checkAuthStatus authSignal)
         setState _ { interval = Just authCheckInterval }
         pure $ traverse_ Timer.clearInterval state.interval
       pure content
   pure $ Tuple authSignal component
   where
-  tokenRefreshInterval = 90_0000
-
   onSessionExpire = redirect Home
 
   refreshToken authSignal = do

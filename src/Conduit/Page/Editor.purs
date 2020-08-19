@@ -3,14 +3,15 @@ module Conduit.Page.Editor where
 import Prelude
 import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
-import Conduit.Api.Article (GetArticle, UpdateArticle, CreateArticle)
+import Conduit.Api.Endpoints (GetArticle, UpdateArticle, CreateArticle)
 import Conduit.Api.Utils as Utils
 import Conduit.Component.App as App
-import Conduit.Component.Routing (navigate)
+import Conduit.Component.ReponseError (responseErrors)
 import Conduit.Component.TagInput (tagInput)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Slug (Slug)
 import Conduit.Env (Env)
+import Conduit.Env.Routing (navigate)
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Control.Comonad (extract)
@@ -72,7 +73,7 @@ mkEditorPage =
             response
               # Variant.match
                   { ok:
-                      \{ article } -> do
+                      \{ article } ->
                         self.setState
                           _
                             { article = RemoteData.Success article
@@ -81,121 +82,105 @@ mkEditorPage =
                             , body = pure article.body
                             , tagList = Set.fromFoldable article.tagList
                             }
-                  , notFound: \_ -> do navigate Home
+                  , notFound: \_ -> navigate Home
                   }
     UpdateTitle title -> self.setState _ { title = V.Modified title }
     UpdateDescription description -> self.setState _ { description = V.Modified description }
     UpdateBody body -> self.setState _ { body = V.Modified body }
     UpdateTagList tagList -> self.setState _ { tagList = tagList }
-    Submit ->
+    Submit -> do
       let
         state = V.setModified self.state
-      in
-        case toEither (validate state) of
-          Left _ -> self.setState (const state)
-          Right validated -> do
-            self.setState _ { submitResponse = RemoteData.Loading }
-            res <- case self.props.slug of
-              Nothing -> map Variant.expand <$> Utils.makeSecureRequest (Apiary.Route :: CreateArticle) Apiary.none Apiary.none { article: validated }
-              Just slug -> map Variant.expand <$> Utils.makeSecureRequest (Apiary.Route :: UpdateArticle) { slug } Apiary.none { article: validated }
-            case res of
-              Left _ -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown error:" [ "request failed" ]) }
-              Right response ->
-                response
-                  # Variant.match
-                      { ok:
-                          \{ article } -> do
-                            self.setState _ { submitResponse = RemoteData.Success unit }
-                            navigate $ ViewArticle article.slug
-                      , unprocessableEntity:
-                          \{ errors } ->
-                            self.setState _ { submitResponse = RemoteData.Failure errors }
-                      }
+      case toEither (validate state) of
+        Left _ -> self.setState (const state)
+        Right validated -> do
+          self.setState _ { submitResponse = RemoteData.Loading }
+          res <- case self.props.slug of
+            Nothing -> map Variant.expand <$> Utils.makeSecureRequest (Apiary.Route :: CreateArticle) Apiary.none Apiary.none { article: validated }
+            Just slug -> map Variant.expand <$> Utils.makeSecureRequest (Apiary.Route :: UpdateArticle) { slug } Apiary.none { article: validated }
+          case res of
+            Left _ -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown error:" [ "request failed" ]) }
+            Right response ->
+              response
+                # Variant.match
+                    { ok:
+                        \{ article } -> do
+                          self.setState _ { submitResponse = RemoteData.Success unit }
+                          navigate $ ViewArticle article.slug
+                    , unprocessableEntity: \{ errors } -> self.setState _ { submitResponse = RemoteData.Failure errors }
+                    }
 
   render store props =
     let
       errors = validate store.state # unV identity (const mempty) :: { title :: _, description :: _, body :: _ }
     in
-      guard (not $ RemoteData.isLoading store.state.article)
-        $ container
-            [ case store.state.submitResponse of
-                RemoteData.Failure submissionErrors ->
-                  R.ul
-                    { className: "error-messages"
-                    , children:
-                        submissionErrors
-                          # Object.foldMap \key value -> value <#> \error -> R.li_ [ R.text $ key <> " " <> error ]
-                    }
-                _ -> React.empty
-            , R.form
-                { children:
-                    [ R.fieldset_
-                        [ R.fieldset
-                            { className: "form-group"
-                            , children:
-                                [ R.input
-                                    { className: "form-control"
-                                    , type: "text"
-                                    , value: extract store.state.title
-                                    , placeholder: "Article title"
-                                    , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateTitle
-                                    }
-                                , guard (not $ Array.null errors.title)
-                                    $ R.div
-                                        { className: "error-messages"
-                                        , children: errors.title <#> \error -> R.div_ [ R.text $ "Name " <> error ]
-                                        }
-                                ]
-                            }
-                        , R.fieldset
-                            { className: "form-group"
-                            , children:
-                                [ R.input
-                                    { className: "form-control"
-                                    , type: "text"
-                                    , value: extract store.state.description
-                                    , placeholder: "What is this article about?"
-                                    , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateDescription
-                                    }
-                                , guard (not $ Array.null errors.description)
-                                    $ R.div
-                                        { className: "error-messages"
-                                        , children: errors.description <#> \error -> R.div_ [ R.text $ "Description " <> error ]
-                                        }
-                                ]
-                            }
-                        , R.fieldset
-                            { className: "form-group"
-                            , children:
-                                [ R.textarea
-                                    { className: "form-control"
-                                    , rows: 8
-                                    , value: extract store.state.body
-                                    , placeholder: "Write your article (in markdown)"
-                                    , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateBody
-                                    }
-                                , guard (not $ Array.null errors.body)
-                                    $ R.div
-                                        { className: "error-messages"
-                                        , children: errors.body <#> \error -> R.div_ [ R.text $ "Body " <> error ]
-                                        }
-                                ]
-                            }
-                        , tagInput
-                            _
-                              { tags = store.state.tagList
-                              , onChange = store.dispatch <<< UpdateTagList
-                              }
-                        , R.button
-                            { className: "btn btn-primary pull-xs-right"
-                            , type: "button"
-                            , onClick: handler_ $ store.dispatch Submit
-                            , children: [ R.text "Publish article" ]
-                            }
-                        ]
+      guard (not $ RemoteData.isLoading store.state.article) container
+        [ responseErrors store.state.submitResponse
+        , R.form
+            { children:
+                [ R.fieldset_
+                    [ R.fieldset
+                        { className: "form-group"
+                        , children:
+                            [ R.input
+                                { className: "form-control"
+                                , type: "text"
+                                , value: extract store.state.title
+                                , placeholder: "Article title"
+                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateTitle
+                                }
+                            , guard (not $ Array.null errors.title) R.div
+                                { className: "error-messages"
+                                , children: errors.title <#> \error -> R.div_ [ R.text $ "Name " <> error ]
+                                }
+                            ]
+                        }
+                    , R.fieldset
+                        { className: "form-group"
+                        , children:
+                            [ R.input
+                                { className: "form-control"
+                                , type: "text"
+                                , value: extract store.state.description
+                                , placeholder: "What is this article about?"
+                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateDescription
+                                }
+                            , guard (not $ Array.null errors.description) R.div
+                                { className: "error-messages"
+                                , children: errors.description <#> \error -> R.div_ [ R.text $ "Description " <> error ]
+                                }
+                            ]
+                        }
+                    , R.fieldset
+                        { className: "form-group"
+                        , children:
+                            [ R.textarea
+                                { className: "form-control"
+                                , rows: 8
+                                , value: extract store.state.body
+                                , placeholder: "Write your article (in markdown)"
+                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateBody
+                                }
+                            , guard (not $ Array.null errors.body) R.div
+                                { className: "error-messages"
+                                , children: errors.body <#> \error -> R.div_ [ R.text $ "Body " <> error ]
+                                }
+                            ]
+                        }
+                    , tagInput
+                        { tags: store.state.tagList
+                        , onChange: store.dispatch <<< UpdateTagList
+                        }
+                    , R.button
+                        { className: "btn btn-primary pull-xs-right"
+                        , type: "button"
+                        , onClick: handler_ $ store.dispatch Submit
+                        , children: [ R.text "Publish article" ]
+                        }
                     ]
-                }
-            ]
+                ]
+            }
+        ]
 
   container children =
     R.div

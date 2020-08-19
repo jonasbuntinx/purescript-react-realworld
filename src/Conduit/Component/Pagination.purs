@@ -21,43 +21,28 @@ type Props
     , marginPages :: Int
     }
 
-pagination :: (Props -> Props) -> JSX
-pagination =
-  let
-    defaultProps =
-      { offset: 0
-      , limit: 10
-      , totalCount: 0
-      , onChange: const $ pure unit
-      , focusWindow: 3
-      , marginPages: 1
-      }
-  in
-    \fn -> pagination' (fn defaultProps)
-
-pagination' :: Props -> JSX
-pagination' props =
-  guard (pageCount > 1)
-    $ R.ul
-        { className: "pagination"
-        , children:
-            Array.fold
-              [ guard (rangeMin > 0)
-                  [ pageButtons 0 (min (rangeMin - 1) leftMargin)
-                  ]
-              , guard (rangeMin > leftMargin + 1)
-                  [ separator
-                  ]
-              , [ pageButtons rangeMin rangeMax
-                ]
-              , guard (rangeMax < rightMargin - 1)
-                  [ separator
-                  ]
-              , guard (rangeMax < pageCount - 1)
-                  [ pageButtons (max (rangeMax + 1) rightMargin) (pageCount - 1)
-                  ]
+pagination :: Props -> JSX
+pagination props =
+  guard (pageCount > 1) R.ul
+    { className: "pagination"
+    , children:
+        Array.fold
+          [ guard (rangeMin > 0)
+              [ pageButtons 0 (min (rangeMin - 1) leftMargin)
               ]
-        }
+          , guard (rangeMin > leftMargin + 1)
+              [ separator
+              ]
+          , [ pageButtons rangeMin rangeMax
+            ]
+          , guard (rangeMax < rightMargin - 1)
+              [ separator
+              ]
+          , guard (rangeMax < pageCount - 1)
+              [ pageButtons (max (rangeMax + 1) rightMargin) (pageCount - 1)
+              ]
+          ]
+    }
   where
   currentPage = props.offset / props.limit
 
@@ -87,9 +72,7 @@ pagination' props =
                     { className: "page-link"
                     , href: "#"
                     , onClick: handler preventDefault $ const $ onPageChange i
-                    , children:
-                        [ R.text $ writeJSON (i + 1)
-                        ]
+                    , children: [ R.text $ writeJSON (i + 1) ]
                     }
                 ]
             }
@@ -104,9 +87,7 @@ pagination' props =
       , children:
           [ R.span
               { className: "page-link"
-              , children:
-                  [ R.text "..."
-                  ]
+              , children: [ R.text "..." ]
               }
           ]
       }

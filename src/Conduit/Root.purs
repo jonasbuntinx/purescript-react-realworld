@@ -4,9 +4,9 @@ import Prelude
 import Conduit.Component.App as App
 import Conduit.Component.Footer as Footer
 import Conduit.Component.Header as Header
-import Conduit.Component.Routing (redirect)
 import Conduit.Data.Route (Route(..))
 import Conduit.Env (Env)
+import Conduit.Env.Routing (redirect)
 import Conduit.Hook.Auth (useAuth)
 import Conduit.Hook.Routing (useRoute)
 import Conduit.Page.Article (mkArticlePage)
@@ -34,44 +34,27 @@ mkRoot = do
     route <- useRoute env
     React.useEffect (route /\ auth) do
       case route, auth of
-        Login, Just _ -> do
-          redirect Home
-        Register, Just _ -> do
-          redirect Home
-        Settings, Nothing -> do
-          redirect Home
-        CreateArticle, Nothing -> do
-          redirect Home
-        UpdateArticle _, Nothing -> do
-          redirect Home
-        Error, _ -> do
-          redirect Home
-        _, _ -> do
-          pure unit
+        Login, Just _ -> redirect Home
+        Register, Just _ -> redirect Home
+        Settings, Nothing -> redirect Home
+        CreateArticle, Nothing -> redirect Home
+        UpdateArticle _, Nothing -> redirect Home
+        Error, _ -> redirect Home
+        _, _ -> pure unit
       mempty
     pure
       $ React.fragment
           [ Header.header auth route
           , case route of
-              Home -> do
-                homePage unit
-              Login -> do
-                loginPage unit
-              Register -> do
-                registerPage unit
-              Settings -> do
-                settingsPage unit
-              CreateArticle -> do
-                editorPage { slug: Nothing }
-              UpdateArticle slug -> do
-                editorPage { slug: Just slug }
-              ViewArticle slug -> do
-                articlePage { slug }
-              Profile username -> do
-                profilePage { username, tab: Published }
-              Favorites username -> do
-                profilePage { username, tab: Favorited }
-              Error -> do
-                React.empty
+              Home -> homePage unit
+              Login -> loginPage unit
+              Register -> registerPage unit
+              Settings -> settingsPage unit
+              CreateArticle -> editorPage { slug: Nothing }
+              UpdateArticle slug -> editorPage { slug: Just slug }
+              ViewArticle slug -> articlePage { slug }
+              Profile username -> profilePage { username, tab: Published }
+              Favorites username -> profilePage { username, tab: Favorited }
+              Error -> React.empty
           , Footer.footer
           ]

@@ -1,5 +1,3 @@
-"use strict";
-
 exports._atob = function (Left, Right, str) {
   var result;
 

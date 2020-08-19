@@ -36,18 +36,17 @@ tabs props =
                 , children:
                     props.tabs
                       <#> \{ id, label, disabled } ->
-                          guard (not disabled)
-                            $ R.li
-                                { className: "nav-item"
-                                , children:
-                                    [ R.a
-                                        { className: "nav-link" <> guard (isActive id) " active"
-                                        , href: "#"
-                                        , onClick: handler preventDefault $ const $ props.onChange id
-                                        , children: [ label ]
-                                        }
-                                    ]
-                                }
+                          guard (not disabled) R.li
+                            { className: "nav-item"
+                            , children:
+                                [ R.a
+                                    { className: "nav-link" <> guard (isActive id) " active"
+                                    , href: "#"
+                                    , onClick: handler preventDefault $ const $ props.onChange id
+                                    , children: [ label ]
+                                    }
+                                ]
+                            }
                 }
             ]
         }
