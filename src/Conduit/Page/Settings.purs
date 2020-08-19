@@ -6,7 +6,7 @@ import Apiary.Types (none) as Apiary
 import Conduit.Api.Endpoints (UpdateUser)
 import Conduit.Api.Utils as Utils
 import Conduit.Component.App as App
-import Conduit.Component.ReponseError (responseErrors)
+import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))

@@ -7,7 +7,7 @@ import Conduit.Api.Endpoints (Register)
 import Conduit.Api.Utils as Utils
 import Conduit.Component.App as App
 import Conduit.Component.Link as Link
-import Conduit.Component.ReponseError (responseErrors)
+import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Data.Route (Route(..))
 import Conduit.Env (Env)
 import Conduit.Env.Auth (login)

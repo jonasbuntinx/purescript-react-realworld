@@ -6,7 +6,7 @@ import Apiary.Types (none) as Apiary
 import Conduit.Api.Endpoints (GetArticle, UpdateArticle, CreateArticle)
 import Conduit.Api.Utils as Utils
 import Conduit.Component.App as App
-import Conduit.Component.ReponseError (responseErrors)
+import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Component.TagInput (tagInput)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Slug (Slug)

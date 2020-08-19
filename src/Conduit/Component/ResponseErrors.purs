@@ -1,4 +1,4 @@
-module Conduit.Component.ReponseError where
+module Conduit.Component.ResponseErrors where
 
 import Prelude
 import Foreign.Object (Object, foldMap)
