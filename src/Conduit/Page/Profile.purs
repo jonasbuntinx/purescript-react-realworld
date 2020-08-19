@@ -175,6 +175,8 @@ mkProfilePage =
                                   [ R.img
                                       { className: "user-img"
                                       , src: Avatar.toString $ RemoteData.maybe Avatar.blank (Avatar.withDefault <<< _.image) store.state.author
+                                      , width: "100px"
+                                      , height: "100px"
                                       }
                                   , R.h4_ [ R.text $ Username.toString props.username ]
                                   , maybe React.empty (\bio -> R.p_ [ R.text bio ]) (RemoteData.toMaybe store.state.author >>= _.bio)

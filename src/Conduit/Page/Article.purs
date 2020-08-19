@@ -222,6 +222,8 @@ mkArticlePage =
                                                       [ R.img
                                                           { className: "comment-author-img"
                                                           , src: Avatar.toString $ maybe Avatar.blank (Avatar.withDefault <<< _.image) (_.profile =<< auth)
+                                                          , width: "30px"
+                                                          , height: "30px"
                                                           }
                                                       , R.button
                                                           { className: "btn btn-sm btn-primary"
@@ -267,6 +269,8 @@ mkArticlePage =
                   [ R.img
                       { src: Avatar.toString $ Avatar.withDefault article.author.image
                       , alt: Username.toString article.author.username
+                      , width: "32px"
+                      , height: "32px"
                       }
                   ]
               }
@@ -356,6 +360,8 @@ mkArticlePage =
                             [ R.img
                                 { className: "comment-author-img"
                                 , src: Avatar.toString $ Avatar.withDefault comment.author.image
+                                , width: "30px"
+                                , height: "30px"
                                 }
                             ]
                         }

@@ -49,6 +49,8 @@ header { auth, currentRoute } =
                                   [ R.img
                                       { className: "user-pic"
                                       , src: Avatar.toString $ maybe Avatar.blank (Avatar.withDefault <<< _.image) profile
+                                      , width: "26px"
+                                      , height: "26px"
                                       }
                                   , R.text $ " " <> Username.toString username
                                   ]
