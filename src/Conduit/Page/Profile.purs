@@ -10,6 +10,7 @@ import Conduit.Component.App as App
 import Conduit.Component.ArticleList (articleList)
 import Conduit.Component.Buttons (followButton)
 import Conduit.Component.Pagination (pagination)
+import Conduit.Component.Routing (navigate)
 import Conduit.Component.Tabs as Tabs
 import Conduit.Data.Article (Article)
 import Conduit.Data.Avatar as Avatar
@@ -17,7 +18,6 @@ import Conduit.Data.Profile (Author)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
-import Conduit.Effects.Routing (navigate)
 import Conduit.Env (Env)
 import Conduit.Hook.Auth (useAuth)
 import Data.Either (Either(..), either)

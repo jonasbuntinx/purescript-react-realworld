@@ -4,7 +4,6 @@ import Conduit.Data.Slug (Slug)
 import Conduit.Data.Slug as Slug
 import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
-import Conduit.Effects.Routing (class HasRoute)
 import Data.Either (note)
 import Data.Generic.Rep (class Generic)
 import Data.Lens (Lens', lens)
@@ -30,8 +29,8 @@ derive instance genericRoute :: Generic Route _
 
 derive instance eqRoute :: Eq Route
 
-instance hasRouteRoute :: HasRoute Route where
-  toRouteString x = print routeCodec x
+toRouteString :: Route -> String
+toRouteString x = print routeCodec x
 
 routeCodec :: RouteDuplex' Route
 routeCodec =

@@ -10,6 +10,7 @@ import Conduit.Component.App as App
 import Conduit.Component.Buttons (ButtonSize(..), favoriteButton, followButton)
 import Conduit.Component.Confirm as Confirm
 import Conduit.Component.Link as Link
+import Conduit.Component.Routing (navigate)
 import Conduit.Data.Article (Article)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Comment (CommentId)
@@ -17,7 +18,6 @@ import Conduit.Data.Profile (Author)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Slug (Slug)
 import Conduit.Data.Username as Username
-import Conduit.Effects.Routing (navigate)
 import Conduit.Env (Env)
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F

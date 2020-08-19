@@ -27,7 +27,7 @@ main = do
     Nothing -> throw "Conduit container element not found."
     Just c -> do
       authSignal /\ authManager <- Auth.mkAuthManager
-      routingSignal /\ routingManager <- Routing.mkRoutingManager routeCodec (Root.onNavigate authSignal)
+      routingSignal /\ routingManager <- Routing.mkRoutingManager routeCodec
       root <- Reader.runReaderT Root.mkRoot { authSignal, routingSignal }
       render
         ( authManager

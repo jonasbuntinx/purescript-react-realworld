@@ -6,13 +6,13 @@ import Apiary.Types (none) as Apiary
 import Conduit.Api.User (UpdateUser)
 import Conduit.Api.Utils as Utils
 import Conduit.Component.App as App
+import Conduit.Component.Routing (navigate, redirect)
 import Conduit.Data.Avatar (Avatar)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
-import Conduit.Effects.Routing (navigate, redirect)
 import Conduit.Env (Env)
 import Conduit.Env.Auth (logout, updateProfile)
 import Conduit.Form.Validated as V

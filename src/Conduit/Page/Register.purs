@@ -7,9 +7,9 @@ import Conduit.Api.User (Register)
 import Conduit.Api.Utils as Utils
 import Conduit.Component.App as App
 import Conduit.Component.Link as Link
+import Conduit.Component.Routing (redirect)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username (Username)
-import Conduit.Effects.Routing (redirect)
 import Conduit.Env (Env)
 import Conduit.Env.Auth (login)
 import Conduit.Form.Validated as V

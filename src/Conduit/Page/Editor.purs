@@ -6,10 +6,10 @@ import Apiary.Types (none) as Apiary
 import Conduit.Api.Article (GetArticle, UpdateArticle, CreateArticle)
 import Conduit.Api.Utils as Utils
 import Conduit.Component.App as App
+import Conduit.Component.Routing (navigate)
 import Conduit.Component.TagInput (tagInput)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Slug (Slug)
-import Conduit.Effects.Routing (navigate)
 import Conduit.Env (Env)
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F

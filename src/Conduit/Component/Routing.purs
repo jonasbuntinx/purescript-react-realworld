@@ -1,57 +1,50 @@
 module Conduit.Component.Routing where
 
 import Prelude
-import Conduit.Control.Routing (Command(..), Completed, Pending, Routing)
-import Conduit.Data.Route (Route, Transition(..))
-import Conduit.Effects.Routing as Routing
+import Conduit.Data.Route (Route, toRouteString)
 import Conduit.Env.Routing (RoutingSignal, create)
-import Control.Monad.Free.Trans (runFreeT)
-import Data.Foldable (traverse_)
-import Data.Maybe (Maybe(..))
-import Data.Newtype (unwrap)
+import Control.Monad.Error.Class (try)
 import Data.Tuple (Tuple(..))
+import Data.Tuple.Nested ((/\))
 import Effect (Effect)
-import Effect.Aff (error, killFiber, launchAff, launchAff_)
-import Effect.Class (liftEffect)
-import Effect.Ref as Ref
+import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Unsafe (unsafePerformEffect)
+import Foreign.NullOrUndefined (undefined)
 import React.Basic.Hooks as React
-import Routing.Duplex (RouteDuplex')
+import Routing.Duplex (RouteDuplex', parse)
+import Routing.PushState (PushStateInterface)
+import Routing.PushState as PushState
 import Wire.Event as Event
 import Wire.React.Class (modify)
 
+pushStateInterface :: PushStateInterface
+pushStateInterface = unsafePerformEffect PushState.makeInterface
+
 mkRoutingManager ::
   RouteDuplex' Route ->
-  (Route -> Routing Pending Completed Unit) ->
   Effect (Tuple RoutingSignal (React.JSX -> React.JSX))
-mkRoutingManager routes onNavigate = do
+mkRoutingManager routes = do
   routingSignal <- create
-  fiberRef <- Ref.new Nothing
-  previousRouteRef <- Ref.new Nothing
   component <-
     React.component "RoutingManager" \content -> React.do
       React.useEffectOnce do
-        Event.subscribe (Routing.onPushState routes) \(Tuple _ route) -> do
-          Ref.read fiberRef >>= traverse_ \fiber -> launchAff_ do killFiber (error "Transition cancelled") fiber
-          previousRoute <- Ref.read previousRouteRef
-          modify routingSignal $ const $ Loading previousRoute route
-          let
-            finalise r =
-              liftEffect do
-                Ref.write (Just r) previousRouteRef
-                modify routingSignal $ const $ Loaded previousRoute r
-          fiber <-
-            onNavigate route
-              # unwrap
-              # runFreeT
-                  ( \cmd -> do
-                      liftEffect $ Ref.write Nothing fiberRef
-                      case cmd of
-                        Redirect route' -> Routing.redirect route'
-                        Override route' -> finalise route'
-                        Continue -> finalise route
-                      mempty
-                  )
-              # launchAff
-          Ref.write (Just fiber) fiberRef
+        Event.subscribe (onPushState routes) \(Tuple _ route) -> do
+          modify routingSignal $ const $ route
       pure content
   pure $ Tuple routingSignal component
+  where
+  onPushState matcher =
+    Event.makeEvent \k ->
+      PushState.matchesWith (parse matcher) (\old new -> k (old /\ new)) pushStateInterface
+
+pushState :: String -> Effect Unit
+pushState url = void $ try $ pushStateInterface.pushState undefined url
+
+replaceState :: String -> Effect Unit
+replaceState url = void $ try $ pushStateInterface.replaceState undefined url
+
+navigate :: forall m. MonadEffect m => Route -> m Unit
+navigate = liftEffect <<< pushState <<< toRouteString
+
+redirect :: forall m. MonadEffect m => Route -> m Unit
+redirect = liftEffect <<< replaceState <<< toRouteString

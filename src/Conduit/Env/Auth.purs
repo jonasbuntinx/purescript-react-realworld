@@ -9,7 +9,7 @@ import Conduit.Api.Utils (addBaseUrl, addToken)
 import Conduit.Data.Jwt as Jwt
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Username (Username)
-import Conduit.Effects.LocalStorage as LocalStorage
+import Control.Monad.Except (runExcept)
 import Control.Monad.Reader (class MonadAsk, ask)
 import Data.Either (hush)
 import Data.Maybe (Maybe(..), maybe)
@@ -19,8 +19,12 @@ import Data.Traversable (for)
 import Data.Variant as Variant
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
+import Foreign.Generic (decodeJSON, encodeJSON)
 import Foreign.Moment (Moment, unix)
 import Record as Record
+import Web.HTML (window)
+import Web.HTML.Window as Window
+import Web.Storage.Storage as Storage
 import Wire.React.Async as Async
 import Wire.React.Class as Wire
 import Wire.React.Selector as Selector
@@ -40,11 +44,19 @@ create :: Effect AuthSignal
 create = do
   tokenSignal <-
     Sync.create
-      { load: LocalStorage.read cachedToken
+      { load:
+          do
+            localStorage <- Window.localStorage =<< window
+            item <- Storage.getItem "token" localStorage
+            pure $ (hush <<< runExcept <<< decodeJSON) =<< item
       , save:
           case _ of
-            Nothing -> LocalStorage.delete cachedToken
-            Just token -> LocalStorage.write cachedToken token
+            Nothing -> do
+              localStorage <- Window.localStorage =<< window
+              Storage.removeItem "token" localStorage
+            Just token -> do
+              localStorage <- Window.localStorage =<< window
+              Storage.setItem "token" (encodeJSON token) localStorage
       }
   profileSignal <-
     Async.create
@@ -77,10 +89,6 @@ create = do
           Selector.write tokenSignal (_.token <$> auth)
           Selector.write profileSignal (_.profile =<< auth)
     }
-
--- | Local Storage
-cachedToken :: LocalStorage.StorageKey String
-cachedToken = LocalStorage.StorageKey "token"
 
 -- | Helpers
 login ::
