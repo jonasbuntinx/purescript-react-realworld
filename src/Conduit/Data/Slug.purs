@@ -8,8 +8,6 @@ import Prelude
 import Apiary.Url as Url
 import Control.Monad.Error.Class (throwError)
 import Data.Either (fromRight)
-import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(..))
 import Data.String.Regex as Regex
 import Data.String.Regex.Flags as Flags
@@ -20,14 +18,9 @@ import Simple.JSON (class ReadForeign, readImpl)
 newtype Slug
   = Slug String
 
-derive instance genericSlug :: Generic Slug _
-
 derive instance eqSlug :: Eq Slug
 
 derive instance ordSlug :: Ord Slug
-
-instance showSlug :: Show Slug where
-  show = genericShow
 
 instance readForeignSlug :: ReadForeign Slug where
   readImpl =

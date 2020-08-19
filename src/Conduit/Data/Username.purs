@@ -7,8 +7,6 @@ module Conduit.Data.Username
 import Prelude
 import Apiary.Url as Url
 import Control.Monad.Error.Class (throwError)
-import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(..))
 import Foreign (ForeignError(..))
 import Simple.JSON (class ReadForeign, class WriteForeign, readImpl)
@@ -16,14 +14,9 @@ import Simple.JSON (class ReadForeign, class WriteForeign, readImpl)
 newtype Username
   = Username String
 
-derive instance genericUsername :: Generic Username _
-
 derive instance eqUsername :: Eq Username
 
 derive instance ordUsername :: Ord Username
-
-instance showUsername :: Show Username where
-  show = genericShow
 
 derive newtype instance writeForeignUsername :: WriteForeign Username
 

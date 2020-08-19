@@ -20,8 +20,6 @@ newtype CommentId
 
 derive instance newtypeCommentId :: Newtype CommentId _
 
-derive newtype instance showCommentId :: Show CommentId
-
 derive newtype instance eqCommentId :: Eq CommentId
 
 derive newtype instance ordCommentId :: Ord CommentId

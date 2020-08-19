@@ -8,8 +8,6 @@ module Conduit.Data.Avatar
   ) where
 
 import Prelude
-import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(..))
 import Data.String as String
 import Simple.JSON (class ReadForeign, class WriteForeign)
@@ -17,14 +15,9 @@ import Simple.JSON (class ReadForeign, class WriteForeign)
 newtype Avatar
   = Avatar String
 
-derive instance genericAvatar :: Generic Avatar _
-
 derive instance eqAvatar :: Eq Avatar
 
 derive instance ordAvatar :: Ord Avatar
-
-instance showAvatar :: Show Avatar where
-  show = genericShow
 
 derive newtype instance writeForeignAvatar :: WriteForeign Avatar
 
