@@ -14,7 +14,7 @@
     "bundle": "yarn bundle:build && yarn bundle:dce && yarn bundle:parcel",
     "bundle:build": "spago build --purs-args '--codegen corefn'",
     "bundle:dce": "zephyr -f Main.main",
-    "bundle:parcel": "parcel build index.html --no-source-maps --experimental-scope-hoisting",
+    "bundle:parcel": "parcel build index.html --no-source-maps",
     "clean": "rm -Rf .cache dist serve output dce-output",
     "dev-server": "parcel serve --no-source-maps --out-dir serve index.html",
     "id": "pscid",
