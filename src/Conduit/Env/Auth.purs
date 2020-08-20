@@ -20,7 +20,7 @@ import Data.Variant as Variant
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 import Foreign.Generic (decodeJSON, encodeJSON)
-import Foreign.Moment (Moment, fromMilliseconds)
+import Foreign.Day (DateTime, fromMilliseconds)
 import Record as Record
 import Web.HTML (window)
 import Web.HTML.Window as Window
@@ -33,7 +33,7 @@ import Wire.React.Sync as Sync
 type Auth
   = { token :: String
     , username :: Username
-    , expirationTime :: Moment
+    , expirationTime :: DateTime
     , profile :: Maybe UserProfile
     }
 

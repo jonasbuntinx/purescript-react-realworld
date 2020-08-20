@@ -9,7 +9,7 @@ import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username as Username
 import Data.Array as Array
 import Effect (Effect)
-import Foreign.Moment (toDisplay)
+import Foreign.Day (toDisplay)
 import Network.RemoteData (RemoteData(..))
 import React.Basic.DOM as R
 import React.Basic.Events (handler_)

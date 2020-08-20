@@ -4,7 +4,7 @@ import Conduit.Data.Profile (Profile)
 import Conduit.Data.Slug (Slug)
 import Conduit.Data.Username (Username)
 import Data.Maybe (Maybe(..))
-import Foreign.Moment (Moment)
+import Foreign.Day (DateTime)
 
 type ArticleRep r
   = ( title :: String
@@ -18,7 +18,7 @@ type Article
   = {
     | ArticleRep
       ( slug :: Slug
-      , createdAt :: Moment
+      , createdAt :: DateTime
       , favorited :: Boolean
       , favoritesCount :: Int
       , author :: Profile

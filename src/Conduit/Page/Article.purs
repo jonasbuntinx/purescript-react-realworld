@@ -30,7 +30,7 @@ import Data.Symbol (SProxy(..))
 import Data.Validation.Semigroup (toEither, unV)
 import Data.Variant as Variant
 import Foreign.Marked (marked)
-import Foreign.Moment (toDisplay)
+import Foreign.Day (toDisplay)
 import Foreign.Object as Object
 import Network.RemoteData (_Success)
 import Network.RemoteData as RemoteData

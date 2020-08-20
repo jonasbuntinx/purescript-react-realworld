@@ -19,7 +19,7 @@ import Effect.Aff (launchAff_)
 import Effect.Aff.Class (liftAff)
 import Effect.Class (liftEffect)
 import Effect.Timer as Timer
-import Foreign.Moment (now)
+import Foreign.Day (now)
 import React.Basic.Hooks as React
 import Wire.React.Class (read)
 
