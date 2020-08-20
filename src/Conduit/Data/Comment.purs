@@ -2,15 +2,15 @@ module Conduit.Data.Comment where
 
 import Prelude
 import Apiary.Url as Url
-import Conduit.Data.PreciseDateTime (PreciseDateTime)
 import Conduit.Data.Profile (Profile)
 import Data.Newtype (class Newtype, unwrap, wrap)
+import Foreign.Moment (Moment)
 import Simple.JSON (class ReadForeign, class WriteForeign, readImpl, writeImpl)
 
 type Comment
   = { id :: CommentId
-    , createdAt :: PreciseDateTime
-    , updatedAt :: PreciseDateTime
+    , createdAt :: Moment
+    , updatedAt :: Moment
     , body :: String
     , author :: Profile
     }

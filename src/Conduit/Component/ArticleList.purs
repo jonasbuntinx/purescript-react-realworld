@@ -5,11 +5,11 @@ import Conduit.Component.Buttons (ButtonSize(..), favoriteButton)
 import Conduit.Component.Link as Link
 import Conduit.Data.Article (Article)
 import Conduit.Data.Avatar as Avatar
-import Conduit.Data.PreciseDateTime as PDT
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username as Username
 import Data.Array as Array
 import Effect (Effect)
+import Foreign.Moment (toDisplay)
 import Network.RemoteData (RemoteData(..))
 import React.Basic.DOM as R
 import React.Basic.Events (handler_)
@@ -73,7 +73,7 @@ articleList props = case props.articles of
                               }
                           , R.span
                               { className: "date"
-                              , children: [ R.text $ PDT.toDisplay article.createdAt ]
+                              , children: [ R.text $ toDisplay article.createdAt ]
                               }
                           ]
                       }

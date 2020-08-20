@@ -1,10 +1,10 @@
 module Conduit.Data.Article where
 
-import Conduit.Data.PreciseDateTime (PreciseDateTime)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Slug (Slug)
 import Conduit.Data.Username (Username)
 import Data.Maybe (Maybe(..))
+import Foreign.Moment (Moment)
 
 type ArticleRep r
   = ( title :: String
@@ -18,7 +18,7 @@ type Article
   = {
     | ArticleRep
       ( slug :: Slug
-      , createdAt :: PreciseDateTime
+      , createdAt :: Moment
       , favorited :: Boolean
       , favoritesCount :: Int
       , author :: Profile
