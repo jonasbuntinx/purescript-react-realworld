@@ -14,13 +14,13 @@ import Control.Monad.Reader (class MonadAsk, ask)
 import Data.Either (hush)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Symbol (SProxy(..))
-import Data.Time.Duration (Seconds(..))
+import Data.Time.Duration (Milliseconds(..))
 import Data.Traversable (for)
 import Data.Variant as Variant
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 import Foreign.Generic (decodeJSON, encodeJSON)
-import Foreign.Moment (Moment, unix)
+import Foreign.Moment (Moment, fromMilliseconds)
 import Record as Record
 import Web.HTML (window)
 import Web.HTML.Window as Window
@@ -78,7 +78,7 @@ create = do
           pure do
             t <- token
             { exp, username } <- hush $ Jwt.decode t
-            pure { token: t, username, expirationTime: unix $ Seconds exp, profile }
+            pure { token: t, username, expirationTime: fromMilliseconds $ Milliseconds $ exp * 1000.0, profile }
     , update:
         \auth -> do
           Selector.write tokenSignal (_.token <$> auth)
@@ -93,7 +93,7 @@ login' :: AuthSignal -> String -> UserProfile -> Effect Unit
 login' authSignal token profile =
   Wire.modify authSignal \_ -> do
     { exp, username } <- hush $ Jwt.decode token
-    pure { token, username, expirationTime: unix $ Seconds exp, profile: Just profile }
+    pure { token, username, expirationTime: fromMilliseconds $ Milliseconds $ exp * 1000.0, profile: Just profile }
 
 refreshToken :: forall m r. MonadAsk { authSignal :: AuthSignal | r } m => MonadEffect m => String -> m Unit
 refreshToken token = ask >>= liftEffect <<< flip refreshToken' token <<< _.authSignal

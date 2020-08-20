@@ -1,10 +1,10 @@
-module Foreign.Moment (Moment, fromUTCString, fromMilliseconds, toMilliseconds, now, format, unix, Format(..), toDisplay) where
+module Foreign.Moment (Moment, fromUTCString, fromMilliseconds, toMilliseconds, now, format, Format(..), toDisplay) where
 
 import Prelude
 import Control.Monad.Error.Class (throwError)
 import Data.Function.Uncurried (Fn3, runFn3)
 import Data.Maybe (Maybe(..))
-import Data.Time.Duration (Milliseconds, Seconds)
+import Data.Time.Duration (Milliseconds)
 import Effect (Effect)
 import Foreign.Generic (ForeignError(..))
 import Simple.JSON (class ReadForeign, readImpl)
@@ -23,8 +23,6 @@ foreign import toMilliseconds :: Moment -> Milliseconds
 foreign import now :: Effect Moment
 
 foreign import format :: Format -> Moment -> String
-
-foreign import unix :: Seconds -> Moment
 
 newtype Format
   = Format String
