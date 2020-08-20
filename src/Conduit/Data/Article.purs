@@ -1,7 +1,7 @@
 module Conduit.Data.Article where
 
 import Conduit.Data.PreciseDateTime (PreciseDateTime)
-import Conduit.Data.Profile (Author)
+import Conduit.Data.Profile (Profile)
 import Conduit.Data.Slug (Slug)
 import Conduit.Data.Username (Username)
 import Data.Maybe (Maybe(..))
@@ -21,7 +21,7 @@ type Article
       , createdAt :: PreciseDateTime
       , favorited :: Boolean
       , favoritesCount :: Int
-      , author :: Author
+      , author :: Profile
       )
     }
 

@@ -3,30 +3,26 @@ module Conduit.Page.Profile (Props, Tab(..), mkProfilePage) where
 import Prelude
 import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
-import Conduit.Api.Endpoints (FavoriteArticle, GetProfile, ListArticles, UnfavoriteArticle, UnfollowProfile, FollowProfile)
+import Conduit.Api.Endpoints (GetProfile, ListArticles)
 import Conduit.Api.Utils as Utils
 import Conduit.Component.App as App
 import Conduit.Component.ArticleList (articleList)
 import Conduit.Component.Buttons (followButton)
 import Conduit.Component.Pagination (pagination)
 import Conduit.Component.Tabs as Tabs
-import Conduit.Data.Article (Article, defaultArticlesQuery)
+import Conduit.Data.Article (defaultArticlesQuery)
 import Conduit.Data.Avatar as Avatar
-import Conduit.Data.Profile (Author)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
 import Conduit.Env (Env)
 import Conduit.Env.Routing (navigate)
 import Conduit.Hook.Auth (useAuth)
+import Conduit.Page.Utils (_articles, _profile, toggleFavorite, toggleFollow)
 import Data.Either (Either(..), either)
-import Data.Foldable (for_)
-import Data.Lens (Traversal', preview, set)
-import Data.Lens.Index as LI
-import Data.Lens.Record as LR
+import Data.Lens (preview, set)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Monoid (guard)
-import Data.Symbol (SProxy(..))
 import Data.Tuple.Nested ((/\))
 import Data.Variant as Variant
 import Network.RemoteData as RemoteData
@@ -65,60 +61,38 @@ mkProfilePage =
   where
   init =
     { selectedTab: Nothing
-    , author: RemoteData.NotAsked
+    , profile: RemoteData.NotAsked
     , articles: RemoteData.NotAsked
     , pagination: { offset: 0, limit: 5 }
     }
 
   update self = case _ of
     Initialize -> do
-      self.setState _ { author = RemoteData.Loading }
+      self.setState _ { profile = RemoteData.Loading }
       res <- Utils.makeRequest (Apiary.Route :: GetProfile) { username: self.props.username } Apiary.none Apiary.none
       case res of
-        Left error -> self.setState _ { author = RemoteData.Failure error }
+        Left error -> self.setState _ { profile = RemoteData.Failure error }
         Right response ->
           response
             # Variant.match
-                { ok: \{ profile } -> self.setState _ { author = RemoteData.Success profile }
+                { ok: \{ profile } -> self.setState _ { profile = RemoteData.Success profile }
                 , notFound: \_ -> navigate Home
                 }
     LoadArticles pagination -> do
       let
-        query = case self.props.tab of
-          Published ->
-            defaultArticlesQuery
-              { author = Just self.props.username
-              , offset = Just pagination.offset
-              , limit = Just pagination.limit
-              }
-          Favorited ->
-            defaultArticlesQuery
-              { favorited = Just self.props.username
-              , offset = Just pagination.offset
-              , limit = Just pagination.limit
-              }
+        query =
+          defaultArticlesQuery { offset = Just pagination.offset, limit = Just pagination.limit }
+            # case self.props.tab of
+                Published -> _ { author = Just self.props.username }
+                Favorited -> _ { favorited = Just self.props.username }
       self.setState _ { articles = RemoteData.Loading, pagination = pagination }
       res <- Utils.makeRequest (Apiary.Route :: ListArticles) Apiary.none query Apiary.none
       self.setState _ { articles = res # either RemoteData.Failure (Variant.match { ok: RemoteData.Success }) }
-    ToggleFavorite ix ->
-      for_ (preview (_articles ix) self.state) \{ slug, favorited } -> do
-        res <-
-          if favorited then
-            Utils.makeSecureRequest (Apiary.Route :: UnfavoriteArticle) { slug } Apiary.none Apiary.none
-          else
-            Utils.makeSecureRequest (Apiary.Route :: FavoriteArticle) { slug } Apiary.none Apiary.none
-        for_ res $ Variant.match { ok: \{ article } -> self.setState $ set (_articles ix) article }
-    ToggleFollow ->
-      for_ (preview _author self.state) \{ username, following } -> do
-        res <-
-          if following then
-            Utils.makeSecureRequest (Apiary.Route :: UnfollowProfile) { username } Apiary.none Apiary.none
-          else
-            Utils.makeSecureRequest (Apiary.Route :: FollowProfile) { username } Apiary.none Apiary.none
-        for_ res $ Variant.match { ok: \{ profile } -> self.setState $ set _author profile }
+    ToggleFavorite ix -> toggleFavorite (preview (_articles ix) self.state) (self.setState <<< set (_articles ix))
+    ToggleFollow -> toggleFollow (preview _profile self.state) (self.setState <<< set _profile)
 
   render auth store props =
-    guard (not $ RemoteData.isLoading store.state.author) container (userInfo auth store props)
+    guard (not $ RemoteData.isLoading store.state.profile) container (userInfo auth store props)
       [ Tabs.tabs
           { className: "articles-toggle"
           , selectedTab: Just props.tab
@@ -174,10 +148,10 @@ mkProfilePage =
                               , children:
                                   [ R.img
                                       { className: "user-img"
-                                      , src: Avatar.toString $ RemoteData.maybe Avatar.blank (Avatar.withDefault <<< _.image) store.state.author
+                                      , src: Avatar.toString $ RemoteData.maybe Avatar.blank (Avatar.withDefault <<< _.image) store.state.profile
                                       }
                                   , R.h4_ [ R.text $ Username.toString props.username ]
-                                  , maybe React.empty (\bio -> R.p_ [ R.text bio ]) (RemoteData.toMaybe store.state.author >>= _.bio)
+                                  , maybe React.empty (\bio -> R.p_ [ R.text bio ]) (RemoteData.toMaybe store.state.profile >>= _.bio)
                                   , if (Just props.username == map _.username auth) then
                                       R.button
                                         { className: "btn btn-sm action-btn btn-outline-secondary"
@@ -192,7 +166,7 @@ mkProfilePage =
                                         }
                                     else
                                       followButton
-                                        { following: RemoteData.maybe false _.following store.state.author
+                                        { following: RemoteData.maybe false _.following store.state.profile
                                         , username: props.username
                                         , onClick: handler_ $ store.dispatch ToggleFollow
                                         }
@@ -226,9 +200,3 @@ mkProfilePage =
               }
           ]
       }
-
-_articles :: forall err r s. Int -> Traversal' { articles :: RemoteData.RemoteData err { articles :: Array Article | s } | r } Article
-_articles i = LR.prop (SProxy :: _ "articles") <<< RemoteData._Success <<< LR.prop (SProxy :: _ "articles") <<< LI.ix i
-
-_author :: forall err r. Traversal' { author :: RemoteData.RemoteData err Author | r } Author
-_author = LR.prop (SProxy :: _ "author") <<< RemoteData._Success

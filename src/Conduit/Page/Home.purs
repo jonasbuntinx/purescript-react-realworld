@@ -3,23 +3,20 @@ module Conduit.Page.Home (mkHomePage) where
 import Prelude
 import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
-import Conduit.Api.Endpoints (FavoriteArticle, ListArticles, ListFeed, UnfavoriteArticle, ListTags)
+import Conduit.Api.Endpoints (ListArticles, ListFeed, ListTags)
 import Conduit.Api.Utils as Utils
 import Conduit.Component.App as App
 import Conduit.Component.ArticleList (articleList)
 import Conduit.Component.Pagination (pagination)
 import Conduit.Component.Tabs as Tabs
-import Conduit.Data.Article (Article, defaultArticlesQuery)
+import Conduit.Data.Article (defaultArticlesQuery)
 import Conduit.Env (Env)
 import Conduit.Hook.Auth (useAuth)
+import Conduit.Page.Utils (_articles, toggleFavorite)
 import Data.Either (either)
-import Data.Foldable (for_)
-import Data.Lens (Traversal', preview, set)
-import Data.Lens.Index as LI
-import Data.Lens.Record as LR
+import Data.Lens (preview, set)
 import Data.Maybe (Maybe(..), isNothing)
 import Data.Monoid (guard)
-import Data.Symbol (SProxy(..))
 import Data.Variant as Variant
 import Network.RemoteData (RemoteData(..))
 import Network.RemoteData as RemoteData
@@ -73,14 +70,7 @@ mkHomePage =
         Global -> Utils.makeRequest (Apiary.Route :: ListArticles) Apiary.none query Apiary.none
         Tag tag -> Utils.makeRequest (Apiary.Route :: ListArticles) Apiary.none (query { tag = Just tag }) Apiary.none
       self.setState _ { articles = res # either RemoteData.Failure (Variant.match { ok: RemoteData.Success }) }
-    ToggleFavorite ix ->
-      for_ (preview (_articles ix) self.state) \{ slug, favorited } -> do
-        res <-
-          if favorited then
-            Utils.makeSecureRequest (Apiary.Route :: UnfavoriteArticle) { slug } Apiary.none Apiary.none
-          else
-            Utils.makeSecureRequest (Apiary.Route :: FavoriteArticle) { slug } Apiary.none Apiary.none
-        for_ res $ Variant.match { ok: \{ article } -> self.setState $ set (_articles ix) article }
+    ToggleFavorite ix -> toggleFavorite (preview (_articles ix) self.state) (self.setState <<< set (_articles ix))
 
   render auth store props =
     container (guard (isNothing auth) banner)
@@ -205,6 +195,3 @@ mkHomePage =
               }
           ]
       }
-
-_articles :: forall err r s. Int -> Traversal' { articles :: RemoteData.RemoteData err { articles :: Array Article | s } | r } Article
-_articles i = LR.prop (SProxy :: _ "articles") <<< RemoteData._Success <<< LR.prop (SProxy :: _ "articles") <<< LI.ix i

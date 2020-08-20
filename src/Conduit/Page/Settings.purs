@@ -8,7 +8,7 @@ import Conduit.Api.Utils as Utils
 import Conduit.Component.App as App
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Data.Avatar as Avatar
-import Conduit.Data.Profile (Profile)
+import Conduit.Data.Profile (UserProfile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username as Username
 import Conduit.Env (Env)
@@ -36,7 +36,7 @@ import React.Basic.Hooks as React
 import Record as Record
 
 data Action
-  = Initialize Profile
+  = Initialize UserProfile
   | UpdateImage String
   | UpdateUsername String
   | UpdateBio String

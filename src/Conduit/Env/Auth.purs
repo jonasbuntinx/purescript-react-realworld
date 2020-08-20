@@ -7,7 +7,7 @@ import Apiary.Types (none) as Apiary
 import Conduit.Api.Endpoints (GetUser)
 import Conduit.Api.Utils (addBaseUrl, addToken)
 import Conduit.Data.Jwt as Jwt
-import Conduit.Data.Profile (Profile)
+import Conduit.Data.Profile (UserProfile)
 import Conduit.Data.Username (Username)
 import Control.Monad.Except (runExcept)
 import Control.Monad.Reader (class MonadAsk, ask)
@@ -36,7 +36,7 @@ type Auth
   = { token :: String
     , username :: Username
     , expirationTime :: DateTime
-    , profile :: Maybe Profile
+    , profile :: Maybe UserProfile
     }
 
 type AuthSignal
@@ -89,10 +89,10 @@ create = do
     }
 
 -- | Helpers
-login :: forall m r. MonadAsk { authSignal :: AuthSignal | r } m => MonadEffect m => String -> Profile -> m Unit
+login :: forall m r. MonadAsk { authSignal :: AuthSignal | r } m => MonadEffect m => String -> UserProfile -> m Unit
 login token profile = ask >>= liftEffect <<< flip (flip login' token) profile <<< _.authSignal
 
-login' :: AuthSignal -> String -> Profile -> Effect Unit
+login' :: AuthSignal -> String -> UserProfile -> Effect Unit
 login' authSignal token profile =
   Wire.modify authSignal \_ -> do
     { exp, username } <- hush $ Jwt.decode token
@@ -111,5 +111,5 @@ logout = ask >>= liftEffect <<< logout' <<< _.authSignal
 logout' :: AuthSignal -> Effect Unit
 logout' authSignal = Wire.modify authSignal $ const Nothing
 
-updateProfile :: forall m r. MonadAsk { authSignal :: AuthSignal | r } m => MonadEffect m => Profile -> m Unit
+updateProfile :: forall m r. MonadAsk { authSignal :: AuthSignal | r } m => MonadEffect m => UserProfile -> m Unit
 updateProfile profile = ask >>= liftEffect <<< flip Wire.modify (map $ _ { profile = Just profile }) <<< _.authSignal

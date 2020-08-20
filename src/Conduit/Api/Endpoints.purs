@@ -5,7 +5,7 @@ import Apiary.Route (GET, POST, PUT, DELETE)
 import Apiary.Types (None)
 import Conduit.Data.Article (Article, ArticleRep, ArticlesQuery)
 import Conduit.Data.Comment (Comment, CommentId)
-import Conduit.Data.Profile (Author, User, ProfileRep)
+import Conduit.Data.Profile (ProfileRep, User, Profile)
 import Conduit.Data.Slug (Slug)
 import Conduit.Data.Username (Username)
 import Foreign.Object (Object)
@@ -146,7 +146,7 @@ type GetProfile
   = GET "/api/profiles/:username"
       { path :: { username :: Username }
       , response ::
-          { ok :: JSON { profile :: Author }
+          { ok :: JSON { profile :: Profile }
           , notFound :: JSON { status :: String, error :: String }
           }
       }
@@ -156,7 +156,7 @@ type FollowProfile
   = POST "/api/profiles/:username/follow"
       { path :: { username :: Username }
       , response ::
-          { ok :: JSON { profile :: Author }
+          { ok :: JSON { profile :: Profile }
           }
       }
 
@@ -164,7 +164,7 @@ type UnfollowProfile
   = DELETE "/api/profiles/:username/follow"
       { path :: { username :: Username }
       , response ::
-          { ok :: JSON { profile :: Author }
+          { ok :: JSON { profile :: Profile }
           }
       }
 

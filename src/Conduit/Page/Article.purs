@@ -3,16 +3,14 @@ module Conduit.Page.Article (Props, mkArticlePage) where
 import Prelude
 import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
-import Conduit.Api.Endpoints (CreateComment, DeleteArticle, DeleteComment, FavoriteArticle, GetArticle, ListComments, UnfavoriteArticle, UnfollowProfile, FollowProfile)
+import Conduit.Api.Endpoints (CreateComment, DeleteArticle, DeleteComment, GetArticle, ListComments)
 import Conduit.Api.Utils as Utils
 import Conduit.Component.App as App
 import Conduit.Component.Buttons (ButtonSize(..), favoriteButton, followButton)
 import Conduit.Component.Link as Link
-import Conduit.Data.Article (Article)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Comment (CommentId)
 import Conduit.Data.PreciseDateTime as PDT
-import Conduit.Data.Profile (Author)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Slug (Slug)
 import Conduit.Data.Username as Username
@@ -21,10 +19,11 @@ import Conduit.Env.Routing (navigate)
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Conduit.Hook.Auth (useAuth)
+import Conduit.Page.Utils (_article, _author, toggleFavorite, toggleFollow)
 import Control.Comonad (extract)
 import Data.Either (Either(..), either)
-import Data.Foldable (for_, traverse_)
-import Data.Lens (Traversal', preview, set)
+import Data.Foldable (traverse_)
+import Data.Lens (preview, set)
 import Data.Lens.Record as LR
 import Data.Maybe (Maybe(..), maybe)
 import Data.Monoid (guard)
@@ -100,22 +99,8 @@ mkArticlePage =
                       self.setState _ { submitResponse = RemoteData.Success unit, isModalOpen = false }
                       navigate Home
                 }
-    ToggleFollow -> do
-      for_ (preview _author self.state) \{ username, following } -> do
-        res <-
-          if following then
-            Utils.makeSecureRequest (Apiary.Route :: UnfollowProfile) { username } Apiary.none Apiary.none
-          else
-            Utils.makeSecureRequest (Apiary.Route :: FollowProfile) { username } Apiary.none Apiary.none
-        for_ res $ Variant.match { ok: \{ profile } -> self.setState $ set _author profile }
-    ToggleFavorite ->
-      for_ (preview _article self.state) \{ slug, favorited } -> do
-        res <-
-          if favorited then
-            Utils.makeSecureRequest (Apiary.Route :: UnfavoriteArticle) { slug } Apiary.none Apiary.none
-          else
-            Utils.makeSecureRequest (Apiary.Route :: FavoriteArticle) { slug } Apiary.none Apiary.none
-        for_ res $ Variant.match { ok: \{ article } -> self.setState $ set _article article }
+    ToggleFollow -> toggleFollow (preview _author self.state) (self.setState <<< set _author)
+    ToggleFavorite -> toggleFavorite (preview _article self.state) (self.setState <<< set _article)
     UpdateBody body -> self.setState _ { body = V.Modified body }
     DeleteComment id -> do
       self.setState _ { submitResponse = RemoteData.Loading }
@@ -416,9 +401,3 @@ mkArticlePage =
   validate values = ado
     body <- values.body # V.validated (LR.prop (SProxy :: _ "body")) F.nonEmpty
     in { body }
-
-_author :: forall err r. Traversal' { article :: RemoteData.RemoteData err Article | r } Author
-_author = LR.prop (SProxy :: _ "article") <<< RemoteData._Success <<< LR.prop (SProxy :: _ "author")
-
-_article :: forall err r. Traversal' { article :: RemoteData.RemoteData err Article | r } Article
-_article = LR.prop (SProxy :: _ "article") <<< RemoteData._Success

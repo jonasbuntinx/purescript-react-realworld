@@ -3,7 +3,7 @@ module Conduit.Data.Comment where
 import Prelude
 import Apiary.Url as Url
 import Conduit.Data.PreciseDateTime (PreciseDateTime)
-import Conduit.Data.Profile (Author)
+import Conduit.Data.Profile (Profile)
 import Data.Newtype (class Newtype, unwrap, wrap)
 import Simple.JSON (class ReadForeign, class WriteForeign, readImpl, writeImpl)
 
@@ -12,7 +12,7 @@ type Comment
     , createdAt :: PreciseDateTime
     , updatedAt :: PreciseDateTime
     , body :: String
-    , author :: Author
+    , author :: Profile
     }
 
 newtype CommentId
