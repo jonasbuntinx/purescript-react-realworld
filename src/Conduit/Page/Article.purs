@@ -29,8 +29,8 @@ import Data.Monoid (guard)
 import Data.Symbol (SProxy(..))
 import Data.Validation.Semigroup (toEither, unV)
 import Data.Variant as Variant
-import Foreign.Marked (marked)
 import Foreign.Day (toDisplay)
+import Foreign.NanoMarkdown (nmd)
 import Foreign.Object as Object
 import Network.RemoteData (_Success)
 import Network.RemoteData as RemoteData
@@ -157,7 +157,7 @@ mkArticlePage =
                           [ R.div
                               { className: "col-xs-12"
                               , children:
-                                  [ R.div { dangerouslySetInnerHTML: { __html: marked article.body } }
+                                  [ R.div { dangerouslySetInnerHTML: { __html: nmd article.body } }
                                   , R.ul
                                       { className: "tag-list"
                                       , children:
