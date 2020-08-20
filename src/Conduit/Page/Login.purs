@@ -98,6 +98,7 @@ mkLoginPage =
                         , children:
                             [ R.input
                                 { className: "form-control form-control-lg"
+                                , autoComplete: "UserName"
                                 , type: "email"
                                 , value: extract store.state.email
                                 , placeholder: "Email"
@@ -114,6 +115,7 @@ mkLoginPage =
                         , children:
                             [ R.input
                                 { className: "form-control form-control-lg"
+                                , autoComplete: "Password"
                                 , type: "password"
                                 , value: extract store.state.password
                                 , placeholder: "Password"

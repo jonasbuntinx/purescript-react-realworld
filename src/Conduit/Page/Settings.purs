@@ -159,6 +159,7 @@ mkSettingsPage =
                         , children:
                             [ R.input
                                 { className: "form-control"
+                                , autoComplete: "UserName"
                                 , type: "email"
                                 , value: extract store.state.email
                                 , placeholder: "Email"
@@ -175,6 +176,7 @@ mkSettingsPage =
                         , children:
                             [ R.input
                                 { className: "form-control"
+                                , autoComplete: "Password"
                                 , type: "password"
                                 , value: extract store.state.password
                                 , placeholder: "Password"
