@@ -57,7 +57,7 @@ mkProfilePage =
     React.useEffect (props.username /\ props.tab) do
       store.dispatch $ LoadArticles init.pagination
       mempty
-    pure $ render auth store props
+    pure $ render env auth store props
   where
   init =
     { selectedTab: Nothing
@@ -91,8 +91,8 @@ mkProfilePage =
     ToggleFavorite ix -> toggleFavorite (preview (_articles ix) self.state) (self.setState <<< set (_articles ix))
     ToggleFollow -> toggleFollow (preview _profile self.state) (self.setState <<< set _profile)
 
-  render auth store props =
-    guard (not $ RemoteData.isLoading store.state.profile) container (userInfo auth store props)
+  render env auth store props =
+    guard (not $ RemoteData.isLoading store.state.profile) container (userInfo env auth store props)
       [ Tabs.tabs
           { className: "articles-toggle"
           , selectedTab: Just props.tab
@@ -100,25 +100,26 @@ mkProfilePage =
               [ { id: Published
                 , label: R.text "Published Articles"
                 , disabled: false
-                , content: tabContent store
+                , content: tabContent env store
                 }
               , { id: Favorited
                 , label: R.text "Favorited Articles"
                 , disabled: false
-                , content: tabContent store
+                , content: tabContent env store
                 }
               ]
           , onChange:
               case _ of
-                Published -> navigate $ Profile props.username
-                Favorited -> navigate $ Favorites props.username
+                Published -> env.navigate $ Profile props.username
+                Favorited -> env.navigate $ Favorites props.username
           }
       ]
 
-  tabContent store =
+  tabContent env store =
     R.div_
       [ articleList
           { articles: store.state.articles <#> _.articles
+          , onNavigate: env.navigate
           , onFavoriteToggle: store.dispatch <<< ToggleFavorite
           }
       , store.state.articles
@@ -133,7 +134,7 @@ mkProfilePage =
                 }
       ]
 
-  userInfo auth store props =
+  userInfo env auth store props =
     R.div
       { className: "user-info"
       , children:
@@ -155,7 +156,7 @@ mkProfilePage =
                                   , if (Just props.username == map _.username auth) then
                                       R.button
                                         { className: "btn btn-sm action-btn btn-outline-secondary"
-                                        , onClick: handler_ $ navigate Settings
+                                        , onClick: handler_ $ env.navigate Settings
                                         , children:
                                             [ R.i
                                                 { className: "ion-gear-a"

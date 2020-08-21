@@ -1,13 +1,10 @@
 module Conduit.Env.Routing where
 
 import Prelude
-import Conduit.Data.Route (Route(..), toRouteString)
+import Conduit.Data.Route (Route(..))
+import Control.Monad.Reader (class MonadAsk, ask)
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
-import Effect.Unsafe (unsafePerformEffect)
-import Foreign.NullOrUndefined (undefined)
-import Routing.PushState (PushStateInterface)
-import Routing.PushState as PushState
 import Wire.React.Pure (Pure, create) as Pure
 
 type RoutingSignal
@@ -16,13 +13,9 @@ type RoutingSignal
 create :: Effect RoutingSignal
 create = Pure.create Home
 
--- | Global
-pushStateInterface :: PushStateInterface
-pushStateInterface = unsafePerformEffect PushState.makeInterface
-
 -- | Helpers
-navigate :: forall m. MonadEffect m => Route -> m Unit
-navigate = liftEffect <<< pushStateInterface.pushState undefined <<< toRouteString
+navigate :: forall m r. MonadAsk { navigate :: Route -> Effect Unit | r } m => MonadEffect m => Route -> m Unit
+navigate route = ask >>= \env -> liftEffect $ env.navigate route
 
-redirect :: forall m. MonadEffect m => Route -> m Unit
-redirect = liftEffect <<< pushStateInterface.replaceState undefined <<< toRouteString
+redirect :: forall m r. MonadAsk { redirect :: Route -> Effect Unit | r } m => MonadEffect m => Route -> m Unit
+redirect route = ask >>= \env -> liftEffect $ env.redirect route

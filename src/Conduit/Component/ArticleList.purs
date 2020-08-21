@@ -5,7 +5,7 @@ import Conduit.Component.Buttons (ButtonSize(..), favoriteButton)
 import Conduit.Component.Link as Link
 import Conduit.Data.Article (Article)
 import Conduit.Data.Avatar as Avatar
-import Conduit.Data.Route (Route(..))
+import Conduit.Data.Route (Route(..), toRouteString)
 import Conduit.Data.Username as Username
 import Data.Array as Array
 import Effect (Effect)
@@ -18,6 +18,7 @@ import React.Basic.Hooks as React
 -- | Article List
 type Props err
   = { articles :: RemoteData err (Array Article)
+    , onNavigate :: Route -> Effect Unit
     , onFavoriteToggle :: Int -> Effect Unit
     }
 
@@ -55,7 +56,8 @@ articleList props = case props.articles of
               , children:
                   [ Link.link
                       { className: ""
-                      , route: Profile article.author.username
+                      , href: toRouteString $ Profile article.author.username
+                      , onClick: props.onNavigate $ Profile article.author.username
                       , children:
                           [ R.img
                               { src: Avatar.toString $ Avatar.withDefault article.author.image
@@ -68,7 +70,8 @@ articleList props = case props.articles of
                       , children:
                           [ Link.link
                               { className: "author"
-                              , route: Profile article.author.username
+                              , href: toRouteString $ Profile article.author.username
+                              , onClick: props.onNavigate $ Profile article.author.username
                               , children: [ R.text $ Username.toString article.author.username ]
                               }
                           , R.span
@@ -92,7 +95,8 @@ articleList props = case props.articles of
               }
           , Link.link
               { className: "preview-link"
-              , route: ViewArticle article.slug
+              , href: toRouteString $ ViewArticle article.slug
+              , onClick: props.onNavigate $ ViewArticle article.slug
               , children:
                   [ R.h1_ [ R.text article.title ]
                   , R.p_ [ R.text article.description ]

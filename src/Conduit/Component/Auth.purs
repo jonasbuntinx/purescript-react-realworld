@@ -6,9 +6,7 @@ import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
 import Conduit.Api.Endpoints (GetUser)
 import Conduit.Api.Utils (addBaseUrl, addToken)
-import Conduit.Data.Route (Route(..))
 import Conduit.Env.Auth (AuthSignal, create, logout', refreshToken')
-import Conduit.Env.Routing (redirect)
 import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
 import Data.Maybe (Maybe(..))
@@ -37,8 +35,6 @@ mkAuthManager = do
       pure content
   pure $ authSignal /\ component
   where
-  onSessionExpire = redirect Home
-
   refreshToken authSignal = do
     auth <- read authSignal
     for_ auth \{ token } -> do
@@ -46,7 +42,7 @@ mkAuthManager = do
         res <- liftAff $ Apiary.makeRequest (Apiary.Route :: GetUser) (addBaseUrl <<< addToken token) Apiary.none Apiary.none Apiary.none
         liftEffect
           $ case res of
-              Left _ -> logout' authSignal *> onSessionExpire
+              Left _ -> logout' authSignal
               Right success -> success # Variant.match { ok: refreshToken' authSignal <<< _.token <<< _.user }
 
   checkAuthStatus authSignal = do
@@ -54,6 +50,6 @@ mkAuthManager = do
     for_ auth \{ expirationTime } -> do
       now <- now
       if now > expirationTime then
-        logout' authSignal *> onSessionExpire
+        logout' authSignal
       else
         refreshToken authSignal

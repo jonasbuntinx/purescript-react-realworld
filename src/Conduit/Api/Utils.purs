@@ -7,13 +7,13 @@ import Apiary.Client.Response (class DecodeResponse) as Apiary
 import Apiary.Types (Error(..)) as Apiary
 import Conduit.Config as Config
 import Conduit.Data.Route (Route(..))
-import Conduit.Env.Routing (redirect)
 import Control.Comonad (extract)
 import Control.Monad.Reader (class MonadAsk, ask)
 import Data.Bifunctor (lmap)
 import Data.Bitraversable (lfor)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
+import Effect (Effect)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Class.Console as Console
@@ -44,7 +44,7 @@ makeRequest route path query body = do
 
 makeSecureRequest ::
   forall m a r s rep body query path route response.
-  MonadAsk { authSignal :: a (Maybe { token :: String | s }) | r } m =>
+  MonadAsk { authSignal :: a (Maybe { token :: String | s }), redirect :: Route -> Effect Unit | r } m =>
   Atom a =>
   MonadAff m =>
   Apiary.BuildRequest route path query body rep =>
@@ -59,7 +59,7 @@ makeSecureRequest route path query body = do
   auth <- liftEffect $ read env.authSignal
   case auth of
     Nothing -> do
-      redirect Register
+      liftEffect $ env.redirect Register
       pure $ Left $ NotAuthorized
     Just { token } -> do
       res <- liftAff $ Apiary.makeRequest route (addBaseUrl <<< addToken token) path query body

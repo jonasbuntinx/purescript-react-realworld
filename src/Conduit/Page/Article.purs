@@ -10,7 +10,7 @@ import Conduit.Component.Buttons (ButtonSize(..), favoriteButton, followButton)
 import Conduit.Component.Link as Link
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Comment (CommentId)
-import Conduit.Data.Route (Route(..))
+import Conduit.Data.Route (Route(..), toRouteString)
 import Conduit.Data.Slug (Slug)
 import Conduit.Data.Username as Username
 import Conduit.Env (Env)
@@ -61,7 +61,7 @@ mkArticlePage =
       store.dispatch Initialize
       store.dispatch LoadComments
       mempty
-    pure $ render auth store props
+    pure $ render env auth store props
   where
   init =
     { article: RemoteData.NotAsked
@@ -143,14 +143,14 @@ mkArticlePage =
     res <- Utils.makeRequest (Apiary.Route :: ListComments) { slug: self.props.slug } Apiary.none Apiary.none
     self.setState _ { comments = res # either RemoteData.Failure (Variant.match { ok: RemoteData.Success <<< _.comments }) }
 
-  render auth store props =
+  render env auth store props =
     let
       errors = validate store.state # unV identity (const mempty) :: { body :: _ }
     in
       store.state.article
         # RemoteData.maybe React.empty \article ->
             React.fragment
-              [ container (banner auth article store)
+              [ container (banner env auth article store)
                   [ R.div
                       { className: "row article-content"
                       , children:
@@ -175,7 +175,7 @@ mkArticlePage =
                   , R.hr {}
                   , R.div
                       { className: "article-actions"
-                      , children: [ articleMeta auth article store ]
+                      , children: [ articleMeta env auth article store ]
                       }
                   , R.div
                       { className: "row"
@@ -221,19 +221,21 @@ mkArticlePage =
                                         R.p_
                                           [ Link.link
                                               { className: ""
-                                              , route: Login
+                                              , href: toRouteString Login
+                                              , onClick: env.navigate Login
                                               , children: [ R.text "Sign in" ]
                                               }
                                           , R.text " or "
                                           , Link.link
                                               { className: ""
-                                              , route: Register
+                                              , href: toRouteString Register
+                                              , onClick: env.navigate Register
                                               , children: [ R.text "sign up" ]
                                               }
                                           , R.text " to add comments on this article."
                                           ]
                                   , (preview _Success store.state.comments)
-                                      # maybe React.empty (React.fragment <<< commentList auth store)
+                                      # maybe React.empty (React.fragment <<< commentList env auth store)
                                   ]
                               }
                           ]
@@ -241,13 +243,14 @@ mkArticlePage =
                   ]
               ]
 
-  articleMeta auth article store =
+  articleMeta env auth article store =
     R.div
       { className: "article-meta"
       , children:
           [ Link.link
               { className: ""
-              , route: Profile article.author.username
+              , href: toRouteString $ Profile article.author.username
+              , onClick: env.navigate $ Profile article.author.username
               , children:
                   [ R.img
                       { src: Avatar.toString $ Avatar.withDefault article.author.image
@@ -260,7 +263,8 @@ mkArticlePage =
               , children:
                   [ Link.link
                       { className: "author"
-                      , route: Profile article.author.username
+                      , href: toRouteString $ Profile article.author.username
+                      , onClick: env.navigate $ Profile article.author.username
                       , children: [ R.text $ Username.toString article.author.username ]
                       }
                   , R.span
@@ -277,7 +281,8 @@ mkArticlePage =
                   R.span_
                     [ Link.link
                         { className: "btn btn-outline-secondary btn-sm"
-                        , route: UpdateArticle article.slug
+                        , href: toRouteString $ UpdateArticle article.slug
+                        , onClick: env.navigate $ UpdateArticle article.slug
                         , children:
                             [ R.i
                                 { className: "ion-edit"
@@ -317,7 +322,7 @@ mkArticlePage =
           ]
       }
 
-  commentList auth store =
+  commentList env auth store =
     map \comment ->
       R.div
         { className: "card"
@@ -336,7 +341,8 @@ mkArticlePage =
                 , children:
                     [ Link.link
                         { className: "comment-author"
-                        , route: Profile comment.author.username
+                        , href: toRouteString $ Profile comment.author.username
+                        , onClick: env.navigate $ Profile comment.author.username
                         , children:
                             [ R.img
                                 { className: "comment-author-img"
@@ -347,7 +353,8 @@ mkArticlePage =
                     , R.text " "
                     , Link.link
                         { className: "comment-author"
-                        , route: Profile comment.author.username
+                        , href: toRouteString $ Profile comment.author.username
+                        , onClick: env.navigate $ Profile comment.author.username
                         , children:
                             [ R.text $ Username.toString comment.author.username ]
                         }
@@ -372,7 +379,7 @@ mkArticlePage =
             ]
         }
 
-  banner auth article store =
+  banner env auth article store =
     R.div
       { className: "banner"
       , children:
@@ -380,7 +387,7 @@ mkArticlePage =
               { className: "container"
               , children:
                   [ R.h1_ [ R.text article.title ]
-                  , articleMeta auth article store
+                  , articleMeta env auth article store
                   ]
               }
           ]

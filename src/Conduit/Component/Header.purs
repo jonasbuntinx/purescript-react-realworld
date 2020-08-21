@@ -3,21 +3,23 @@ module Conduit.Component.Header where
 import Prelude
 import Conduit.Component.Link as Link
 import Conduit.Data.Avatar as Avatar
-import Conduit.Data.Route (Route(..))
+import Conduit.Data.Route (Route(..), toRouteString)
 import Conduit.Data.Username as Username
 import Conduit.Env.Auth (Auth)
 import Data.Maybe (Maybe, isJust, isNothing, maybe)
 import Data.Monoid (guard)
+import Effect (Effect)
 import React.Basic.DOM as R
 import React.Basic.Hooks as React
 
 type Props
   = { auth :: Maybe Auth
     , currentRoute :: Route
+    , onNavigate :: Route -> Effect Unit
     }
 
 header :: Props -> React.JSX
-header { auth, currentRoute } =
+header { auth, currentRoute, onNavigate } =
   R.nav
     { className: "navbar navbar-light"
     , children:
@@ -26,7 +28,8 @@ header { auth, currentRoute } =
             , children:
                 [ Link.link
                     { className: "navbar-brand"
-                    , route: Home
+                    , href: toRouteString Home
+                    , onClick: onNavigate Home
                     , children: [ R.text "conduit" ]
                     }
                 , R.ul
@@ -65,7 +68,8 @@ header { auth, currentRoute } =
       , children:
           [ Link.link
               { className: "nav-link" <> guard (currentRoute == route) " active"
-              , route
+              , href: toRouteString route
+              , onClick: onNavigate route
               , children
               }
           ]

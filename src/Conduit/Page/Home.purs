@@ -47,7 +47,7 @@ mkHomePage =
         Just _ -> store.dispatch $ LoadArticles Feed store.state.pagination
       store.dispatch LoadTags
       mempty
-    pure $ render auth store props
+    pure $ render env auth store props
   where
   init =
     { tags: NotAsked
@@ -72,9 +72,9 @@ mkHomePage =
       self.setState _ { articles = res # either RemoteData.Failure (Variant.match { ok: RemoteData.Success }) }
     ToggleFavorite ix -> toggleFavorite (preview (_articles ix) self.state) (self.setState <<< set (_articles ix))
 
-  render auth store props =
+  render env auth store props =
     container (guard (isNothing auth) banner)
-      [ mainView auth store
+      [ mainView env auth store
       , R.div
           { className: "col-md-3"
           , children:
@@ -89,7 +89,7 @@ mkHomePage =
           }
       ]
 
-  mainView auth store =
+  mainView env auth store =
     R.div
       { className: "col-md-9"
       , children:
@@ -100,12 +100,12 @@ mkHomePage =
                   [ { id: Feed
                     , label: R.text "Your Feed"
                     , disabled: isNothing auth
-                    , content: tabContent store
+                    , content: tabContent env store
                     }
                   , { id: Global
                     , label: R.text "Global Feed"
                     , disabled: false
-                    , content: tabContent store
+                    , content: tabContent env store
                     }
                   ]
                     <> case store.state.tab of
@@ -120,7 +120,7 @@ mkHomePage =
                                   , R.text $ " " <> tag
                                   ]
                             , disabled: false
-                            , content: tabContent store
+                            , content: tabContent env store
                             }
                           ]
                         _ -> []
@@ -129,10 +129,11 @@ mkHomePage =
           ]
       }
 
-  tabContent store =
+  tabContent env store =
     R.div_
       [ articleList
           { articles: store.state.articles <#> _.articles
+          , onNavigate: env.navigate
           , onFavoriteToggle: store.dispatch <<< ToggleFavorite
           }
       , store.state.articles

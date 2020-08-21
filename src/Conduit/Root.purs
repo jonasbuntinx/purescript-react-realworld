@@ -6,7 +6,6 @@ import Conduit.Component.Footer as Footer
 import Conduit.Component.Header as Header
 import Conduit.Data.Route (Route(..))
 import Conduit.Env (Env)
-import Conduit.Env.Routing (redirect)
 import Conduit.Hook.Auth (useAuth)
 import Conduit.Hook.Routing (useRoute)
 import Conduit.Page.Article (mkArticlePage)
@@ -34,17 +33,17 @@ mkRoot = do
     route <- useRoute env
     React.useEffect (route /\ auth) do
       case route, auth of
-        Login, Just _ -> redirect Home
-        Register, Just _ -> redirect Home
-        Settings, Nothing -> redirect Home
-        CreateArticle, Nothing -> redirect Home
-        UpdateArticle _, Nothing -> redirect Home
-        Error, _ -> redirect Home
+        Login, Just _ -> env.redirect Home
+        Register, Just _ -> env.redirect Home
+        Settings, Nothing -> env.redirect Home
+        CreateArticle, Nothing -> env.redirect Home
+        UpdateArticle _, Nothing -> env.redirect Home
+        Error, _ -> env.redirect Home
         _, _ -> pure unit
       mempty
     pure
       $ React.fragment
-          [ Header.header { auth, currentRoute: route }
+          [ Header.header { auth, currentRoute: route, onNavigate: env.navigate }
           , case route of
               Home -> homePage unit
               Login -> loginPage unit

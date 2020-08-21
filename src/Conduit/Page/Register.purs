@@ -8,7 +8,7 @@ import Conduit.Api.Utils as Utils
 import Conduit.Component.App as App
 import Conduit.Component.Link as Link
 import Conduit.Component.ResponseErrors (responseErrors)
-import Conduit.Data.Route (Route(..))
+import Conduit.Data.Route (Route(..), toRouteString)
 import Conduit.Env (Env)
 import Conduit.Env.Auth (login)
 import Conduit.Env.Routing (redirect)
@@ -38,8 +38,8 @@ data Action
 
 mkRegisterPage :: App.Component Env Unit
 mkRegisterPage =
-  App.component "RegisterPage" { init, update } \_ store props -> React.do
-    pure $ render store props
+  App.component "RegisterPage" { init, update } \env store props -> React.do
+    pure $ render env store props
   where
   init =
     { username: pure ""
@@ -73,7 +73,7 @@ mkRegisterPage =
                     , unprocessableEntity: \{ errors } -> self.setState _ { submitResponse = RemoteData.Failure errors }
                     }
 
-  render store props =
+  render env store props =
     let
       errors = validate store.state # unV identity (const mempty) :: { username :: _, email :: _, password :: _ }
     in
@@ -87,7 +87,8 @@ mkRegisterPage =
             , children:
                 [ Link.link
                     { className: ""
-                    , route: Login
+                    , href: toRouteString Login
+                    , onClick: env.navigate Login
                     , children: [ R.text "Already have an account?" ]
                     }
                 ]
