@@ -50,7 +50,7 @@ header { auth, currentRoute } =
                                       { className: "user-pic"
                                       , src: Avatar.toString $ maybe Avatar.blank (Avatar.withDefault <<< _.image) profile
                                       }
-                                  , R.text $ " " <> Username.toString username
+                                  , R.text $ " " <> Username.toString (maybe username _.username profile)
                                   ]
                         ]
                     }
