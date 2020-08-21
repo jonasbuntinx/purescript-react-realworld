@@ -6,11 +6,11 @@ import Apiary.Types (none) as Apiary
 import Conduit.Api.Endpoints (Register)
 import Conduit.Api.Utils as Utils
 import Conduit.Capability.Auth (login)
-import Conduit.Capability.Routing (redirect)
+import Conduit.Capability.Routing (redirect, toRouteURL)
 import Conduit.Component.App as App
 import Conduit.Component.Link as Link
 import Conduit.Component.ResponseErrors (responseErrors)
-import Conduit.Data.Route (Route(..), toRouteString)
+import Conduit.Data.Route (Route(..))
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Control.Comonad (extract)
@@ -86,7 +86,7 @@ mkRegisterPage =
             , children:
                 [ Link.link
                     { className: ""
-                    , href: toRouteString Login
+                    , href: toRouteURL Login
                     , onClick: env.routing.navigate Login
                     , children: [ R.text "Already have an account?" ]
                     }

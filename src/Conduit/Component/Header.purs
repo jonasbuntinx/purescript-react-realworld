@@ -1,10 +1,11 @@
 module Conduit.Component.Header where
 
 import Prelude
+import Conduit.Capability.Routing (toRouteURL)
 import Conduit.Component.Link as Link
 import Conduit.Data.Auth (Auth)
 import Conduit.Data.Avatar as Avatar
-import Conduit.Data.Route (Route(..), toRouteString)
+import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username as Username
 import Data.Maybe (Maybe, isJust, isNothing, maybe)
 import Data.Monoid (guard)
@@ -28,7 +29,7 @@ header { auth, currentRoute, onNavigate } =
             , children:
                 [ Link.link
                     { className: "navbar-brand"
-                    , href: toRouteString Home
+                    , href: toRouteURL Home
                     , onClick: onNavigate Home
                     , children: [ R.text "conduit" ]
                     }
@@ -68,7 +69,7 @@ header { auth, currentRoute, onNavigate } =
       , children:
           [ Link.link
               { className: "nav-link" <> guard (currentRoute == route) " active"
-              , href: toRouteString route
+              , href: toRouteURL route
               , onClick: onNavigate route
               , children
               }

@@ -5,13 +5,13 @@ import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
 import Conduit.Api.Endpoints (CreateComment, DeleteArticle, DeleteComment, GetArticle, ListComments)
 import Conduit.Api.Utils as Utils
-import Conduit.Capability.Routing (navigate)
+import Conduit.Capability.Routing (navigate, toRouteURL)
 import Conduit.Component.App as App
 import Conduit.Component.Buttons (ButtonSize(..), favoriteButton, followButton)
 import Conduit.Component.Link as Link
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Comment (CommentId)
-import Conduit.Data.Route (Route(..), toRouteString)
+import Conduit.Data.Route (Route(..))
 import Conduit.Data.Slug (Slug)
 import Conduit.Data.Username as Username
 import Conduit.Form.Validated as V
@@ -220,14 +220,14 @@ mkArticlePage =
                                         R.p_
                                           [ Link.link
                                               { className: ""
-                                              , href: toRouteString Login
+                                              , href: toRouteURL Login
                                               , onClick: env.routing.navigate Login
                                               , children: [ R.text "Sign in" ]
                                               }
                                           , R.text " or "
                                           , Link.link
                                               { className: ""
-                                              , href: toRouteString Register
+                                              , href: toRouteURL Register
                                               , onClick: env.routing.navigate Register
                                               , children: [ R.text "sign up" ]
                                               }
@@ -248,7 +248,7 @@ mkArticlePage =
       , children:
           [ Link.link
               { className: ""
-              , href: toRouteString $ Profile article.author.username
+              , href: toRouteURL $ Profile article.author.username
               , onClick: env.routing.navigate $ Profile article.author.username
               , children:
                   [ R.img
@@ -262,7 +262,7 @@ mkArticlePage =
               , children:
                   [ Link.link
                       { className: "author"
-                      , href: toRouteString $ Profile article.author.username
+                      , href: toRouteURL $ Profile article.author.username
                       , onClick: env.routing.navigate $ Profile article.author.username
                       , children: [ R.text $ Username.toString article.author.username ]
                       }
@@ -280,7 +280,7 @@ mkArticlePage =
                   R.span_
                     [ Link.link
                         { className: "btn btn-outline-secondary btn-sm"
-                        , href: toRouteString $ UpdateArticle article.slug
+                        , href: toRouteURL $ UpdateArticle article.slug
                         , onClick: env.routing.navigate $ UpdateArticle article.slug
                         , children:
                             [ R.i
@@ -340,7 +340,7 @@ mkArticlePage =
                 , children:
                     [ Link.link
                         { className: "comment-author"
-                        , href: toRouteString $ Profile comment.author.username
+                        , href: toRouteURL $ Profile comment.author.username
                         , onClick: env.routing.navigate $ Profile comment.author.username
                         , children:
                             [ R.img
@@ -352,7 +352,7 @@ mkArticlePage =
                     , R.text " "
                     , Link.link
                         { className: "comment-author"
-                        , href: toRouteString $ Profile comment.author.username
+                        , href: toRouteURL $ Profile comment.author.username
                         , onClick: env.routing.navigate $ Profile comment.author.username
                         , children:
                             [ R.text $ Username.toString comment.author.username ]

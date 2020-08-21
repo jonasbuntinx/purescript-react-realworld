@@ -1,7 +1,8 @@
 module Conduit.Component.Routing where
 
 import Prelude
-import Conduit.Data.Route (Route, toRouteString)
+import Conduit.Capability.Routing (toRouteURL)
+import Conduit.Data.Route (Route)
 import Conduit.Env.Routing (RoutingEnv, create)
 import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
@@ -35,6 +36,6 @@ mkRoutingManager routes = do
     Event.makeEvent \k ->
       PushState.matchesWith (parse matcher) (\old new -> k (old /\ new)) interface
 
-  navigate interface = interface.pushState undefined <<< toRouteString
+  navigate interface = interface.pushState undefined <<< toRouteURL
 
-  redirect interface = interface.replaceState undefined <<< toRouteString
+  redirect interface = interface.replaceState undefined <<< toRouteURL
