@@ -6,10 +6,8 @@ import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
 import Conduit.Api.Endpoints (GetUser)
 import Conduit.Api.Utils (addBaseUrl, addToken)
-import Conduit.Data.Auth (Auth)
 import Conduit.Data.Jwt as Jwt
-import Conduit.Data.Profile (UserProfile)
-import Conduit.Env.Auth (AuthSignal, create)
+import Conduit.Env.Auth (AuthEnv, create)
 import Data.Either (Either(..), hush)
 import Data.Foldable (for_, traverse_)
 import Data.Maybe (Maybe(..))
@@ -25,16 +23,7 @@ import Foreign.Day (fromMilliseconds, now)
 import React.Basic.Hooks as React
 import Wire.React.Class (modify, read)
 
-mkAuthManager ::
-  Effect
-    ( { authSignal :: AuthSignal
-      , readAuth :: Effect (Maybe Auth)
-      , login :: String -> UserProfile -> Effect Unit
-      , logout :: Effect Unit
-      , updateProfile :: UserProfile -> Effect Unit
-      }
-        /\ (React.JSX -> React.JSX)
-    )
+mkAuthManager :: Effect (AuthEnv /\ (React.JSX -> React.JSX))
 mkAuthManager = do
   authSignal <- create
   component <-
@@ -47,8 +36,8 @@ mkAuthManager = do
         pure $ traverse_ Timer.clearInterval state.interval
       pure content
   pure
-    $ { authSignal
-      , readAuth: read authSignal
+    $ { signal: authSignal
+      , read: read authSignal
       , login: login authSignal
       , logout: logout authSignal
       , updateProfile: updateProfile authSignal

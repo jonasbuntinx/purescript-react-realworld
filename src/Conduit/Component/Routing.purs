@@ -2,7 +2,7 @@ module Conduit.Component.Routing where
 
 import Prelude
 import Conduit.Data.Route (Route, toRouteString)
-import Conduit.Env.Routing (RoutingSignal, create)
+import Conduit.Env.Routing (RoutingEnv, create)
 import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
 import Foreign.NullOrUndefined (undefined)
@@ -14,13 +14,7 @@ import Wire.React.Class (modify)
 
 mkRoutingManager ::
   RouteDuplex' Route ->
-  Effect
-    ( { routingSignal :: RoutingSignal
-      , navigate :: Route -> Effect Unit
-      , redirect :: Route -> Effect Unit
-      }
-        /\ (React.JSX -> React.JSX)
-    )
+  Effect (RoutingEnv /\ (React.JSX -> React.JSX))
 mkRoutingManager routes = do
   interface <- PushState.makeInterface
   routingSignal <- create
@@ -30,7 +24,12 @@ mkRoutingManager routes = do
         Event.subscribe (onPushState interface routes) \(_ /\ route) -> do
           modify routingSignal $ const $ route
       pure content
-  pure $ { routingSignal, navigate: navigate interface, redirect: redirect interface } /\ component
+  pure
+    $ { signal: routingSignal
+      , navigate: navigate interface
+      , redirect: redirect interface
+      }
+    /\ component
   where
   onPushState interface matcher =
     Event.makeEvent \k ->

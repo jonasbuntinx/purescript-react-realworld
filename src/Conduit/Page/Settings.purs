@@ -5,15 +5,14 @@ import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
 import Conduit.Api.Endpoints (UpdateUser)
 import Conduit.Api.Utils as Utils
+import Conduit.Capability.Auth (logout, updateProfile)
+import Conduit.Capability.Routing (navigate, redirect)
 import Conduit.Component.App as App
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Profile (UserProfile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username as Username
-import Conduit.Env (Env)
-import Conduit.Env.Auth (logout, updateProfile)
-import Conduit.Env.Routing (navigate, redirect)
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Conduit.Hook.Auth (useProfile)
@@ -45,7 +44,7 @@ data Action
   | Submit
   | Logout
 
-mkSettingsPage :: App.Component Env Unit
+mkSettingsPage :: App.Component Unit
 mkSettingsPage =
   App.component "SettingsPage" { init, update } \env store props -> React.do
     profile <- useProfile env

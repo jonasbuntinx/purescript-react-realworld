@@ -1,17 +1,18 @@
 module Main where
 
 import Prelude
+import Conduit.AppM (runAppM)
 import Conduit.Component.Auth as Auth
 import Conduit.Component.Routing as Routing
 import Conduit.Data.Route (routeCodec)
 import Conduit.Root as Root
-import Control.Monad.Reader as Reader
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
+import Effect.Aff (launchAff_)
+import Effect.Class (liftEffect)
 import Effect.Exception (throw)
 import React.Basic.DOM (render)
-import Record as Record
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)
 import Web.HTML.HTMLDocument (toNonElementParentNode)
@@ -23,7 +24,8 @@ main = do
   case container of
     Nothing -> throw "Conduit container element not found."
     Just c -> do
-      authEnv /\ authManager <- Auth.mkAuthManager
-      routingEnv /\ routingManager <- Routing.mkRoutingManager routeCodec
-      root <- Reader.runReaderT Root.mkRoot $ Record.merge authEnv routingEnv
-      render (authManager (routingManager (root unit))) c
+      auth /\ authManager <- Auth.mkAuthManager
+      routing /\ routingManager <- Routing.mkRoutingManager routeCodec
+      launchAff_ do
+        root <- runAppM { auth, routing } Root.mkRoot
+        liftEffect $ render (authManager (routingManager (root unit))) c

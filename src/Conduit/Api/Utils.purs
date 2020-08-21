@@ -5,18 +5,17 @@ import Apiary.Client (makeRequest) as Apiary
 import Apiary.Client.Request (class BuildRequest) as Apiary
 import Apiary.Client.Response (class DecodeResponse) as Apiary
 import Apiary.Types (Error(..)) as Apiary
+import Conduit.Capability.Auth (class MonadAuth, read)
+import Conduit.Capability.Routing (class MonadRouting, redirect)
 import Conduit.Config as Config
-import Conduit.Data.Auth (Auth)
 import Conduit.Data.Route (Route(..))
 import Control.Comonad (extract)
-import Control.Monad.Reader (class MonadAsk, ask)
 import Data.Bifunctor (lmap)
 import Data.Bitraversable (lfor)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
-import Effect (Effect)
 import Effect.Aff.Class (class MonadAff, liftAff)
-import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Class (class MonadEffect)
 import Effect.Class.Console as Console
 import Effect.Exception as Exception
 import Foreign (renderForeignError)
@@ -28,7 +27,7 @@ data Error
   | ApiaryError Apiary.Error
 
 makeRequest ::
-  forall m route path query body rep response.
+  forall m rep body query path route response.
   MonadAff m =>
   Apiary.BuildRequest route path query body rep =>
   Apiary.DecodeResponse rep response =>
@@ -43,8 +42,9 @@ makeRequest route path query body = do
   pure $ lmap ApiaryError res
 
 makeSecureRequest ::
-  forall m r rep body query path route response.
-  MonadAsk { readAuth :: Effect (Maybe Auth), redirect :: Route -> Effect Unit | r } m =>
+  forall m rep body query path route response.
+  MonadAuth m =>
+  MonadRouting Route m =>
   MonadAff m =>
   Apiary.BuildRequest route path query body rep =>
   Apiary.DecodeResponse rep response =>
@@ -54,11 +54,10 @@ makeSecureRequest ::
   body ->
   m (Either Error response)
 makeSecureRequest route path query body = do
-  env <- ask
-  auth <- liftEffect $ env.readAuth
+  auth <- read
   case auth of
     Nothing -> do
-      liftEffect $ env.redirect Register
+      redirect Register
       pure $ Left $ NotAuthorized
     Just { token } -> do
       res <- liftAff $ Apiary.makeRequest route (addBaseUrl <<< addToken token) path query body

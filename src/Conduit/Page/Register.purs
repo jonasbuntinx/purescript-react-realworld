@@ -5,13 +5,12 @@ import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
 import Conduit.Api.Endpoints (Register)
 import Conduit.Api.Utils as Utils
+import Conduit.Capability.Auth (login)
+import Conduit.Capability.Routing (redirect)
 import Conduit.Component.App as App
 import Conduit.Component.Link as Link
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Data.Route (Route(..), toRouteString)
-import Conduit.Env (Env)
-import Conduit.Env.Auth (login)
-import Conduit.Env.Routing (redirect)
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Control.Comonad (extract)
@@ -36,7 +35,7 @@ data Action
   | UpdatePassword String
   | Submit
 
-mkRegisterPage :: App.Component Env Unit
+mkRegisterPage :: App.Component Unit
 mkRegisterPage =
   App.component "RegisterPage" { init, update } \env store props -> React.do
     pure $ render env store props
@@ -88,7 +87,7 @@ mkRegisterPage =
                 [ Link.link
                     { className: ""
                     , href: toRouteString Login
-                    , onClick: env.navigate Login
+                    , onClick: env.routing.navigate Login
                     , children: [ R.text "Already have an account?" ]
                     }
                 ]

@@ -5,7 +5,6 @@ import Conduit.Component.App as App
 import Conduit.Component.Footer as Footer
 import Conduit.Component.Header as Header
 import Conduit.Data.Route (Route(..))
-import Conduit.Env (Env)
 import Conduit.Hook.Auth (useAuth)
 import Conduit.Hook.Routing (useRoute)
 import Conduit.Page.Article (mkArticlePage)
@@ -19,7 +18,7 @@ import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import React.Basic.Hooks as React
 
-mkRoot :: App.Component Env Unit
+mkRoot :: App.Component Unit
 mkRoot = do
   homePage <- mkHomePage
   loginPage <- mkLoginPage
@@ -33,17 +32,17 @@ mkRoot = do
     route <- useRoute env
     React.useEffect (route /\ auth) do
       case route, auth of
-        Login, Just _ -> env.redirect Home
-        Register, Just _ -> env.redirect Home
-        Settings, Nothing -> env.redirect Home
-        CreateArticle, Nothing -> env.redirect Home
-        UpdateArticle _, Nothing -> env.redirect Home
-        Error, _ -> env.redirect Home
+        Login, Just _ -> env.routing.redirect Home
+        Register, Just _ -> env.routing.redirect Home
+        Settings, Nothing -> env.routing.redirect Home
+        CreateArticle, Nothing -> env.routing.redirect Home
+        UpdateArticle _, Nothing -> env.routing.redirect Home
+        Error, _ -> env.routing.redirect Home
         _, _ -> pure unit
       mempty
     pure
       $ React.fragment
-          [ Header.header { auth, currentRoute: route, onNavigate: env.navigate }
+          [ Header.header { auth, currentRoute: route, onNavigate: env.routing.navigate }
           , case route of
               Home -> homePage unit
               Login -> loginPage unit

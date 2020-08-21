@@ -5,13 +5,12 @@ import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
 import Conduit.Api.Endpoints (GetArticle, UpdateArticle, CreateArticle)
 import Conduit.Api.Utils as Utils
+import Conduit.Capability.Routing (navigate)
 import Conduit.Component.App as App
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Component.TagInput (tagInput)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Slug (Slug)
-import Conduit.Env (Env)
-import Conduit.Env.Routing (navigate)
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Control.Comonad (extract)
@@ -45,7 +44,7 @@ data Action
   | UpdateTagList (Set String)
   | Submit
 
-mkEditorPage :: App.Component Env Props
+mkEditorPage :: App.Component Props
 mkEditorPage =
   App.component "SettingsPage" { init, update } \env store props -> React.do
     React.useEffect props.slug do

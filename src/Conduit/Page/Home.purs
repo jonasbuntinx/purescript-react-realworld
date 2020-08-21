@@ -10,7 +10,6 @@ import Conduit.Component.ArticleList (articleList)
 import Conduit.Component.Pagination (pagination)
 import Conduit.Component.Tabs as Tabs
 import Conduit.Data.Article (defaultArticlesQuery)
-import Conduit.Env (Env)
 import Conduit.Hook.Auth (useAuth)
 import Conduit.Page.Utils (_articles, toggleFavorite)
 import Data.Either (either)
@@ -37,7 +36,7 @@ data Action
   | LoadArticles Tab { offset :: Int, limit :: Int }
   | ToggleFavorite Int
 
-mkHomePage :: App.Component Env Unit
+mkHomePage :: App.Component Unit
 mkHomePage =
   App.component "HomePage" { init, update } \env store props -> React.do
     auth <- useAuth env
@@ -135,7 +134,7 @@ mkHomePage =
     R.div_
       [ articleList
           { articles: store.state.articles <#> _.articles
-          , onNavigate: env.navigate
+          , onNavigate: env.routing.navigate
           , onFavoriteToggle: store.dispatch <<< ToggleFavorite
           }
       , store.state.articles

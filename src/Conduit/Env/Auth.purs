@@ -10,7 +10,6 @@ import Conduit.Data.Auth (Auth)
 import Conduit.Data.Jwt as Jwt
 import Conduit.Data.Profile (UserProfile)
 import Control.Monad.Except (runExcept)
-import Control.Monad.Reader (class MonadAsk, ask)
 import Data.Either (hush)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Symbol (SProxy(..))
@@ -18,7 +17,7 @@ import Data.Time.Duration (Milliseconds(..))
 import Data.Traversable (for)
 import Data.Variant as Variant
 import Effect (Effect)
-import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Class (liftEffect)
 import Foreign.Day (fromMilliseconds)
 import Foreign.Generic (decodeJSON, encodeJSON)
 import Record as Record
@@ -29,6 +28,14 @@ import Wire.React.Async as Async
 import Wire.React.Class as Wire
 import Wire.React.Selector as Selector
 import Wire.React.Sync as Sync
+
+type AuthEnv
+  = { signal :: AuthSignal
+    , read :: Effect (Maybe Auth)
+    , login :: String -> UserProfile -> Effect Unit
+    , logout :: Effect Unit
+    , updateProfile :: UserProfile -> Effect Unit
+    }
 
 type AuthSignal
   = Selector.Selector (Maybe Auth)
@@ -77,13 +84,3 @@ create = do
           Selector.write tokenSignal (_.token <$> auth)
           Selector.write profileSignal (_.profile =<< auth)
     }
-
--- | Helpers
-login :: forall m r. MonadAsk { login :: String -> UserProfile -> Effect Unit | r } m => MonadEffect m => String -> UserProfile -> m Unit
-login token profile = ask >>= \env -> liftEffect $ env.login token profile
-
-logout :: forall m r. MonadAsk { logout :: Effect Unit | r } m => MonadEffect m => m Unit
-logout = ask >>= \env -> liftEffect env.logout
-
-updateProfile :: forall m r. MonadAsk { updateProfile :: UserProfile -> Effect Unit | r } m => MonadEffect m => UserProfile -> m Unit
-updateProfile profile = ask >>= \env -> liftEffect $ env.updateProfile profile
