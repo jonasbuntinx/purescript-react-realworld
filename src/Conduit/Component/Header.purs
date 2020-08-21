@@ -2,10 +2,10 @@ module Conduit.Component.Header where
 
 import Prelude
 import Conduit.Component.Link as Link
+import Conduit.Data.Auth (Auth)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Route (Route(..), toRouteString)
 import Conduit.Data.Username as Username
-import Conduit.Env.Auth (Auth)
 import Data.Maybe (Maybe, isJust, isNothing, maybe)
 import Data.Monoid (guard)
 import Effect (Effect)

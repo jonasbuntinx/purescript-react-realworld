@@ -6,9 +6,9 @@ import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
 import Conduit.Api.Endpoints (GetUser)
 import Conduit.Api.Utils (addBaseUrl, addToken)
+import Conduit.Data.Auth (Auth)
 import Conduit.Data.Jwt as Jwt
 import Conduit.Data.Profile (UserProfile)
-import Conduit.Data.Username (Username)
 import Control.Monad.Except (runExcept)
 import Control.Monad.Reader (class MonadAsk, ask)
 import Data.Either (hush)
@@ -19,8 +19,8 @@ import Data.Traversable (for)
 import Data.Variant as Variant
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
+import Foreign.Day (fromMilliseconds)
 import Foreign.Generic (decodeJSON, encodeJSON)
-import Foreign.Day (DateTime, fromMilliseconds)
 import Record as Record
 import Web.HTML (window)
 import Web.HTML.Window as Window
@@ -29,13 +29,6 @@ import Wire.React.Async as Async
 import Wire.React.Class as Wire
 import Wire.React.Selector as Selector
 import Wire.React.Sync as Sync
-
-type Auth
-  = { token :: String
-    , username :: Username
-    , expirationTime :: DateTime
-    , profile :: Maybe UserProfile
-    }
 
 type AuthSignal
   = Selector.Selector (Maybe Auth)
@@ -86,26 +79,11 @@ create = do
     }
 
 -- | Helpers
-login :: forall m r. MonadAsk { authSignal :: AuthSignal | r } m => MonadEffect m => String -> UserProfile -> m Unit
-login token profile = ask >>= liftEffect <<< flip (flip login' token) profile <<< _.authSignal
+login :: forall m r. MonadAsk { login :: String -> UserProfile -> Effect Unit | r } m => MonadEffect m => String -> UserProfile -> m Unit
+login token profile = ask >>= \env -> liftEffect $ env.login token profile
 
-login' :: AuthSignal -> String -> UserProfile -> Effect Unit
-login' authSignal token profile =
-  Wire.modify authSignal \_ -> do
-    { exp, username } <- hush $ Jwt.decode token
-    pure { token, username, expirationTime: fromMilliseconds $ Milliseconds $ exp * 1000.0, profile: Just profile }
+logout :: forall m r. MonadAsk { logout :: Effect Unit | r } m => MonadEffect m => m Unit
+logout = ask >>= \env -> liftEffect env.logout
 
-refreshToken :: forall m r. MonadAsk { authSignal :: AuthSignal | r } m => MonadEffect m => String -> m Unit
-refreshToken token = ask >>= liftEffect <<< flip refreshToken' token <<< _.authSignal
-
-refreshToken' :: AuthSignal -> String -> Effect Unit
-refreshToken' authSignal token = Wire.modify authSignal $ map $ _ { token = token }
-
-logout :: forall m r. MonadAsk { authSignal :: AuthSignal | r } m => MonadEffect m => m Unit
-logout = ask >>= liftEffect <<< logout' <<< _.authSignal
-
-logout' :: AuthSignal -> Effect Unit
-logout' authSignal = Wire.modify authSignal $ const Nothing
-
-updateProfile :: forall m r. MonadAsk { authSignal :: AuthSignal | r } m => MonadEffect m => UserProfile -> m Unit
-updateProfile profile = ask >>= liftEffect <<< flip Wire.modify (map $ _ { profile = Just profile }) <<< _.authSignal
+updateProfile :: forall m r. MonadAsk { updateProfile :: UserProfile -> Effect Unit | r } m => MonadEffect m => UserProfile -> m Unit
+updateProfile profile = ask >>= \env -> liftEffect $ env.updateProfile profile

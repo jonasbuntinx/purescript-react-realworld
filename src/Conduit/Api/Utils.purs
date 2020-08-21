@@ -6,6 +6,7 @@ import Apiary.Client.Request (class BuildRequest) as Apiary
 import Apiary.Client.Response (class DecodeResponse) as Apiary
 import Apiary.Types (Error(..)) as Apiary
 import Conduit.Config as Config
+import Conduit.Data.Auth (Auth)
 import Conduit.Data.Route (Route(..))
 import Control.Comonad (extract)
 import Control.Monad.Reader (class MonadAsk, ask)
@@ -21,7 +22,6 @@ import Effect.Exception as Exception
 import Foreign (renderForeignError)
 import Foreign.Object as Object
 import Milkis as Milkis
-import Wire.React.Class (class Atom, read)
 
 data Error
   = NotAuthorized
@@ -43,9 +43,8 @@ makeRequest route path query body = do
   pure $ lmap ApiaryError res
 
 makeSecureRequest ::
-  forall m a r s rep body query path route response.
-  MonadAsk { authSignal :: a (Maybe { token :: String | s }), redirect :: Route -> Effect Unit | r } m =>
-  Atom a =>
+  forall m r rep body query path route response.
+  MonadAsk { readAuth :: Effect (Maybe Auth), redirect :: Route -> Effect Unit | r } m =>
   MonadAff m =>
   Apiary.BuildRequest route path query body rep =>
   Apiary.DecodeResponse rep response =>
@@ -56,7 +55,7 @@ makeSecureRequest ::
   m (Either Error response)
 makeSecureRequest route path query body = do
   env <- ask
-  auth <- liftEffect $ read env.authSignal
+  auth <- liftEffect $ env.readAuth
   case auth of
     Nothing -> do
       liftEffect $ env.redirect Register

@@ -41,10 +41,12 @@ mkHomePage :: App.Component Env Unit
 mkHomePage =
   App.component "HomePage" { init, update } \env store props -> React.do
     auth <- useAuth env
-    React.useEffectOnce do
+    React.useEffect auth do
       case auth of
         Nothing -> store.dispatch $ LoadArticles store.state.tab store.state.pagination
         Just _ -> store.dispatch $ LoadArticles Feed store.state.pagination
+      mempty
+    React.useEffectOnce do
       store.dispatch LoadTags
       mempty
     pure $ render env auth store props

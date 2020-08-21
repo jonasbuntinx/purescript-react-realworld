@@ -15,7 +15,7 @@ import Wire.React.Class (modify)
 mkRoutingManager ::
   RouteDuplex' Route ->
   Effect
-    ( { signal :: RoutingSignal
+    ( { routingSignal :: RoutingSignal
       , navigate :: Route -> Effect Unit
       , redirect :: Route -> Effect Unit
       }
@@ -30,7 +30,7 @@ mkRoutingManager routes = do
         Event.subscribe (onPushState interface routes) \(_ /\ route) -> do
           modify routingSignal $ const $ route
       pure content
-  pure $ { signal: routingSignal, navigate: navigate interface, redirect: redirect interface } /\ component
+  pure $ { routingSignal, navigate: navigate interface, redirect: redirect interface } /\ component
   where
   onPushState interface matcher =
     Event.makeEvent \k ->

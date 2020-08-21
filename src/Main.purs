@@ -11,6 +11,7 @@ import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Exception (throw)
 import React.Basic.DOM (render)
+import Record as Record
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)
 import Web.HTML.HTMLDocument (toNonElementParentNode)
@@ -22,7 +23,7 @@ main = do
   case container of
     Nothing -> throw "Conduit container element not found."
     Just c -> do
-      authSignal /\ authManager <- Auth.mkAuthManager
-      { signal, navigate, redirect } /\ routingManager <- Routing.mkRoutingManager routeCodec
-      root <- Reader.runReaderT Root.mkRoot { authSignal, routingSignal: signal, navigate, redirect }
+      authEnv /\ authManager <- Auth.mkAuthManager
+      routingEnv /\ routingManager <- Routing.mkRoutingManager routeCodec
+      root <- Reader.runReaderT Root.mkRoot $ Record.merge authEnv routingEnv
       render (authManager (routingManager (root unit))) c
