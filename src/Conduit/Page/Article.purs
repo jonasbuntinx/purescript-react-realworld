@@ -142,6 +142,10 @@ mkArticlePage =
     res <- Utils.makeRequest (Apiary.Route :: ListComments) { slug: self.props.slug } Apiary.none Apiary.none
     self.setState _ { comments = res # either RemoteData.Failure (Variant.match { ok: RemoteData.Success <<< _.comments }) }
 
+  validate values = ado
+    body <- values.body # V.validated (LR.prop (SProxy :: _ "body")) F.nonEmpty
+    in { body }
+
   render env auth store props =
     let
       errors = validate store.state # unV identity (const mempty) :: { body :: _ }
@@ -149,7 +153,7 @@ mkArticlePage =
       store.state.article
         # RemoteData.maybe React.empty \article ->
             React.fragment
-              [ container (banner env auth article store)
+              [ container (banner article)
                   [ R.div
                       { className: "row article-content"
                       , children:
@@ -174,7 +178,7 @@ mkArticlePage =
                   , R.hr {}
                   , R.div
                       { className: "article-actions"
-                      , children: [ articleMeta env auth article store ]
+                      , children: [ articleMeta article ]
                       }
                   , R.div
                       { className: "row"
@@ -234,176 +238,172 @@ mkArticlePage =
                                           , R.text " to add comments on this article."
                                           ]
                                   , (preview _Success store.state.comments)
-                                      # maybe React.empty (React.fragment <<< commentList env auth store)
+                                      # maybe React.empty (React.fragment <<< commentList)
                                   ]
                               }
                           ]
                       }
                   ]
               ]
-
-  articleMeta env auth article store =
-    R.div
-      { className: "article-meta"
-      , children:
-          [ Link.link
-              { className: ""
-              , href: toRouteURL $ Profile article.author.username
-              , onClick: env.routing.navigate $ Profile article.author.username
-              , children:
-                  [ R.img
-                      { src: Avatar.toString $ Avatar.withDefault article.author.image
-                      , alt: Username.toString article.author.username
-                      }
-                  ]
-              }
-          , R.div
-              { className: "info"
-              , children:
-                  [ Link.link
-                      { className: "author"
-                      , href: toRouteURL $ Profile article.author.username
-                      , onClick: env.routing.navigate $ Profile article.author.username
-                      , children: [ R.text $ Username.toString article.author.username ]
-                      }
-                  , R.span
-                      { className: "date"
-                      , children:
-                          [ R.text $ toDisplay article.createdAt
-                          ]
-                      }
-                  ]
-              }
-          , case _.username <$> auth of
-              Just username
-                | username == article.author.username ->
-                  R.span_
-                    [ Link.link
-                        { className: "btn btn-outline-secondary btn-sm"
-                        , href: toRouteURL $ UpdateArticle article.slug
-                        , onClick: env.routing.navigate $ UpdateArticle article.slug
-                        , children:
-                            [ R.i
-                                { className: "ion-edit"
-                                , children: []
-                                }
-                            , R.text " Edit Article"
-                            ]
-                        }
-                    , R.text " "
-                    , R.button
-                        { className: "btn btn-outline-danger btn-sm"
-                        , onClick: handler_ $ store.dispatch DeleteArticle
-                        , children:
-                            [ R.i
-                                { className: "ion-trash-a"
-                                , children: []
-                                }
-                            , R.text " Delete Article"
-                            ]
-                        }
-                    ]
-              _ ->
-                R.span_
-                  [ followButton
-                      { following: article.author.following
-                      , username: article.author.username
-                      , onClick: handler_ $ store.dispatch ToggleFollow
-                      }
-                  , R.text " "
-                  , favoriteButton
-                      { size: Medium
-                      , favorited: article.favorited
-                      , count: article.favoritesCount
-                      , onClick: handler_ $ store.dispatch ToggleFavorite
-                      }
-                  ]
-          ]
-      }
-
-  commentList env auth store =
-    map \comment ->
+    where
+    articleMeta article =
       R.div
-        { className: "card"
+        { className: "article-meta"
         , children:
-            [ R.div
-                { className: "card-block"
+            [ Link.link
+                { className: ""
+                , href: toRouteURL $ Profile article.author.username
+                , onClick: env.routing.navigate $ Profile article.author.username
                 , children:
-                    [ R.p
-                        { className: "card-text"
-                        , children: [ R.text comment.body ]
+                    [ R.img
+                        { src: Avatar.toString $ Avatar.withDefault article.author.image
+                        , alt: Username.toString article.author.username
                         }
                     ]
                 }
             , R.div
-                { className: "card-footer"
+                { className: "info"
                 , children:
                     [ Link.link
-                        { className: "comment-author"
-                        , href: toRouteURL $ Profile comment.author.username
-                        , onClick: env.routing.navigate $ Profile comment.author.username
-                        , children:
-                            [ R.img
-                                { className: "comment-author-img"
-                                , src: Avatar.toString $ Avatar.withDefault comment.author.image
-                                }
-                            ]
+                        { className: "author"
+                        , href: toRouteURL $ Profile article.author.username
+                        , onClick: env.routing.navigate $ Profile article.author.username
+                        , children: [ R.text $ Username.toString article.author.username ]
                         }
-                    , R.text " "
-                    , Link.link
-                        { className: "comment-author"
-                        , href: toRouteURL $ Profile comment.author.username
-                        , onClick: env.routing.navigate $ Profile comment.author.username
-                        , children:
-                            [ R.text $ Username.toString comment.author.username ]
-                        }
-                    , R.text " "
                     , R.span
-                        { className: "date-posted"
+                        { className: "date"
                         , children:
-                            [ R.text $ toDisplay comment.createdAt ]
-                        }
-                    , guard (Just comment.author.username == map _.username auth) R.span
-                        { className: "mod-options"
-                        , children:
-                            [ R.i
-                                { className: "ion-trash-a"
-                                , onClick: handler_ $ store.dispatch $ DeleteComment comment.id
-                                , children: []
-                                }
+                            [ R.text $ toDisplay article.createdAt
                             ]
                         }
+                    ]
+                }
+            , case _.username <$> auth of
+                Just username
+                  | username == article.author.username ->
+                    R.span_
+                      [ Link.link
+                          { className: "btn btn-outline-secondary btn-sm"
+                          , href: toRouteURL $ UpdateArticle article.slug
+                          , onClick: env.routing.navigate $ UpdateArticle article.slug
+                          , children:
+                              [ R.i
+                                  { className: "ion-edit"
+                                  , children: []
+                                  }
+                              , R.text " Edit Article"
+                              ]
+                          }
+                      , R.text " "
+                      , R.button
+                          { className: "btn btn-outline-danger btn-sm"
+                          , onClick: handler_ $ store.dispatch DeleteArticle
+                          , children:
+                              [ R.i
+                                  { className: "ion-trash-a"
+                                  , children: []
+                                  }
+                              , R.text " Delete Article"
+                              ]
+                          }
+                      ]
+                _ ->
+                  R.span_
+                    [ followButton
+                        { following: article.author.following
+                        , username: article.author.username
+                        , onClick: handler_ $ store.dispatch ToggleFollow
+                        }
+                    , R.text " "
+                    , favoriteButton
+                        { size: Medium
+                        , favorited: article.favorited
+                        , count: article.favoritesCount
+                        , onClick: handler_ $ store.dispatch ToggleFavorite
+                        }
+                    ]
+            ]
+        }
+
+    commentList =
+      map \comment ->
+        R.div
+          { className: "card"
+          , children:
+              [ R.div
+                  { className: "card-block"
+                  , children:
+                      [ R.p
+                          { className: "card-text"
+                          , children: [ R.text comment.body ]
+                          }
+                      ]
+                  }
+              , R.div
+                  { className: "card-footer"
+                  , children:
+                      [ Link.link
+                          { className: "comment-author"
+                          , href: toRouteURL $ Profile comment.author.username
+                          , onClick: env.routing.navigate $ Profile comment.author.username
+                          , children:
+                              [ R.img
+                                  { className: "comment-author-img"
+                                  , src: Avatar.toString $ Avatar.withDefault comment.author.image
+                                  }
+                              ]
+                          }
+                      , R.text " "
+                      , Link.link
+                          { className: "comment-author"
+                          , href: toRouteURL $ Profile comment.author.username
+                          , onClick: env.routing.navigate $ Profile comment.author.username
+                          , children:
+                              [ R.text $ Username.toString comment.author.username ]
+                          }
+                      , R.text " "
+                      , R.span
+                          { className: "date-posted"
+                          , children:
+                              [ R.text $ toDisplay comment.createdAt ]
+                          }
+                      , guard (Just comment.author.username == map _.username auth) R.span
+                          { className: "mod-options"
+                          , children:
+                              [ R.i
+                                  { className: "ion-trash-a"
+                                  , onClick: handler_ $ store.dispatch $ DeleteComment comment.id
+                                  , children: []
+                                  }
+                              ]
+                          }
+                      ]
+                  }
+              ]
+          }
+
+    banner article =
+      R.div
+        { className: "banner"
+        , children:
+            [ R.div
+                { className: "container"
+                , children:
+                    [ R.h1_ [ R.text article.title ]
+                    , articleMeta article
                     ]
                 }
             ]
         }
 
-  banner env auth article store =
-    R.div
-      { className: "banner"
-      , children:
-          [ R.div
-              { className: "container"
-              , children:
-                  [ R.h1_ [ R.text article.title ]
-                  , articleMeta env auth article store
-                  ]
-              }
-          ]
-      }
-
-  container header children =
-    R.div
-      { className: "article-page"
-      , children:
-          [ header
-          , R.div
-              { className: "container page"
-              , children
-              }
-          ]
-      }
-
-  validate values = ado
-    body <- values.body # V.validated (LR.prop (SProxy :: _ "body")) F.nonEmpty
-    in { body }
+    container header children =
+      R.div
+        { className: "article-page"
+        , children:
+            [ header
+            , R.div
+                { className: "container page"
+                , children
+                }
+            ]
+        }

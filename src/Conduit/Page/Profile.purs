@@ -91,7 +91,7 @@ mkProfilePage =
     ToggleFollow -> toggleFollow (preview _profile self.state) (self.setState <<< set _profile)
 
   render env auth store props =
-    guard (not $ RemoteData.isLoading store.state.profile) container (userInfo env auth store props)
+    guard (not $ RemoteData.isLoading store.state.profile) container userInfo
       [ Tabs.tabs
           { className: "articles-toggle"
           , selectedTab: Just props.tab
@@ -99,12 +99,12 @@ mkProfilePage =
               [ { id: Published
                 , label: R.text "Published Articles"
                 , disabled: false
-                , content: tabContent env store
+                , content: tabContent
                 }
               , { id: Favorited
                 , label: R.text "Favorited Articles"
                 , disabled: false
-                , content: tabContent env store
+                , content: tabContent
                 }
               ]
           , onChange:
@@ -113,90 +113,90 @@ mkProfilePage =
                 Favorited -> env.routing.navigate $ Favorites props.username
           }
       ]
+    where
+    tabContent =
+      R.div_
+        [ articleList
+            { articles: store.state.articles <#> _.articles
+            , onNavigate: env.routing.navigate
+            , onFavoriteToggle: store.dispatch <<< ToggleFavorite
+            }
+        , store.state.articles
+            # RemoteData.maybe React.empty \{ articlesCount } ->
+                pagination
+                  { offset: store.state.pagination.offset
+                  , limit: store.state.pagination.limit
+                  , totalCount: articlesCount
+                  , onChange: store.dispatch <<< LoadArticles
+                  , focusWindow: 3
+                  , marginPages: 1
+                  }
+        ]
 
-  tabContent env store =
-    R.div_
-      [ articleList
-          { articles: store.state.articles <#> _.articles
-          , onNavigate: env.routing.navigate
-          , onFavoriteToggle: store.dispatch <<< ToggleFavorite
-          }
-      , store.state.articles
-          # RemoteData.maybe React.empty \{ articlesCount } ->
-              pagination
-                { offset: store.state.pagination.offset
-                , limit: store.state.pagination.limit
-                , totalCount: articlesCount
-                , onChange: store.dispatch <<< LoadArticles
-                , focusWindow: 3
-                , marginPages: 1
+    userInfo =
+      R.div
+        { className: "user-info"
+        , children:
+            [ R.div
+                { className: "container"
+                , children:
+                    [ R.div
+                        { className: "row"
+                        , children:
+                            [ R.div
+                                { className: "col-xs-12 col-md-10 offset-md-1"
+                                , children:
+                                    [ R.img
+                                        { className: "user-img"
+                                        , src: Avatar.toString $ RemoteData.maybe Avatar.blank (Avatar.withDefault <<< _.image) store.state.profile
+                                        }
+                                    , R.h4_ [ R.text $ Username.toString props.username ]
+                                    , maybe React.empty (\bio -> R.p_ [ R.text bio ]) (RemoteData.toMaybe store.state.profile >>= _.bio)
+                                    , if (Just props.username == map _.username auth) then
+                                        R.button
+                                          { className: "btn btn-sm action-btn btn-outline-secondary"
+                                          , onClick: handler_ $ env.routing.navigate Settings
+                                          , children:
+                                              [ R.i
+                                                  { className: "ion-gear-a"
+                                                  , children: []
+                                                  }
+                                              , R.text $ " Edit Profile Settings"
+                                              ]
+                                          }
+                                      else
+                                        followButton
+                                          { following: RemoteData.maybe false _.following store.state.profile
+                                          , username: props.username
+                                          , onClick: handler_ $ store.dispatch ToggleFollow
+                                          }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 }
-      ]
+            ]
+        }
 
-  userInfo env auth store props =
-    R.div
-      { className: "user-info"
-      , children:
-          [ R.div
-              { className: "container"
-              , children:
-                  [ R.div
-                      { className: "row"
-                      , children:
-                          [ R.div
-                              { className: "col-xs-12 col-md-10 offset-md-1"
-                              , children:
-                                  [ R.img
-                                      { className: "user-img"
-                                      , src: Avatar.toString $ RemoteData.maybe Avatar.blank (Avatar.withDefault <<< _.image) store.state.profile
-                                      }
-                                  , R.h4_ [ R.text $ Username.toString props.username ]
-                                  , maybe React.empty (\bio -> R.p_ [ R.text bio ]) (RemoteData.toMaybe store.state.profile >>= _.bio)
-                                  , if (Just props.username == map _.username auth) then
-                                      R.button
-                                        { className: "btn btn-sm action-btn btn-outline-secondary"
-                                        , onClick: handler_ $ env.routing.navigate Settings
-                                        , children:
-                                            [ R.i
-                                                { className: "ion-gear-a"
-                                                , children: []
-                                                }
-                                            , R.text $ " Edit Profile Settings"
-                                            ]
-                                        }
-                                    else
-                                      followButton
-                                        { following: RemoteData.maybe false _.following store.state.profile
-                                        , username: props.username
-                                        , onClick: handler_ $ store.dispatch ToggleFollow
-                                        }
-                                  ]
-                              }
-                          ]
-                      }
-                  ]
-              }
-          ]
-      }
-
-  container header children =
-    R.div
-      { className: "profile-page"
-      , children:
-          [ header
-          , R.div
-              { className: "container"
-              , children:
-                  [ R.div
-                      { className: "row"
-                      , children:
-                          [ R.div
-                              { className: "col-xs-12 col-md-10 offset-md-1"
-                              , children
-                              }
-                          ]
-                      }
-                  ]
-              }
-          ]
-      }
+    container header children =
+      R.div
+        { className: "profile-page"
+        , children:
+            [ header
+            , R.div
+                { className: "container"
+                , children:
+                    [ R.div
+                        { className: "row"
+                        , children:
+                            [ R.div
+                                { className: "col-xs-12 col-md-10 offset-md-1"
+                                , children
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }

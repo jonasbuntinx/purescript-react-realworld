@@ -109,6 +109,12 @@ mkEditorPage =
                     , unprocessableEntity: \{ errors } -> self.setState _ { submitResponse = RemoteData.Failure errors }
                     }
 
+  validate values = ado
+    title <- values.title # V.validated (LR.prop (SProxy :: _ "title")) F.nonEmpty
+    description <- values.description # V.validated (LR.prop (SProxy :: _ "description")) F.nonEmpty
+    body <- values.body # V.validated (LR.prop (SProxy :: _ "body")) \body -> F.nonEmpty body `andThen` F.minimumLength 3
+    in { title, description, body, tagList: Set.toUnfoldable values.tagList }
+
   render store props =
     let
       errors = validate store.state # unV identity (const mempty) :: { title :: _, description :: _, body :: _ }
@@ -180,30 +186,24 @@ mkEditorPage =
                 ]
             }
         ]
-
-  container children =
-    R.div
-      { className: "editor-page"
-      , children:
-          [ R.div
-              { className: "container page"
-              , children:
-                  [ R.div
-                      { className: "row"
-                      , children:
-                          [ R.div
-                              { className: "col-md-6 offset-md-3 col-xs12"
-                              , children
-                              }
-                          ]
-                      }
-                  ]
-              }
-          ]
-      }
-
-  validate values = ado
-    title <- values.title # V.validated (LR.prop (SProxy :: _ "title")) F.nonEmpty
-    description <- values.description # V.validated (LR.prop (SProxy :: _ "description")) F.nonEmpty
-    body <- values.body # V.validated (LR.prop (SProxy :: _ "body")) \body -> F.nonEmpty body `andThen` F.minimumLength 3
-    in { title, description, body, tagList: Set.toUnfoldable values.tagList }
+    where
+    container children =
+      R.div
+        { className: "editor-page"
+        , children:
+            [ R.div
+                { className: "container page"
+                , children:
+                    [ R.div
+                        { className: "row"
+                        , children:
+                            [ R.div
+                                { className: "col-md-6 offset-md-3 col-xs12"
+                                , children
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
