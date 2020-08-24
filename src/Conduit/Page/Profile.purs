@@ -5,6 +5,7 @@ import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
 import Conduit.Api.Endpoints (GetProfile, ListArticles)
 import Conduit.Api.Utils as Utils
+import Conduit.AppM (runAppM)
 import Conduit.Capability.Routing (navigate)
 import Conduit.Component.App as App
 import Conduit.Component.ArticleList (articleList)
@@ -109,8 +110,8 @@ mkProfilePage =
               ]
           , onChange:
               case _ of
-                Published -> env.routing.navigate $ Profile props.username
-                Favorited -> env.routing.navigate $ Favorites props.username
+                Published -> runAppM env $ navigate $ Profile props.username
+                Favorited -> runAppM env $ navigate $ Favorites props.username
           }
       ]
 
@@ -118,7 +119,7 @@ mkProfilePage =
     R.div_
       [ articleList
           { articles: store.state.articles <#> _.articles
-          , onNavigate: env.routing.navigate
+          , onNavigate: runAppM env <<< navigate
           , onFavoriteToggle: store.dispatch <<< ToggleFavorite
           }
       , store.state.articles
@@ -155,7 +156,7 @@ mkProfilePage =
                                   , if (Just props.username == map _.username auth) then
                                       R.button
                                         { className: "btn btn-sm action-btn btn-outline-secondary"
-                                        , onClick: handler_ $ env.routing.navigate Settings
+                                        , onClick: handler_ $ runAppM env $ navigate Settings
                                         , children:
                                             [ R.i
                                                 { className: "ion-gear-a"

@@ -8,7 +8,6 @@ import Conduit.Api.Endpoints (GetUser)
 import Conduit.Api.Utils (addBaseUrl, addToken)
 import Conduit.Data.Auth (Auth)
 import Conduit.Data.Jwt as Jwt
-import Conduit.Data.Profile (UserProfile)
 import Control.Monad.Except (runExcept)
 import Data.Either (hush)
 import Data.Maybe (Maybe(..), maybe)
@@ -29,16 +28,11 @@ import Wire.React.Class as Wire
 import Wire.React.Selector as Selector
 import Wire.React.Sync as Sync
 
-type AuthEnv
-  = { signal :: AuthSignal
-    , read :: Effect (Maybe Auth)
-    , login :: String -> UserProfile -> Effect Unit
-    , logout :: Effect Unit
-    , updateProfile :: UserProfile -> Effect Unit
-    }
-
 type AuthSignal
-  = Selector.Selector (Maybe Auth)
+  = Selector.Selector AuthEnv
+
+type AuthEnv
+  = Maybe Auth
 
 create :: Effect AuthSignal
 create = do
