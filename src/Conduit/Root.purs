@@ -1,12 +1,12 @@
 module Conduit.Root where
 
 import Prelude
+import Conduit.AppM (runAppM)
 import Conduit.Capability.Routing (redirect)
 import Conduit.Component.App as App
 import Conduit.Component.Footer as Footer
 import Conduit.Component.Header as Header
 import Conduit.Data.Route (Route(..))
-import Conduit.Hook.App (useAppEffect)
 import Conduit.Hook.Auth (useAuth)
 import Conduit.Hook.Routing (useRoute)
 import Conduit.Page.Article (mkArticlePage)
@@ -32,8 +32,8 @@ mkRoot = do
   App.component' "Root" \env props -> React.do
     auth <- useAuth env
     route <- useRoute env
-    useAppEffect env (route /\ auth) do
-      case route, auth of
+    React.useEffect (route /\ auth) do
+      runAppM env case route, auth of
         Login, Just _ -> redirect Home
         Register, Just _ -> redirect Home
         Settings, Nothing -> redirect Home
