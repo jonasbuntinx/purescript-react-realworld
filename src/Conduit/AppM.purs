@@ -8,7 +8,7 @@ import Conduit.Env (Env)
 import Control.Monad.Reader (class MonadAsk, ReaderT, ask, asks, runReaderT)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect, liftEffect)
-import Type.Equality (class TypeEquals, from, to)
+import Type.Equality (class TypeEquals, from)
 
 newtype AppM m a
   = AppM (ReaderT Env m a)
@@ -34,11 +34,11 @@ instance monadAskAppM :: (TypeEquals e Env, Monad m) => MonadAsk e (AppM m) wher
   ask = AppM $ asks from
 
 instance monadAuthAppM :: MonadEffect m => MonadAuth (AppM m) where
-  read = ask >>= \env -> liftEffect (to env).auth.read
-  login token profile = ask >>= \env -> liftEffect ((to env).auth.login token profile)
-  logout = ask >>= \env -> liftEffect ((to env).auth.logout)
-  updateProfile profile = ask >>= \env -> liftEffect ((to env).auth.updateProfile profile)
+  read = ask >>= \env -> liftEffect env.auth.read
+  login token profile = ask >>= \env -> liftEffect (env.auth.login token profile)
+  logout = ask >>= \env -> liftEffect (env.auth.logout)
+  updateProfile profile = ask >>= \env -> liftEffect (env.auth.updateProfile profile)
 
 instance monadRoutingAppM :: MonadEffect m => MonadRouting Route (AppM m) where
-  navigate route = ask >>= \env -> liftEffect ((to env).routing.navigate route)
-  redirect route = ask >>= \env -> liftEffect ((to env).routing.redirect route)
+  navigate route = ask >>= \env -> liftEffect (env.routing.navigate route)
+  redirect route = ask >>= \env -> liftEffect (env.routing.redirect route)
