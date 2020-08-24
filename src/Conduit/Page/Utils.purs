@@ -15,6 +15,7 @@ import Data.Lens.Record as LR
 import Data.Maybe (Maybe)
 import Data.Symbol (SProxy(..))
 import Data.Variant as Variant
+import Effect.Aff (Aff)
 import Network.RemoteData as RemoteData
 
 _articles :: forall err r s. Int -> Traversal' { articles :: RemoteData.RemoteData err { articles :: Array Article | s } | r } Article
@@ -29,7 +30,7 @@ _author = LR.prop (SProxy :: _ "article") <<< RemoteData._Success <<< LR.prop (S
 _profile :: forall err r. Traversal' { profile :: RemoteData.RemoteData err Profile | r } Profile
 _profile = LR.prop (SProxy :: _ "profile") <<< RemoteData._Success
 
-toggleFavorite :: Maybe Article -> (Article -> AppM Unit) -> AppM Unit
+toggleFavorite :: Maybe Article -> (Article -> AppM Aff Unit) -> AppM Aff Unit
 toggleFavorite article setArticle =
   for_ article \{ slug, favorited } -> do
     res <-
@@ -39,7 +40,7 @@ toggleFavorite article setArticle =
         Utils.makeSecureRequest (Apiary.Route :: FavoriteArticle) { slug } Apiary.none Apiary.none
     for_ res $ Variant.match { ok: setArticle <<< _.article }
 
-toggleFollow :: Maybe Profile -> (Profile -> AppM Unit) -> AppM Unit
+toggleFollow :: Maybe Profile -> (Profile -> AppM Aff Unit) -> AppM Aff Unit
 toggleFollow profile setProfile =
   for_ profile \{ username, following } -> do
     res <-

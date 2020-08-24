@@ -6,40 +6,39 @@ import Conduit.Capability.Routing (class MonadRouting)
 import Conduit.Data.Route (Route)
 import Conduit.Env (Env)
 import Control.Monad.Reader (class MonadAsk, ReaderT, ask, asks, runReaderT)
-import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Type.Equality (class TypeEquals, from, to)
 
-newtype AppM a
-  = AppM (ReaderT Env Aff a)
+newtype AppM m a
+  = AppM (ReaderT Env m a)
 
-runAppM :: Env -> AppM ~> Aff
+runAppM :: forall m. Env -> AppM m ~> m
 runAppM env (AppM m) = runReaderT m env
 
-derive newtype instance functorAppM :: Functor AppM
+derive newtype instance functorAppM :: Functor m => Functor (AppM m)
 
-derive newtype instance applyAppM :: Apply AppM
+derive newtype instance applyAppM :: Apply m => Apply (AppM m)
 
-derive newtype instance applicativeAppM :: Applicative AppM
+derive newtype instance applicativeAppM :: Applicative m => Applicative (AppM m)
 
-derive newtype instance bindAppM :: Bind AppM
+derive newtype instance bindAppM :: Bind m => Bind (AppM m)
 
-derive newtype instance monadAppM :: Monad AppM
+derive newtype instance monadAppM :: Monad m => Monad (AppM m)
 
-derive newtype instance monadEffectAppM :: MonadEffect AppM
+derive newtype instance monadEffectAppM :: MonadEffect m => MonadEffect (AppM m)
 
-derive newtype instance monadAffAppM :: MonadAff AppM
+derive newtype instance monadAffAppM :: MonadAff m => MonadAff (AppM m)
 
-instance monadAskAppM :: TypeEquals e Env => MonadAsk e AppM where
+instance monadAskAppM :: (TypeEquals e Env, Monad m) => MonadAsk e (AppM m) where
   ask = AppM $ asks from
 
-instance monadAuthAppM :: MonadAuth AppM where
+instance monadAuthAppM :: MonadEffect m => MonadAuth (AppM m) where
   read = ask >>= \env -> liftEffect (to env).auth.read
   login token profile = ask >>= \env -> liftEffect ((to env).auth.login token profile)
   logout = ask >>= \env -> liftEffect ((to env).auth.logout)
   updateProfile profile = ask >>= \env -> liftEffect ((to env).auth.updateProfile profile)
 
-instance monadRoutingAppM :: MonadRouting Route AppM where
+instance monadRoutingAppM :: MonadEffect m => MonadRouting Route (AppM m) where
   navigate route = ask >>= \env -> liftEffect ((to env).routing.navigate route)
   redirect route = ask >>= \env -> liftEffect ((to env).routing.redirect route)

@@ -9,8 +9,6 @@ import Conduit.Root as Root
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
-import Effect.Aff (launchAff_)
-import Effect.Class (liftEffect)
 import Effect.Exception (throw)
 import React.Basic.DOM (render)
 import Web.DOM.NonElementParentNode (getElementById)
@@ -26,6 +24,5 @@ main = do
     Just c -> do
       auth /\ authManager <- Auth.mkAuthManager
       routing /\ routingManager <- Routing.mkRoutingManager routeCodec
-      launchAff_ do
-        root <- runAppM { auth, routing } Root.mkRoot
-        liftEffect $ render (authManager (routingManager (root unit))) c
+      root <- runAppM { auth, routing } Root.mkRoot
+      render (authManager (routingManager (root unit))) c
