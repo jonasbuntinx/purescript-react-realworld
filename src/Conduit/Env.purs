@@ -1,7 +1,9 @@
 module Conduit.Env where
 
-import Conduit.Env.Auth (AuthSignal)
-import Conduit.Env.Routing (RoutingSignal)
+import Conduit.Component.Auth (AuthEnv)
+import Conduit.Component.Routing (RoutingEnv)
 
 type Env
-  = { auth :: AuthSignal, routing :: RoutingSignal }
+  = { auth :: AuthEnv
+    , routing :: RoutingEnv
+    }

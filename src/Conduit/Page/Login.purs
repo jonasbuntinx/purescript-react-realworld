@@ -5,9 +5,8 @@ import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
 import Conduit.Api.Endpoints (Login)
 import Conduit.Api.Utils as Utils
-import Conduit.AppM (runAppM)
 import Conduit.Capability.Auth (login)
-import Conduit.Capability.Routing (navigate, redirect, toRouteURL)
+import Conduit.Capability.Routing (redirect, toRouteURL)
 import Conduit.Component.App as App
 import Conduit.Component.Link as Link
 import Conduit.Component.ResponseErrors (responseErrors)
@@ -85,7 +84,7 @@ mkLoginPage =
                 [ Link.link
                     { className: ""
                     , href: toRouteURL Register
-                    , onClick: runAppM env $ navigate Register
+                    , onClick: env.routing.navigate Register
                     , children: [ R.text "Need an account?" ]
                     }
                 ]

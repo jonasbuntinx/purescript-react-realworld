@@ -1,8 +1,7 @@
 module Conduit.Root where
 
 import Prelude
-import Conduit.AppM (runAppM)
-import Conduit.Capability.Routing (navigate, redirect)
+import Conduit.Capability.Routing (redirect)
 import Conduit.Component.App as App
 import Conduit.Component.Footer as Footer
 import Conduit.Component.Header as Header
@@ -45,7 +44,7 @@ mkRoot = do
       mempty
     pure
       $ React.fragment
-          [ Header.header { auth, currentRoute: route, onNavigate: runAppM env <<< navigate }
+          [ Header.header { auth, currentRoute: route, onNavigate: env.routing.navigate }
           , case route of
               Home -> homePage unit
               Login -> loginPage unit

@@ -6,7 +6,6 @@ import Conduit.Capability.Routing (class MonadRouting)
 import Conduit.Data.Jwt as Jwt
 import Conduit.Data.Route (Route)
 import Conduit.Env (Env)
-import Conduit.Env.Routing (Action(..))
 import Control.Monad.Reader (class MonadAsk, ReaderT, ask, asks, runReaderT)
 import Data.Either (hush)
 import Data.Maybe (Maybe(..))
@@ -45,16 +44,16 @@ instance monadAskAppM :: (TypeEquals e Env, Monad m) => MonadAsk e (AppM m) wher
   ask = AppM $ asks from
 
 instance monadAuthAppM :: MonadEffect m => MonadAuth (AppM m) where
-  read = ask >>= \{ auth } -> liftEffect $ read auth
+  read = ask >>= \{ auth } -> liftEffect $ read auth.signal
   login token profile = do
     { auth } <- ask
     liftEffect
-      $ modify auth \_ -> do
+      $ modify auth.signal \_ -> do
           { exp, username } <- hush $ Jwt.decode token
           pure { token, username, expirationTime: fromMilliseconds $ Milliseconds $ exp * 1000.0, profile: Just profile }
-  logout = ask >>= \{ auth } -> liftEffect $ modify auth $ const Nothing
-  updateProfile profile = ask >>= \{ auth } -> liftEffect $ modify auth $ map $ _ { profile = Just profile }
+  logout = ask >>= \{ auth } -> liftEffect $ modify auth.signal $ const Nothing
+  updateProfile profile = ask >>= \{ auth } -> liftEffect $ modify auth.signal $ map $ _ { profile = Just profile }
 
 instance monadRoutingAppM :: MonadEffect m => MonadRouting Route (AppM m) where
-  navigate route = ask >>= \{ routing } -> liftEffect $ modify routing $ const { route, action: Push }
-  redirect route = ask >>= \{ routing } -> liftEffect $ modify routing $ const { route, action: Replace }
+  navigate route = ask >>= \{ routing } -> liftEffect $ routing.navigate route
+  redirect route = ask >>= \{ routing } -> liftEffect $ routing.redirect route

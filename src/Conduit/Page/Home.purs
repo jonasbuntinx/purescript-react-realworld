@@ -5,8 +5,6 @@ import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
 import Conduit.Api.Endpoints (ListArticles, ListFeed, ListTags)
 import Conduit.Api.Utils as Utils
-import Conduit.AppM (runAppM)
-import Conduit.Capability.Routing (navigate)
 import Conduit.Component.App as App
 import Conduit.Component.ArticleList (articleList)
 import Conduit.Component.Pagination (pagination)
@@ -136,7 +134,7 @@ mkHomePage =
     R.div_
       [ articleList
           { articles: store.state.articles <#> _.articles
-          , onNavigate: runAppM env <<< navigate
+          , onNavigate: env.routing.navigate
           , onFavoriteToggle: store.dispatch <<< ToggleFavorite
           }
       , store.state.articles
