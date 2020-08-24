@@ -26,6 +26,10 @@ derive newtype instance bindAppM :: Bind m => Bind (AppM m)
 
 derive newtype instance monadAppM :: Monad m => Monad (AppM m)
 
+derive newtype instance semigroupAppM :: (Semigroup a, Apply m) => Semigroup (AppM m a)
+
+derive newtype instance monoidAppM :: (Monoid a, Applicative m) => Monoid (AppM m a)
+
 derive newtype instance monadEffectAppM :: MonadEffect m => MonadEffect (AppM m)
 
 derive newtype instance monadAffAppM :: MonadAff m => MonadAff (AppM m)
