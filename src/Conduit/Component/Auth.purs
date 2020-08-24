@@ -1,5 +1,6 @@
 module Conduit.Component.Auth where
 
+import Prelude
 import Apiary.Client (makeRequest) as Apiary
 import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
@@ -23,7 +24,6 @@ import Effect.Class (liftEffect)
 import Effect.Timer as Timer
 import Foreign.Day (fromMilliseconds, now)
 import Foreign.Generic (decodeJSON, encodeJSON)
-import Prelude (bind, const, discard, map, pure, unit, (#), ($), (*), (<$>), (<<<), (=<<), (>))
 import React.Basic.Hooks as React
 import Record as Record
 import Web.HTML (window)
