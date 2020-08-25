@@ -11,11 +11,11 @@ import React.Basic.Hooks as React
 import Routing.Duplex (RouteDuplex', parse)
 import Routing.PushState as PushState
 import Wire.Event as Event
-import Wire.React.Class (modify)
-import Wire.React.Pure as Pure
+import Wire.Signal (Signal)
+import Wire.Signal as Signal
 
 type RoutingEnv route
-  = { signal :: Pure.Pure route
+  = { signal :: Signal route
     , navigate :: route -> Effect Unit
     , redirect :: route -> Effect Unit
     }
@@ -29,15 +29,15 @@ mkRoutingManager ::
 mkRoutingManager routes default = do
   interface <- PushState.makeInterface
   location <- interface.locationState
-  routingSignal <- Pure.create $ fromMaybe default $ hush $ parse routes location.path
+  routing <- Signal.create $ fromMaybe default $ hush $ parse routes location.path
   component <-
     React.component "RoutingManager" \content -> React.do
       React.useEffectOnce do
         Event.subscribe (onPushState interface routes) \route -> do
-          modify routingSignal $ const route
+          routing.modify $ const route
       pure content
   pure
-    $ { signal: routingSignal
+    $ { signal: routing.signal
       , navigate: interface.pushState undefined <<< toRouteURL
       , redirect: interface.replaceState undefined <<< toRouteURL
       }

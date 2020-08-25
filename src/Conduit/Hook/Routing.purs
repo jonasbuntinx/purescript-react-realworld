@@ -3,7 +3,7 @@ module Conduit.Hook.Routing where
 import Conduit.Data.Route (Route)
 import Conduit.Env (Env)
 import React.Basic.Hooks as React
-import Wire.React (UseAtom, useAtomValue)
+import Wire.React (UseSignal, useSignal)
 
-useRoute :: Env -> React.Hook (UseAtom Route) Route
-useRoute { routing } = useAtomValue routing.signal
+useRoute :: Env -> React.Hook (UseSignal Route) Route
+useRoute { routing } = useSignal routing.signal
