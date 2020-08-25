@@ -46,7 +46,7 @@ mkAuthManager = do
     React.component "AuthManager" \content -> React.do
       state /\ setState <- React.useState { interval: Nothing }
       React.useEffectOnce do
-        refreshToken authSignal
+        checkAuthStatus authSignal
         authCheckInterval <- Timer.setInterval 900_0000 (checkAuthStatus authSignal)
         setState _ { interval = Just authCheckInterval }
         pure $ traverse_ Timer.clearInterval state.interval

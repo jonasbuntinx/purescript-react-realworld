@@ -14,7 +14,7 @@ import Conduit.Hook.Auth (useAuth)
 import Conduit.Page.Utils (_articles, toggleFavorite)
 import Data.Either (either)
 import Data.Lens (preview, set)
-import Data.Maybe (Maybe(..), isNothing)
+import Data.Maybe (Maybe(..), isJust, isNothing)
 import Data.Monoid (guard)
 import Data.Variant as Variant
 import Network.RemoteData (RemoteData(..))
@@ -40,7 +40,7 @@ mkHomePage :: App.Component Unit
 mkHomePage =
   App.component "HomePage" { init, update } \env store props -> React.do
     auth <- useAuth env
-    React.useEffect auth do
+    React.useEffect (isJust auth) do
       case auth of
         Nothing -> store.dispatch $ LoadArticles store.state.tab store.state.pagination
         Just _ -> store.dispatch $ LoadArticles Feed store.state.pagination

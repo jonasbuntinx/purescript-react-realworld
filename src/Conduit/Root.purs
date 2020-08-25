@@ -16,7 +16,7 @@ import Conduit.Page.Login (mkLoginPage)
 import Conduit.Page.Profile (Tab(..), mkProfilePage)
 import Conduit.Page.Register (mkRegisterPage)
 import Conduit.Page.Settings (mkSettingsPage)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), isJust)
 import Data.Tuple.Nested ((/\))
 import React.Basic.Hooks as React
 
@@ -32,7 +32,7 @@ mkRoot = do
   App.component' "Root" \env props -> React.do
     auth <- useAuth env
     route <- useRoute env
-    React.useEffect (route /\ auth) do
+    React.useEffect (route /\ (isJust auth)) do
       runAppM env case route, auth of
         Login, Just _ -> redirect Home
         Register, Just _ -> redirect Home
