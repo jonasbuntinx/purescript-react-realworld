@@ -143,29 +143,36 @@ let additions =
         , repo = "https://github.com/robertdp/purescript-apiary"
         , version = "v0.1.1"
         }
-      , react-basic-hooks-store =
+      , react-store =
         { dependencies =
           [ "avar"
           , "console"
           , "prelude"
           , "react-basic-hooks"
           ]
-        , repo = "https://github.com/robertdp/purescript-react-basic-hooks-store"
-        , version = "v0.2.3"
+        , repo = "https://github.com/robertdp/purescript-react-store"
+        , version = "v0.2.4"
         }
       , wire =
         { dependencies =
-          [ "arrays"
+          [ "aff"
           , "filterable"
           , "foreign-object"
-          , "free"
-          , "freet"
-          , "react-basic-hooks"
           , "refs"
           , "unsafe-reference"
           ]
         , repo = "https://github.com/robertdp/purescript-wire"
-        , version = "v0.4.1"
+        , version = "v0.4.2"
+        }
+      , wire-react =
+        { dependencies =
+          [ "wire"
+          , "free"
+          , "freet"
+          , "react-basic-hooks"
+          ]
+        , repo = "https://github.com/robertdp/purescript-wire-react"
+        , version = "v0.0.1"
         }
       }
 

@@ -8,7 +8,7 @@ import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import React.Basic.Hooks as React
-import React.Basic.Hooks.Store (Instance, Store, UseStore, useStore)
+import React.Store (Instance, Store, UseStore, useStore)
 
 type Component props
   = AppM Effect (props -> React.JSX)
@@ -19,7 +19,7 @@ component ::
   { init :: state
   , update :: Instance props state (AppM Aff) -> action -> AppM Aff Unit
   } ->
-  (Env -> Store state action -> props -> React.Render (UseStore props state action Unit) hooks React.JSX) ->
+  (Env -> Store state action -> props -> React.Render (UseStore props state action (AppM Aff) Unit) hooks React.JSX) ->
   Component props
 component name { init, update } renderFn = do
   env <- ask

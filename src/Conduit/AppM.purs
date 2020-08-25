@@ -14,7 +14,7 @@ import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Foreign.Day (fromMilliseconds)
 import Type.Equality (class TypeEquals, from)
-import Wire.React.Class (modify, read)
+import Wire.React.Atom.Class (modify, read)
 
 newtype AppM m a
   = AppM (ReaderT Env m a)

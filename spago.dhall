@@ -9,13 +9,14 @@
     , "profunctor-lenses"
     , "react-basic-dom"
     , "react-basic-hooks"
-    , "react-basic-hooks-store"
+    , "react-store"
     , "remotedata"
     , "routing"
     , "routing-duplex"
     , "unicode"
     , "web-uievents"
     , "wire"
+    , "wire-react"
     ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]

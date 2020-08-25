@@ -29,11 +29,10 @@ import Record as Record
 import Web.HTML (window)
 import Web.HTML.Window as Window
 import Web.Storage.Storage as Storage
-import Wire.React.Async as Async
-import Wire.React.Class (modify, read)
-import Wire.React.Class as Wire
-import Wire.React.Selector as Selector
-import Wire.React.Sync as Sync
+import Wire.React.Atom.Async as Async
+import Wire.React.Atom.Class (modify, read)
+import Wire.React.Atom.Selector as Selector
+import Wire.React.Atom.Sync as Sync
 
 type AuthEnv
   = { signal :: Selector.Selector (Maybe Auth)
@@ -99,7 +98,7 @@ mkAuthManager = do
         { initial: Nothing
         , load:
             do
-              token <- liftEffect $ Wire.read tokenSignal
+              token <- liftEffect $ read tokenSignal
               token
                 # maybe (pure Nothing) \t -> do
                     res <- hush <$> Apiary.makeRequest (Apiary.Route :: GetUser) (addBaseUrl <<< addToken t) Apiary.none Apiary.none Apiary.none

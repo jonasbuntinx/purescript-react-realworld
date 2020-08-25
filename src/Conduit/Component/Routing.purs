@@ -11,11 +11,10 @@ import React.Basic.Hooks as React
 import Routing.Duplex (RouteDuplex', parse)
 import Routing.PushState as PushState
 import Wire.Event as Event
-import Wire.Signal (Signal)
 import Wire.Signal as Signal
 
 type RoutingEnv route
-  = { signal :: Signal route
+  = { signal :: Signal.Signal route
     , navigate :: route -> Effect Unit
     , redirect :: route -> Effect Unit
     }

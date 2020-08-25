@@ -6,7 +6,7 @@ import Conduit.Data.Profile (UserProfile)
 import Conduit.Env (Env)
 import Data.Maybe (Maybe)
 import React.Basic.Hooks as React
-import Wire.React (UseAtom, useAtomValue)
+import Wire.React.Hooks (UseAtom, useAtomValue)
 
 useAuth :: Env -> React.Hook (UseAtom (Maybe Auth)) (Maybe Auth)
 useAuth { auth } = useAtomValue auth.signal
