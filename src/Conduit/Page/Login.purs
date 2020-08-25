@@ -5,13 +5,12 @@ import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
 import Conduit.Api.Endpoints (Login)
 import Conduit.Api.Utils as Utils
+import Conduit.Capability.Auth (login)
+import Conduit.Capability.Routing (redirect, toRouteURL)
 import Conduit.Component.App as App
 import Conduit.Component.Link as Link
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Data.Route (Route(..))
-import Conduit.Env (Env)
-import Conduit.Env.Auth (login)
-import Conduit.Env.Routing (redirect)
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Control.Comonad (extract)
@@ -35,10 +34,10 @@ data Action
   | UpdatePassword String
   | Submit
 
-mkLoginPage :: App.Component Env Unit
+mkLoginPage :: App.Component Unit
 mkLoginPage =
-  App.component "LoginPage" { init, update } \_ store props -> React.do
-    pure $ render store props
+  App.component "LoginPage" { init, update } \env store props -> React.do
+    pure $ render env store props
   where
   init =
     { email: pure ""
@@ -70,7 +69,12 @@ mkLoginPage =
                     , unprocessableEntity: \{ errors } -> self.setState _ { submitResponse = RemoteData.Failure errors }
                     }
 
-  render store props =
+  validate values = ado
+    email <- values.email # V.validated (LR.prop (SProxy :: _ "email")) \email -> F.nonEmpty email `andThen` F.validEmail
+    password <- values.password # V.validated (LR.prop (SProxy :: _ "password")) \password -> F.nonEmpty password `andThen` (F.minimumLength 3 *> F.maximunLength 20)
+    in { email, password }
+
+  render env store props =
     let
       errors = validate store.state # unV identity (const mempty) :: { email :: _, password :: _ }
     in
@@ -84,7 +88,8 @@ mkLoginPage =
             , children:
                 [ Link.link
                     { className: ""
-                    , route: Register
+                    , href: toRouteURL Register
+                    , onClick: env.routing.navigate Register
                     , children: [ R.text "Need an account?" ]
                     }
                 ]
@@ -137,29 +142,24 @@ mkLoginPage =
                 ]
             }
         ]
-
-  container children =
-    R.div
-      { className: "auth-page"
-      , children:
-          [ R.div
-              { className: "container page"
-              , children:
-                  [ R.div
-                      { className: "row"
-                      , children:
-                          [ R.div
-                              { className: "col-md-6 offset-md-3 col-xs12"
-                              , children
-                              }
-                          ]
-                      }
-                  ]
-              }
-          ]
-      }
-
-  validate values = ado
-    email <- values.email # V.validated (LR.prop (SProxy :: _ "email")) \email -> F.nonEmpty email `andThen` F.validEmail
-    password <- values.password # V.validated (LR.prop (SProxy :: _ "password")) \password -> F.nonEmpty password `andThen` (F.minimumLength 3 *> F.maximunLength 20)
-    in { email, password }
+    where
+    container children =
+      R.div
+        { className: "auth-page"
+        , children:
+            [ R.div
+                { className: "container page"
+                , children:
+                    [ R.div
+                        { className: "row"
+                        , children:
+                            [ R.div
+                                { className: "col-md-6 offset-md-3 col-xs12"
+                                , children
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }

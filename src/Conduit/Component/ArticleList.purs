@@ -1,6 +1,7 @@
 module Conduit.Component.ArticleList where
 
 import Prelude
+import Conduit.Capability.Routing (toRouteURL)
 import Conduit.Component.Buttons (ButtonSize(..), favoriteButton)
 import Conduit.Component.Link as Link
 import Conduit.Data.Article (Article)
@@ -18,6 +19,7 @@ import React.Basic.Hooks as React
 -- | Article List
 type Props err
   = { articles :: RemoteData err (Array Article)
+    , onNavigate :: Route -> Effect Unit
     , onFavoriteToggle :: Int -> Effect Unit
     }
 
@@ -55,7 +57,8 @@ articleList props = case props.articles of
               , children:
                   [ Link.link
                       { className: ""
-                      , route: Profile article.author.username
+                      , href: toRouteURL $ Profile article.author.username
+                      , onClick: props.onNavigate $ Profile article.author.username
                       , children:
                           [ R.img
                               { src: Avatar.toString $ Avatar.withDefault article.author.image
@@ -68,7 +71,8 @@ articleList props = case props.articles of
                       , children:
                           [ Link.link
                               { className: "author"
-                              , route: Profile article.author.username
+                              , href: toRouteURL $ Profile article.author.username
+                              , onClick: props.onNavigate $ Profile article.author.username
                               , children: [ R.text $ Username.toString article.author.username ]
                               }
                           , R.span
@@ -92,7 +96,8 @@ articleList props = case props.articles of
               }
           , Link.link
               { className: "preview-link"
-              , route: ViewArticle article.slug
+              , href: toRouteURL $ ViewArticle article.slug
+              , onClick: props.onNavigate $ ViewArticle article.slug
               , children:
                   [ R.h1_ [ R.text article.title ]
                   , R.p_ [ R.text article.description ]

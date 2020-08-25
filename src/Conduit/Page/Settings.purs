@@ -5,15 +5,14 @@ import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
 import Conduit.Api.Endpoints (UpdateUser)
 import Conduit.Api.Utils as Utils
+import Conduit.Capability.Auth (logout, updateProfile)
+import Conduit.Capability.Routing (navigate, redirect)
 import Conduit.Component.App as App
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Profile (UserProfile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username as Username
-import Conduit.Env (Env)
-import Conduit.Env.Auth (logout, updateProfile)
-import Conduit.Env.Routing (navigate, redirect)
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Conduit.Hook.Auth (useProfile)
@@ -45,7 +44,7 @@ data Action
   | Submit
   | Logout
 
-mkSettingsPage :: App.Component Env Unit
+mkSettingsPage :: App.Component Unit
 mkSettingsPage =
   App.component "SettingsPage" { init, update } \env store props -> React.do
     profile <- useProfile env
@@ -89,8 +88,8 @@ mkSettingsPage =
           res <- Utils.makeSecureRequest (Apiary.Route :: UpdateUser) Apiary.none Apiary.none { user: validated }
           case res of
             Left _ -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown error:" [ "request failed" ]) }
-            Right response ->
-              response
+            Right success ->
+              success
                 # Variant.match
                     { ok:
                         \{ user } -> do
@@ -100,6 +99,12 @@ mkSettingsPage =
                     , unprocessableEntity: \{ errors } -> self.setState _ { submitResponse = RemoteData.Failure errors }
                     }
     Logout -> logout *> redirect Home
+
+  validate values = ado
+    username <- values.username # V.validated (LR.prop (SProxy :: _ "username")) \username -> F.nonEmpty username `andThen` F.validUsername
+    email <- values.email # V.validated (LR.prop (SProxy :: _ "email")) \email -> F.nonEmpty email `andThen` F.validEmail
+    password <- values.password # V.validated (LR.prop (SProxy :: _ "password")) \password -> F.nonEmpty password `andThen` (F.minimumLength 3 *> F.maximunLength 20)
+    in { image: Avatar.fromString <$> values.image, username, bio: values.bio, email, password }
 
   render store props =
     let
@@ -205,30 +210,24 @@ mkSettingsPage =
             , children: [ R.text "Log out" ]
             }
         ]
-
-  container children =
-    R.div
-      { className: "settings-page"
-      , children:
-          [ R.div
-              { className: "container page"
-              , children:
-                  [ R.div
-                      { className: "row"
-                      , children:
-                          [ R.div
-                              { className: "col-md-6 offset-md-3 col-xs12"
-                              , children
-                              }
-                          ]
-                      }
-                  ]
-              }
-          ]
-      }
-
-  validate values = ado
-    username <- values.username # V.validated (LR.prop (SProxy :: _ "username")) \username -> F.nonEmpty username `andThen` F.validUsername
-    email <- values.email # V.validated (LR.prop (SProxy :: _ "email")) \email -> F.nonEmpty email `andThen` F.validEmail
-    password <- values.password # V.validated (LR.prop (SProxy :: _ "password")) \password -> F.nonEmpty password `andThen` (F.minimumLength 3 *> F.maximunLength 20)
-    in { image: Avatar.fromString <$> values.image, username, bio: values.bio, email, password }
+    where
+    container children =
+      R.div
+        { className: "settings-page"
+        , children:
+            [ R.div
+                { className: "container page"
+                , children:
+                    [ R.div
+                        { className: "row"
+                        , children:
+                            [ R.div
+                                { className: "col-md-6 offset-md-3 col-xs12"
+                                , children
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }

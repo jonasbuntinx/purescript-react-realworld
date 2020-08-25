@@ -5,13 +5,12 @@ import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
 import Conduit.Api.Endpoints (GetArticle, UpdateArticle, CreateArticle)
 import Conduit.Api.Utils as Utils
+import Conduit.Capability.Routing (navigate)
 import Conduit.Component.App as App
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Component.TagInput (tagInput)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Slug (Slug)
-import Conduit.Env (Env)
-import Conduit.Env.Routing (navigate)
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Control.Comonad (extract)
@@ -45,7 +44,7 @@ data Action
   | UpdateTagList (Set String)
   | Submit
 
-mkEditorPage :: App.Component Env Props
+mkEditorPage :: App.Component Props
 mkEditorPage =
   App.component "SettingsPage" { init, update } \env store props -> React.do
     React.useEffect props.slug do
@@ -69,8 +68,8 @@ mkEditorPage =
         res <- Utils.makeSecureRequest (Apiary.Route :: GetArticle) { slug } Apiary.none Apiary.none
         case res of
           Left error -> self.setState _ { article = RemoteData.Failure error }
-          Right response ->
-            response
+          Right success ->
+            success
               # Variant.match
                   { ok:
                       \{ article } ->
@@ -100,8 +99,8 @@ mkEditorPage =
             Just slug -> map Variant.expand <$> Utils.makeSecureRequest (Apiary.Route :: UpdateArticle) { slug } Apiary.none { article: validated }
           case res of
             Left _ -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown error:" [ "request failed" ]) }
-            Right response ->
-              response
+            Right success ->
+              success
                 # Variant.match
                     { ok:
                         \{ article } -> do
@@ -109,6 +108,12 @@ mkEditorPage =
                           navigate $ ViewArticle article.slug
                     , unprocessableEntity: \{ errors } -> self.setState _ { submitResponse = RemoteData.Failure errors }
                     }
+
+  validate values = ado
+    title <- values.title # V.validated (LR.prop (SProxy :: _ "title")) F.nonEmpty
+    description <- values.description # V.validated (LR.prop (SProxy :: _ "description")) F.nonEmpty
+    body <- values.body # V.validated (LR.prop (SProxy :: _ "body")) \body -> F.nonEmpty body `andThen` F.minimumLength 3
+    in { title, description, body, tagList: Set.toUnfoldable values.tagList }
 
   render store props =
     let
@@ -181,30 +186,24 @@ mkEditorPage =
                 ]
             }
         ]
-
-  container children =
-    R.div
-      { className: "editor-page"
-      , children:
-          [ R.div
-              { className: "container page"
-              , children:
-                  [ R.div
-                      { className: "row"
-                      , children:
-                          [ R.div
-                              { className: "col-md-6 offset-md-3 col-xs12"
-                              , children
-                              }
-                          ]
-                      }
-                  ]
-              }
-          ]
-      }
-
-  validate values = ado
-    title <- values.title # V.validated (LR.prop (SProxy :: _ "title")) F.nonEmpty
-    description <- values.description # V.validated (LR.prop (SProxy :: _ "description")) F.nonEmpty
-    body <- values.body # V.validated (LR.prop (SProxy :: _ "body")) \body -> F.nonEmpty body `andThen` F.minimumLength 3
-    in { title, description, body, tagList: Set.toUnfoldable values.tagList }
+    where
+    container children =
+      R.div
+        { className: "editor-page"
+        , children:
+            [ R.div
+                { className: "container page"
+                , children:
+                    [ R.div
+                        { className: "row"
+                        , children:
+                            [ R.div
+                                { className: "col-md-6 offset-md-3 col-xs12"
+                                , children
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }

@@ -5,30 +5,29 @@ import Apiary.Client (makeRequest) as Apiary
 import Apiary.Client.Request (class BuildRequest) as Apiary
 import Apiary.Client.Response (class DecodeResponse) as Apiary
 import Apiary.Types (Error(..)) as Apiary
+import Conduit.Capability.Auth (class MonadAuth, read)
+import Conduit.Capability.Routing (class MonadRouting, redirect)
 import Conduit.Config as Config
 import Conduit.Data.Route (Route(..))
-import Conduit.Env.Routing (redirect)
 import Control.Comonad (extract)
-import Control.Monad.Reader (class MonadAsk, ask)
 import Data.Bifunctor (lmap)
 import Data.Bitraversable (lfor)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Effect.Aff.Class (class MonadAff, liftAff)
-import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Class (class MonadEffect)
 import Effect.Class.Console as Console
 import Effect.Exception as Exception
 import Foreign (renderForeignError)
 import Foreign.Object as Object
 import Milkis as Milkis
-import Wire.React.Class (class Atom, read)
 
 data Error
   = NotAuthorized
   | ApiaryError Apiary.Error
 
 makeRequest ::
-  forall m route path query body rep response.
+  forall m rep body query path route response.
   MonadAff m =>
   Apiary.BuildRequest route path query body rep =>
   Apiary.DecodeResponse rep response =>
@@ -43,9 +42,9 @@ makeRequest route path query body = do
   pure $ lmap ApiaryError res
 
 makeSecureRequest ::
-  forall m a r s rep body query path route response.
-  MonadAsk { authSignal :: a (Maybe { token :: String | s }) | r } m =>
-  Atom a =>
+  forall m rep body query path route response.
+  MonadAuth m =>
+  MonadRouting Route m =>
   MonadAff m =>
   Apiary.BuildRequest route path query body rep =>
   Apiary.DecodeResponse rep response =>
@@ -55,8 +54,7 @@ makeSecureRequest ::
   body ->
   m (Either Error response)
 makeSecureRequest route path query body = do
-  env <- ask
-  auth <- liftEffect $ read env.authSignal
+  auth <- read
   case auth of
     Nothing -> do
       redirect Register

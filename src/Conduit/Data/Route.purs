@@ -1,5 +1,6 @@
-module Conduit.Data.Route (Route(..), routeCodec, toRouteString) where
+module Conduit.Data.Route (Route(..), routeCodec) where
 
+import Conduit.Capability.Routing (class IsRoute)
 import Conduit.Data.Slug (Slug)
 import Conduit.Data.Slug as Slug
 import Conduit.Data.Username (Username)
@@ -27,8 +28,8 @@ derive instance genericRoute :: Generic Route _
 
 derive instance eqRoute :: Eq Route
 
-toRouteString :: Route -> String
-toRouteString x = print routeCodec x
+instance isRouteRoute :: IsRoute Route where
+  toRouteURL = print routeCodec
 
 routeCodec :: RouteDuplex' Route
 routeCodec =

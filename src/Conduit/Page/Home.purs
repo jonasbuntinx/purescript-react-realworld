@@ -10,7 +10,6 @@ import Conduit.Component.ArticleList (articleList)
 import Conduit.Component.Pagination (pagination)
 import Conduit.Component.Tabs as Tabs
 import Conduit.Data.Article (defaultArticlesQuery)
-import Conduit.Env (Env)
 import Conduit.Hook.Auth (useAuth)
 import Conduit.Page.Utils (_articles, toggleFavorite)
 import Data.Either (either)
@@ -37,17 +36,19 @@ data Action
   | LoadArticles Tab { offset :: Int, limit :: Int }
   | ToggleFavorite Int
 
-mkHomePage :: App.Component Env Unit
+mkHomePage :: App.Component Unit
 mkHomePage =
   App.component "HomePage" { init, update } \env store props -> React.do
     auth <- useAuth env
-    React.useEffectOnce do
+    React.useEffect auth do
       case auth of
         Nothing -> store.dispatch $ LoadArticles store.state.tab store.state.pagination
         Just _ -> store.dispatch $ LoadArticles Feed store.state.pagination
+      mempty
+    React.useEffectOnce do
       store.dispatch LoadTags
       mempty
-    pure $ render auth store props
+    pure $ render env auth store props
   where
   init =
     { tags: NotAsked
@@ -72,9 +73,9 @@ mkHomePage =
       self.setState _ { articles = res # either RemoteData.Failure (Variant.match { ok: RemoteData.Success }) }
     ToggleFavorite ix -> toggleFavorite (preview (_articles ix) self.state) (self.setState <<< set (_articles ix))
 
-  render auth store props =
+  render env auth store props =
     container (guard (isNothing auth) banner)
-      [ mainView auth store
+      [ mainView
       , R.div
           { className: "col-md-3"
           , children:
@@ -82,116 +83,117 @@ mkHomePage =
                   { className: "sidebar"
                   , children:
                       [ R.p_ [ R.text "Popular Tags" ]
-                      , renderTags store
+                      , renderTags
                       ]
                   }
               ]
           }
       ]
-
-  mainView auth store =
-    R.div
-      { className: "col-md-9"
-      , children:
-          [ Tabs.tabs
-              { className: "feed-toggle"
-              , selectedTab: Just store.state.tab
-              , tabs:
-                  [ { id: Feed
-                    , label: R.text "Your Feed"
-                    , disabled: isNothing auth
-                    , content: tabContent store
-                    }
-                  , { id: Global
-                    , label: R.text "Global Feed"
-                    , disabled: false
-                    , content: tabContent store
-                    }
-                  ]
-                    <> case store.state.tab of
-                        Tag tag ->
-                          [ { id: Tag tag
-                            , label:
-                                React.fragment
-                                  [ R.i
-                                      { className: "ion-pound"
-                                      , children: []
-                                      }
-                                  , R.text $ " " <> tag
-                                  ]
-                            , disabled: false
-                            , content: tabContent store
-                            }
-                          ]
-                        _ -> []
-              , onChange: \tab -> store.dispatch $ LoadArticles tab store.state.pagination
-              }
-          ]
-      }
-
-  tabContent store =
-    R.div_
-      [ articleList
-          { articles: store.state.articles <#> _.articles
-          , onFavoriteToggle: store.dispatch <<< ToggleFavorite
-          }
-      , store.state.articles
-          # RemoteData.maybe React.empty \{ articlesCount } ->
-              pagination
-                { offset: store.state.pagination.offset
-                , limit: store.state.pagination.limit
-                , totalCount: articlesCount
-                , onChange: store.dispatch <<< (LoadArticles store.state.tab)
-                , focusWindow: 3
-                , marginPages: 1
+    where
+    mainView =
+      R.div
+        { className: "col-md-9"
+        , children:
+            [ Tabs.tabs
+                { className: "feed-toggle"
+                , selectedTab: Just store.state.tab
+                , tabs:
+                    [ { id: Feed
+                      , label: R.text "Your Feed"
+                      , disabled: isNothing auth
+                      , content: tabContent
+                      }
+                    , { id: Global
+                      , label: R.text "Global Feed"
+                      , disabled: false
+                      , content: tabContent
+                      }
+                    ]
+                      <> case store.state.tab of
+                          Tag tag ->
+                            [ { id: Tag tag
+                              , label:
+                                  React.fragment
+                                    [ R.i
+                                        { className: "ion-pound"
+                                        , children: []
+                                        }
+                                    , R.text $ " " <> tag
+                                    ]
+                              , disabled: false
+                              , content: tabContent
+                              }
+                            ]
+                          _ -> []
+                , onChange: \tab -> store.dispatch $ LoadArticles tab store.state.pagination
                 }
-      ]
+            ]
+        }
 
-  renderTags store = case store.state.tags of
-    NotAsked -> R.div_ [ R.text "Tags not loaded" ]
-    Loading -> R.div_ [ R.text "Loading Tags" ]
-    Failure err -> R.div_ [ R.text $ "Failed loading tags" ]
-    Success loadedTags -> R.div { className: "tag-list", children: map (renderTag store) loadedTags }
+    tabContent =
+      R.div_
+        [ articleList
+            { articles: store.state.articles <#> _.articles
+            , onNavigate: env.routing.navigate
+            , onFavoriteToggle: store.dispatch <<< ToggleFavorite
+            }
+        , store.state.articles
+            # RemoteData.maybe React.empty \{ articlesCount } ->
+                pagination
+                  { offset: store.state.pagination.offset
+                  , limit: store.state.pagination.limit
+                  , totalCount: articlesCount
+                  , onChange: store.dispatch <<< (LoadArticles store.state.tab)
+                  , focusWindow: 3
+                  , marginPages: 1
+                  }
+        ]
 
-  renderTag store tag =
-    R.a
-      { className: "tag-default tag-pill"
-      , href: "#"
-      , onClick: handler preventDefault $ const $ store.dispatch $ LoadArticles (Tag tag) store.state.pagination
-      , children: [ R.text tag ]
-      }
+    renderTags = case store.state.tags of
+      NotAsked -> R.div_ [ R.text "Tags not loaded" ]
+      Loading -> R.div_ [ R.text "Loading Tags" ]
+      Failure err -> R.div_ [ R.text $ "Failed loading tags" ]
+      Success loadedTags -> R.div { className: "tag-list", children: map renderTag loadedTags }
 
-  banner =
-    R.div
-      { className: "banner"
-      , children:
-          [ R.div
-              { className: "container"
-              , children:
-                  [ R.h1
-                      { className: "logo-font"
-                      , children: [ R.text "conduit" ]
-                      }
-                  , R.p_
-                      [ R.text "A place to share your knowledge." ]
-                  ]
-              }
-          ]
-      }
+    renderTag tag =
+      R.a
+        { className: "tag-default tag-pill"
+        , href: "#"
+        , onClick: handler preventDefault $ const $ store.dispatch $ LoadArticles (Tag tag) store.state.pagination
+        , children: [ R.text tag ]
+        }
 
-  container header children =
-    R.div
-      { className: "home-page"
-      , children:
-          [ header
-          , R.div
-              { className: "container page"
-              , children:
-                  [ R.div
-                      { className: "row"
-                      , children
-                      }
-                  ]
-              }
-          ]
-      }
+    banner =
+      R.div
+        { className: "banner"
+        , children:
+            [ R.div
+                { className: "container"
+                , children:
+                    [ R.h1
+                        { className: "logo-font"
+                        , children: [ R.text "conduit" ]
+                        }
+                    , R.p_
+                        [ R.text "A place to share your knowledge." ]
+                    ]
+                }
+            ]
+        }
+
+    container header children =
+      R.div
+        { className: "home-page"
+        , children:
+            [ header
+            , R.div
+                { className: "container page"
+                , children:
+                    [ R.div
+                        { className: "row"
+                        , children
+                        }
+                    ]
+                }
+            ]
+        }

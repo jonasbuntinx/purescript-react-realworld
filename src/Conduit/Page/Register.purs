@@ -5,13 +5,12 @@ import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
 import Conduit.Api.Endpoints (Register)
 import Conduit.Api.Utils as Utils
+import Conduit.Capability.Auth (login)
+import Conduit.Capability.Routing (redirect, toRouteURL)
 import Conduit.Component.App as App
 import Conduit.Component.Link as Link
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Data.Route (Route(..))
-import Conduit.Env (Env)
-import Conduit.Env.Auth (login)
-import Conduit.Env.Routing (redirect)
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Control.Comonad (extract)
@@ -36,10 +35,10 @@ data Action
   | UpdatePassword String
   | Submit
 
-mkRegisterPage :: App.Component Env Unit
+mkRegisterPage :: App.Component Unit
 mkRegisterPage =
-  App.component "RegisterPage" { init, update } \_ store props -> React.do
-    pure $ render store props
+  App.component "RegisterPage" { init, update } \env store props -> React.do
+    pure $ render env store props
   where
   init =
     { username: pure ""
@@ -62,8 +61,8 @@ mkRegisterPage =
           res <- Utils.makeRequest (Apiary.Route :: Register) Apiary.none Apiary.none { user: validated }
           case res of
             Left _ -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown error:" [ "request failed" ]) }
-            Right response ->
-              response
+            Right success ->
+              success
                 # Variant.match
                     { ok:
                         \{ user } -> do
@@ -73,7 +72,13 @@ mkRegisterPage =
                     , unprocessableEntity: \{ errors } -> self.setState _ { submitResponse = RemoteData.Failure errors }
                     }
 
-  render store props =
+  validate values = ado
+    username <- values.username # V.validated (LR.prop (SProxy :: _ "username")) \username -> F.nonEmpty username `andThen` F.validUsername
+    email <- values.email # V.validated (LR.prop (SProxy :: _ "email")) \email -> F.nonEmpty email `andThen` F.validEmail
+    password <- values.password # V.validated (LR.prop (SProxy :: _ "password")) \password -> F.nonEmpty password `andThen` (F.minimumLength 3 *> F.maximunLength 20)
+    in { username, email, password }
+
+  render env store props =
     let
       errors = validate store.state # unV identity (const mempty) :: { username :: _, email :: _, password :: _ }
     in
@@ -87,7 +92,8 @@ mkRegisterPage =
             , children:
                 [ Link.link
                     { className: ""
-                    , route: Login
+                    , href: toRouteURL Login
+                    , onClick: env.routing.navigate Login
                     , children: [ R.text "Already have an account?" ]
                     }
                 ]
@@ -156,30 +162,24 @@ mkRegisterPage =
                 ]
             }
         ]
-
-  container children =
-    R.div
-      { className: "auth-page"
-      , children:
-          [ R.div
-              { className: "container page"
-              , children:
-                  [ R.div
-                      { className: "row"
-                      , children:
-                          [ R.div
-                              { className: "col-md-6 offset-md-3 col-xs12"
-                              , children
-                              }
-                          ]
-                      }
-                  ]
-              }
-          ]
-      }
-
-  validate values = ado
-    username <- values.username # V.validated (LR.prop (SProxy :: _ "username")) \username -> F.nonEmpty username `andThen` F.validUsername
-    email <- values.email # V.validated (LR.prop (SProxy :: _ "email")) \email -> F.nonEmpty email `andThen` F.validEmail
-    password <- values.password # V.validated (LR.prop (SProxy :: _ "password")) \password -> F.nonEmpty password `andThen` (F.minimumLength 3 *> F.maximunLength 20)
-    in { username, email, password }
+    where
+    container children =
+      R.div
+        { className: "auth-page"
+        , children:
+            [ R.div
+                { className: "container page"
+                , children:
+                    [ R.div
+                        { className: "row"
+                        , children:
+                            [ R.div
+                                { className: "col-md-6 offset-md-3 col-xs12"
+                                , children
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
