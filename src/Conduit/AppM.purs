@@ -3,16 +3,13 @@ module Conduit.AppM where
 import Prelude
 import Conduit.Capability.Auth (class MonadAuth)
 import Conduit.Capability.Routing (class MonadRouting)
-import Conduit.Data.Jwt as Jwt
+import Conduit.Data.Auth (toAuth)
 import Conduit.Data.Route (Route)
 import Conduit.Env (Env)
 import Control.Monad.Reader (class MonadAsk, ReaderT, ask, asks, runReaderT)
-import Data.Either (hush)
 import Data.Maybe (Maybe(..))
-import Data.Time.Duration (Milliseconds(..))
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect, liftEffect)
-import Foreign.Day (fromMilliseconds)
 import Type.Equality (class TypeEquals, from)
 import Wire.React.Atom.Class (modify, read)
 
@@ -45,12 +42,7 @@ instance monadAskAppM :: (TypeEquals e Env, Monad m) => MonadAsk e (AppM m) wher
 
 instance monadAuthAppM :: MonadEffect m => MonadAuth (AppM m) where
   read = ask >>= \{ auth } -> liftEffect $ read auth.signal
-  login token profile = do
-    { auth } <- ask
-    liftEffect
-      $ modify auth.signal \_ -> do
-          { exp, username } <- hush $ Jwt.decode token
-          pure { token, username, expirationTime: fromMilliseconds $ Milliseconds $ exp * 1000.0, profile: Just profile }
+  login token profile = ask >>= \{ auth } -> liftEffect $ modify auth.signal $ const $ toAuth token (Just profile)
   logout = ask >>= \{ auth } -> liftEffect $ modify auth.signal $ const Nothing
   updateProfile profile = ask >>= \{ auth } -> liftEffect $ modify auth.signal $ map $ _ { profile = Just profile }
 

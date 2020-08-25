@@ -6,14 +6,12 @@ import Apiary.Route (Route(..)) as Apiary
 import Apiary.Types (none) as Apiary
 import Conduit.Api.Endpoints (GetUser)
 import Conduit.Api.Utils (addBaseUrl, addToken)
-import Conduit.Data.Auth (Auth)
-import Conduit.Data.Jwt as Jwt
+import Conduit.Data.Auth (Auth, toAuth)
 import Control.Monad.Except (runExcept)
 import Data.Either (Either(..), hush)
 import Data.Foldable (for_, traverse_)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Symbol (SProxy(..))
-import Data.Time.Duration (Milliseconds(..))
 import Data.Traversable (for)
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Variant as Variant
@@ -22,7 +20,7 @@ import Effect.Aff (launchAff_)
 import Effect.Aff.Class (liftAff)
 import Effect.Class (liftEffect)
 import Effect.Timer as Timer
-import Foreign.Day (fromMilliseconds, now)
+import Foreign.Day (now)
 import Foreign.Generic (decodeJSON, encodeJSON)
 import React.Basic.Hooks as React
 import Record as Record
@@ -110,10 +108,7 @@ mkAuthManager = do
           do
             token <- Selector.select tokenSignal
             profile <- Selector.select profileSignal
-            pure do
-              t <- token
-              { exp, username } <- hush $ Jwt.decode t
-              pure { token: t, username, expirationTime: fromMilliseconds $ Milliseconds $ exp * 1000.0, profile }
+            pure $ token >>= flip toAuth profile
       , update:
           \auth -> do
             Selector.write tokenSignal (_.token <$> auth)
