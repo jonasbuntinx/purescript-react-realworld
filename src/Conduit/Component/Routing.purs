@@ -1,8 +1,7 @@
 module Conduit.Component.Routing where
 
 import Prelude
-import Conduit.Capability.Routing (toRouteURL)
-import Conduit.Data.Route (Route(..))
+import Conduit.Capability.Routing (class IsRoute, toRouteURL)
 import Data.Either (hush)
 import Data.Maybe (fromMaybe)
 import Data.Tuple.Nested (type (/\), (/\))
@@ -15,19 +14,22 @@ import Wire.Event as Event
 import Wire.React.Class (modify)
 import Wire.React.Pure as Pure
 
-type RoutingEnv
-  = { signal :: Pure.Pure Route
-    , navigate :: Route -> Effect Unit
-    , redirect :: Route -> Effect Unit
+type RoutingEnv route
+  = { signal :: Pure.Pure route
+    , navigate :: route -> Effect Unit
+    , redirect :: route -> Effect Unit
     }
 
 mkRoutingManager ::
-  RouteDuplex' Route ->
-  Effect (RoutingEnv /\ (React.JSX -> React.JSX))
-mkRoutingManager routes = do
+  forall route.
+  IsRoute route =>
+  RouteDuplex' route ->
+  route ->
+  Effect ((RoutingEnv route) /\ (React.JSX -> React.JSX))
+mkRoutingManager routes default = do
   interface <- PushState.makeInterface
   location <- interface.locationState
-  routingSignal <- Pure.create $ fromMaybe Error $ hush $ parse routes location.path
+  routingSignal <- Pure.create $ fromMaybe default $ hush $ parse routes location.path
   component <-
     React.component "RoutingManager" \content -> React.do
       React.useEffectOnce do

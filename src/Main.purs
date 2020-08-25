@@ -4,7 +4,7 @@ import Prelude
 import Conduit.AppM (runAppM)
 import Conduit.Component.Auth as Auth
 import Conduit.Component.Routing as Routing
-import Conduit.Data.Route (routeCodec)
+import Conduit.Data.Route (Route(..), routeCodec)
 import Conduit.Root as Root
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
@@ -23,6 +23,6 @@ main = do
     Nothing -> throw "Conduit container element not found."
     Just c -> do
       auth /\ authManager <- Auth.mkAuthManager
-      routing /\ routingManager <- Routing.mkRoutingManager routeCodec
+      routing /\ routingManager <- Routing.mkRoutingManager routeCodec Error
       root <- runAppM { auth, routing } Root.mkRoot
       render (authManager (routingManager (root unit))) c
