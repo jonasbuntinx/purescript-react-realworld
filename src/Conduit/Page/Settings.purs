@@ -88,8 +88,8 @@ mkSettingsPage =
           res <- Utils.makeSecureRequest (Apiary.Route :: UpdateUser) Apiary.none Apiary.none { user: validated }
           case res of
             Left _ -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown error:" [ "request failed" ]) }
-            Right response ->
-              response
+            Right success ->
+              success
                 # Variant.match
                     { ok:
                         \{ user } -> do

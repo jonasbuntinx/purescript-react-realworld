@@ -76,8 +76,8 @@ mkArticlePage =
       res <- Utils.makeRequest (Apiary.Route :: GetArticle) { slug: self.props.slug } Apiary.none Apiary.none
       case res of
         Left error -> self.setState _ { article = RemoteData.Failure error }
-        Right response ->
-          response
+        Right success ->
+          success
             # Variant.match
                 { ok: \{ article } -> self.setState _ { article = RemoteData.Success article }
                 , notFound: \_ -> navigate Home
@@ -90,8 +90,8 @@ mkArticlePage =
       res <- Utils.makeSecureRequest (Apiary.Route :: DeleteArticle) { slug: self.props.slug } Apiary.none Apiary.none
       case res of
         Left error -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown error:" [ "request failed" ]) }
-        Right response ->
-          response
+        Right success ->
+          success
             # Variant.match
                 { ok:
                     \_ -> do
@@ -106,8 +106,8 @@ mkArticlePage =
       res <- Utils.makeSecureRequest (Apiary.Route :: DeleteComment) { slug: self.props.slug, id } Apiary.none Apiary.none
       case res of
         Left error -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown error:" [ "request failed" ]) }
-        Right response ->
-          response
+        Right success ->
+          success
             # Variant.match
                 { ok:
                     \_ -> do
@@ -125,8 +125,8 @@ mkArticlePage =
             res <- Utils.makeSecureRequest (Apiary.Route :: CreateComment) { slug: self.props.slug } Apiary.none { comment: validated }
             case res of
               Left _ -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown error:" [ "request failed" ]) }
-              Right response ->
-                response
+              Right success ->
+                success
                   # Variant.match
                       { ok:
                           \_ -> do

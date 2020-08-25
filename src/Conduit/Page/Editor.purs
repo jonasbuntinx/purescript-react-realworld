@@ -68,8 +68,8 @@ mkEditorPage =
         res <- Utils.makeSecureRequest (Apiary.Route :: GetArticle) { slug } Apiary.none Apiary.none
         case res of
           Left error -> self.setState _ { article = RemoteData.Failure error }
-          Right response ->
-            response
+          Right success ->
+            success
               # Variant.match
                   { ok:
                       \{ article } ->
@@ -99,8 +99,8 @@ mkEditorPage =
             Just slug -> map Variant.expand <$> Utils.makeSecureRequest (Apiary.Route :: UpdateArticle) { slug } Apiary.none { article: validated }
           case res of
             Left _ -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown error:" [ "request failed" ]) }
-            Right response ->
-              response
+            Right success ->
+              success
                 # Variant.match
                     { ok:
                         \{ article } -> do

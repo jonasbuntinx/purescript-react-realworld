@@ -71,8 +71,8 @@ mkProfilePage =
       res <- Utils.makeRequest (Apiary.Route :: GetProfile) { username: self.props.username } Apiary.none Apiary.none
       case res of
         Left error -> self.setState _ { profile = RemoteData.Failure error }
-        Right response ->
-          response
+        Right success ->
+          success
             # Variant.match
                 { ok: \{ profile } -> self.setState _ { profile = RemoteData.Success profile }
                 , notFound: \_ -> navigate Home
