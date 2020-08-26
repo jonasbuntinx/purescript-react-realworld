@@ -41,4 +41,4 @@ instance readForeignMoment :: ReadForeign DateTime where
           Just moment -> pure moment
 
 toDisplay :: DateTime -> String
-toDisplay = format (Format "MMMM do, yyyy")
+toDisplay = format (Format "MMMM Do, YYYY")
