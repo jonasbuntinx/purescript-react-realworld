@@ -18,9 +18,7 @@ jobs:
         uses: actions/cache@v2
         with:
           key: ${{ runner.os }}-spago-${{ hashFiles('**/*.dhall') }}
-          path: |
-            .spago
-            output
+          path: .spago
 
       - uses: actions/setup-node@v1
         with:
