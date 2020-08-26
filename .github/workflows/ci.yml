@@ -42,14 +42,6 @@ jobs:
       - name: Install NPM dependencies
         run: npm ci
 
-      # BUILD
-      - name: Build source
-        run: spago build
-
-      # TEST
-      - name: Run tests
-        run: spago test --no-install
-
       # BUNDLE
       - name: Run bundle
         run: npm run bundle
