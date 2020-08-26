@@ -7,6 +7,8 @@
 
 This repository is a [Real World](https://github.com/gothinkster/realworld) implementation of Conduit, a Medium clone, using [PureScript](https://www.purescript.org/) and [React](https://reactjs.org/).
 
+### [Demo](https://purescript-react-realworld.netlify.app/)
+
 ## Installation
 
 Clone the repository:
@@ -50,9 +52,13 @@ An opinionated set of bindings to the React library, optimizing for the most bas
 
 An implementation of React hooks on top of purescript-react-basic
 
-#### [React Basic Hooks Store](https://github.com/robertdp/purescript-react-basic-hooks-store)
+#### [React Store](https://github.com/robertdp/purescript-react-store)
 
 Provides useStore, an asynchronous, scheduled reducer.
+
+#### [Wire React](https://github.com/robertdp/purescript-wire-react)
+
+Event/State library for reactive state.
 
 #### [Routing](https://github.com/purescript-contrib/purescript-routing)
 
@@ -65,10 +71,6 @@ Unified parsing and printing for routes in PureScript
 #### [Apiary](https://github.com/robertdp/purescript-apiary)
 
 For the creation of type-level specs that can be queried against automatically.
-
-#### [Wire](https://github.com/robertdp/purescript-wire)
-
-Event/State library for reactive state.
 
 ## Recognition
 
