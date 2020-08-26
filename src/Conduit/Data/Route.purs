@@ -33,7 +33,7 @@ instance isRouteRoute :: IsRoute Route where
 
 routeCodec :: RouteDuplex' Route
 routeCodec =
-  default (Error)
+  default Error
     $ root
     $ sum
         { "Home": noArgs

@@ -15,14 +15,12 @@
     "bundle:build": "spago build --purs-args '--codegen corefn'",
     "bundle:dce": "zephyr -f Main.main",
     "bundle:parcel": "parcel build index.html --no-source-maps",
-    "clean": "rm -Rf .cache dist serve output dce-output",
-    "dev-server": "parcel serve --no-source-maps --out-dir serve index.html",
+    "clean": "rm -Rf .cache dist serve output dce-output node_modules .spago *.lock",
     "id": "pscid",
     "pscid:build": "yarn build",
     "postinstall": "spago install",
-    "rebuild": "yarn clean && yarn build",
-    "rebundle": "yarn clean && yarn bundle",
-    "serve": "yarn build && yarn dev-server",
+    "serve": "yarn build && yarn serve:parcel",
+    "serve:parcel": "parcel serve --no-source-maps --out-dir serve index.html",
     "test": "spago test"
   },
   "devDependencies": {
@@ -31,7 +29,8 @@
     "purescript": "^0.13.8",
     "purescript-psa": "^0.7.3",
     "purty": "^6.2.0",
-    "spago": "^0.16.0"
+    "spago": "^0.16.0",
+    "zephyr": "https://github.com/jonasbuntinx/zephyr.git"
   },
   "dependencies": {
     "dayjs": "^1.8.34",
