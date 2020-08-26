@@ -21,25 +21,25 @@ cd purescript-react-realworld
 Install the JavaScript and PureScript dependencies:
 
 ```sh
-yarn install
+npm run install
 ```
 
 Build the project:
 
 ```sh
-yarn build
+npm run build
 ```
 
 You can bundle the JS for production:
 
 ```sh
-yarn bundle
+npm run bundle
 ```
 
 Or run a local development server (defaults to [port 1234](http://localhost:1234)):
 
 ```sh
-yarn serve
+npm run serve
 ```
 
 ## Noteworthy PureScript Libraries
