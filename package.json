@@ -21,7 +21,7 @@
     "postinstall": "spago install",
     "serve": "npm rum build && npm rum serve:parcel",
     "serve:parcel": "parcel serve --no-source-maps --out-dir serve index.html",
-    "test": "spago test"
+    "test": "spago test --no-install"
   },
   "devDependencies": {
     "parcel": "^1.12.4",

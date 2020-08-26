@@ -42,6 +42,14 @@ jobs:
       - name: Install NPM dependencies
         run: npm ci
 
+      # BUILD
+      - name: Build source
+        run: npm run build
+
+      # TEST
+      - name: Run tests
+        run: npm run test
+
       # BUNDLE
       - name: Run bundle
         run: npm run bundle
