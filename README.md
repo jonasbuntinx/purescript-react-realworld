@@ -1,6 +1,8 @@
 # Real World PureScript React
 
 [![RealWorld Frontend](https://camo.githubusercontent.com/b507ac8f2ec6427bbef518193567c4ec6060c780/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f7265616c776f726c642d66726f6e74656e642d2532333738333537382e737667)](http://realworld.io)
+![CI](https://github.com/jonasbuntinx/purescript-react-realworld/workflows/CI/badge.svg)
+[![Netlify Status](https://api.netlify.com/api/v1/badges/f8b98224-3465-44f0-bd31-c4413a95953d/deploy-status)](https://app.netlify.com/sites/purescript-react-realworld/deploys)
 [![Maintainer: jonasbuntinx](https://img.shields.io/badge/maintainer-jonasbuntinx-teal.svg)](http://github.com/jonasbuntinx)
 
 This repository is a [Real World](https://github.com/gothinkster/realworld) implementation of Conduit, a Medium clone, using [PureScript](https://www.purescript.org/) and [React](https://reactjs.org/).
