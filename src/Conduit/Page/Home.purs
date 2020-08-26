@@ -125,7 +125,7 @@ mkHomePage =
                               }
                             ]
                           _ -> []
-                , onChange: \tab -> store.dispatch $ LoadArticles tab store.state.pagination
+                , onChange: \tab -> store.dispatch $ LoadArticles tab init.pagination
                 }
             ]
         }
