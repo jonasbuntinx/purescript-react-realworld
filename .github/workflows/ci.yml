@@ -46,6 +46,13 @@ jobs:
       - name: Run bundle
         run: npm run bundle
 
+      # COPY ASSETS
+      - name: Copy assets
+        uses: canastro/copy-file-action@master
+        with:
+          source: "assets/netlify.toml"
+          target: "dist/netlify.toml"
+
       # PUBLISH
       - name: Publish to demo branch
         uses: s0/git-publish-subdir-action@develop
