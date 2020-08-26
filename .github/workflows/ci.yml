@@ -40,7 +40,7 @@ jobs:
             ${{ runner.os }}-
 
       - name: Install NPM dependencies
-        run: npm ci
+        run: npm ci --only=production
 
       # BUILD
       - name: Build source
