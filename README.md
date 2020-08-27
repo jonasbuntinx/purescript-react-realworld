@@ -21,7 +21,7 @@ cd purescript-react-realworld
 Install the JavaScript and PureScript dependencies:
 
 ```sh
-npm run install
+npm install
 ```
 
 Build the project:
