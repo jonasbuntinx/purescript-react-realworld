@@ -1,22 +1,17 @@
 module Conduit.Page.Home (mkHomePage) where
 
 import Prelude
-import Apiary.Route (Route(..)) as Apiary
-import Apiary.Types (none) as Apiary
-import Conduit.Api.Endpoints (ListArticles, ListFeed, ListTags)
-import Conduit.Api.Utils as Utils
+import Conduit.Api.Request (listArticles, listFeed, listTags, toggleFavorite)
 import Conduit.Component.App as App
 import Conduit.Component.ArticleList (articleList)
 import Conduit.Component.Pagination (pagination)
 import Conduit.Component.Tabs as Tabs
 import Conduit.Data.Article (defaultArticlesQuery)
 import Conduit.Hook.Auth (useAuth)
-import Conduit.Page.Utils (_articles, toggleFavorite)
-import Data.Either (either)
+import Conduit.Page.Utils (_articles)
 import Data.Lens (preview, set)
 import Data.Maybe (Maybe(..), isJust, isNothing)
 import Data.Monoid (guard)
-import Data.Variant as Variant
 import Network.RemoteData (RemoteData(..))
 import Network.RemoteData as RemoteData
 import React.Basic.DOM as R
@@ -60,17 +55,17 @@ mkHomePage =
   update self = case _ of
     LoadTags -> do
       self.setState _ { tags = RemoteData.Loading }
-      res <- Utils.makeRequest (Apiary.Route :: ListTags) Apiary.none Apiary.none Apiary.none
-      self.setState _ { tags = res # either RemoteData.Failure (Variant.match { ok: RemoteData.Success <<< _.tags }) }
+      listTags \res -> self.setState _ { tags = RemoteData.fromEither res }
     LoadArticles tab pagination -> do
       let
         query = defaultArticlesQuery { offset = Just pagination.offset, limit = Just pagination.limit }
+
+        request = case tab of
+          Feed -> listFeed query
+          Global -> listArticles query
+          Tag tag -> listArticles (query { tag = Just tag })
       self.setState _ { articles = RemoteData.Loading, tab = tab, pagination = pagination }
-      res <- case tab of
-        Feed -> Utils.makeSecureRequest (Apiary.Route :: ListFeed) Apiary.none query Apiary.none
-        Global -> Utils.makeRequest (Apiary.Route :: ListArticles) Apiary.none query Apiary.none
-        Tag tag -> Utils.makeRequest (Apiary.Route :: ListArticles) Apiary.none (query { tag = Just tag }) Apiary.none
-      self.setState _ { articles = res # either RemoteData.Failure (Variant.match { ok: RemoteData.Success }) }
+      request \res -> self.setState _ { articles = RemoteData.fromEither res }
     ToggleFavorite ix -> toggleFavorite (preview (_articles ix) self.state) (self.setState <<< set (_articles ix))
 
   render env auth store props =

@@ -1,10 +1,7 @@
 module Conduit.Page.Register (mkRegisterPage) where
 
 import Prelude
-import Apiary.Route (Route(..)) as Apiary
-import Apiary.Types (none) as Apiary
-import Conduit.Api.Endpoints (Register)
-import Conduit.Api.Utils as Utils
+import Conduit.Api.Request (registerUser)
 import Conduit.Capability.Auth (login)
 import Conduit.Capability.Routing (redirect, toRouteURL)
 import Conduit.Component.App as App
@@ -21,8 +18,6 @@ import Data.Lens.Record as LR
 import Data.Monoid (guard)
 import Data.Symbol (SProxy(..))
 import Data.Validation.Semigroup (andThen, toEither, unV)
-import Data.Variant as Variant
-import Foreign.Object as Object
 import Network.RemoteData as RemoteData
 import React.Basic.DOM as R
 import React.Basic.DOM.Events (targetValue)
@@ -58,19 +53,12 @@ mkRegisterPage =
         Left _ -> self.setState (const state)
         Right validated -> do
           self.setState _ { submitResponse = RemoteData.Loading }
-          res <- Utils.makeRequest (Apiary.Route :: Register) Apiary.none Apiary.none { user: validated }
-          case res of
-            Left _ -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown error:" [ "request failed" ]) }
-            Right success ->
-              success
-                # Variant.match
-                    { ok:
-                        \{ user } -> do
-                          self.setState _ { submitResponse = RemoteData.Success unit }
-                          login user.token $ Record.delete (SProxy :: _ "token") user
-                          redirect Home
-                    , unprocessableEntity: \{ errors } -> self.setState _ { submitResponse = RemoteData.Failure errors }
-                    }
+          registerUser validated case _ of
+            Right user -> do
+              self.setState _ { submitResponse = RemoteData.Success unit }
+              login user.token $ Record.delete (SProxy :: _ "token") user
+              redirect Home
+            Left err -> self.setState _ { submitResponse = RemoteData.Failure err }
 
   validate values = ado
     username <- values.username # V.validated (LR.prop (SProxy :: _ "username")) \username -> F.nonEmpty username `andThen` F.validUsername

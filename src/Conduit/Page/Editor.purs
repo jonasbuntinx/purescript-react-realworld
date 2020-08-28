@@ -1,14 +1,12 @@
 module Conduit.Page.Editor (Props, mkEditorPage) where
 
 import Prelude
-import Apiary.Route (Route(..)) as Apiary
-import Apiary.Types (none) as Apiary
-import Conduit.Api.Endpoints (GetArticle, UpdateArticle, CreateArticle)
-import Conduit.Api.Utils as Utils
-import Conduit.Capability.Routing (navigate)
+import Conduit.Api.Request (getArticle, submitArticle)
+import Conduit.Capability.Routing (navigate, redirect)
 import Conduit.Component.App as App
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Component.TagInput (tagInput)
+import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Slug (Slug)
 import Conduit.Form.Validated as V
@@ -18,14 +16,12 @@ import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
 import Data.Lens.Record as LR
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe)
 import Data.Monoid (guard)
 import Data.Set (Set)
 import Data.Set as Set
 import Data.Symbol (SProxy(..))
 import Data.Validation.Semigroup (andThen, toEither, unV)
-import Data.Variant as Variant
-import Foreign.Object as Object
 import Network.RemoteData as RemoteData
 import React.Basic.DOM as R
 import React.Basic.DOM.Events (targetValue)
@@ -65,24 +61,18 @@ mkEditorPage =
     Initialize ->
       for_ self.props.slug \slug -> do
         self.setState _ { article = RemoteData.Loading }
-        res <- Utils.makeSecureRequest (Apiary.Route :: GetArticle) { slug } Apiary.none Apiary.none
-        case res of
+        getArticle slug case _ of
+          Left (NotFound _) -> redirect Home
           Left error -> self.setState _ { article = RemoteData.Failure error }
-          Right success ->
-            success
-              # Variant.match
-                  { ok:
-                      \{ article } ->
-                        self.setState
-                          _
-                            { article = RemoteData.Success article
-                            , title = pure article.title
-                            , description = pure article.description
-                            , body = pure article.body
-                            , tagList = Set.fromFoldable article.tagList
-                            }
-                  , notFound: \_ -> navigate Home
-                  }
+          Right article ->
+            self.setState
+              _
+                { article = RemoteData.Success article
+                , title = pure article.title
+                , description = pure article.description
+                , body = pure article.body
+                , tagList = Set.fromFoldable article.tagList
+                }
     UpdateTitle title -> self.setState _ { title = V.Modified title }
     UpdateDescription description -> self.setState _ { description = V.Modified description }
     UpdateBody body -> self.setState _ { body = V.Modified body }
@@ -94,20 +84,11 @@ mkEditorPage =
         Left _ -> self.setState (const state)
         Right validated -> do
           self.setState _ { submitResponse = RemoteData.Loading }
-          res <- case self.props.slug of
-            Nothing -> map Variant.expand <$> Utils.makeSecureRequest (Apiary.Route :: CreateArticle) Apiary.none Apiary.none { article: validated }
-            Just slug -> map Variant.expand <$> Utils.makeSecureRequest (Apiary.Route :: UpdateArticle) { slug } Apiary.none { article: validated }
-          case res of
-            Left _ -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown error:" [ "request failed" ]) }
-            Right success ->
-              success
-                # Variant.match
-                    { ok:
-                        \{ article } -> do
-                          self.setState _ { submitResponse = RemoteData.Success unit }
-                          navigate $ ViewArticle article.slug
-                    , unprocessableEntity: \{ errors } -> self.setState _ { submitResponse = RemoteData.Failure errors }
-                    }
+          submitArticle self.props.slug validated case _ of
+            Right article -> do
+              self.setState _ { submitResponse = RemoteData.Success unit }
+              navigate $ ViewArticle article.slug
+            Left err -> self.setState _ { submitResponse = RemoteData.Failure err }
 
   validate values = ado
     title <- values.title # V.validated (LR.prop (SProxy :: _ "title")) F.nonEmpty

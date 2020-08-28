@@ -1,11 +1,8 @@
 module Conduit.Page.Profile (Props, Tab(..), mkProfilePage) where
 
 import Prelude
-import Apiary.Route (Route(..)) as Apiary
-import Apiary.Types (none) as Apiary
-import Conduit.Api.Endpoints (GetProfile, ListArticles)
-import Conduit.Api.Utils as Utils
-import Conduit.Capability.Routing (navigate)
+import Conduit.Api.Request (getProfile, listArticles, toggleFavorite, toggleFollow)
+import Conduit.Capability.Routing (redirect)
 import Conduit.Component.App as App
 import Conduit.Component.ArticleList (articleList)
 import Conduit.Component.Buttons (followButton)
@@ -13,17 +10,17 @@ import Conduit.Component.Pagination (pagination)
 import Conduit.Component.Tabs as Tabs
 import Conduit.Data.Article (defaultArticlesQuery)
 import Conduit.Data.Avatar as Avatar
+import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
 import Conduit.Hook.Auth (useAuth)
-import Conduit.Page.Utils (_articles, _profile, toggleFavorite, toggleFollow)
-import Data.Either (Either(..), either)
+import Conduit.Page.Utils (_articles, _profile)
+import Data.Either (Either(..))
 import Data.Lens (preview, set)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Monoid (guard)
 import Data.Tuple.Nested ((/\))
-import Data.Variant as Variant
 import Network.RemoteData as RemoteData
 import React.Basic.DOM as R
 import React.Basic.Events (handler_)
@@ -68,25 +65,20 @@ mkProfilePage =
   update self = case _ of
     Initialize -> do
       self.setState _ { profile = RemoteData.Loading }
-      res <- Utils.makeRequest (Apiary.Route :: GetProfile) { username: self.props.username } Apiary.none Apiary.none
-      case res of
+      getProfile self.props.username case _ of
+        Left (NotFound _) -> redirect Home
         Left error -> self.setState _ { profile = RemoteData.Failure error }
-        Right success ->
-          success
-            # Variant.match
-                { ok: \{ profile } -> self.setState _ { profile = RemoteData.Success profile }
-                , notFound: \_ -> navigate Home
-                }
+        Right profile -> self.setState _ { profile = RemoteData.Success profile }
     LoadArticles pagination -> do
       let
-        query =
-          defaultArticlesQuery { offset = Just pagination.offset, limit = Just pagination.limit }
-            # case self.props.tab of
-                Published -> _ { author = Just self.props.username }
-                Favorited -> _ { favorited = Just self.props.username }
+        query = defaultArticlesQuery { offset = Just pagination.offset, limit = Just pagination.limit }
+
+        request =
+          listArticles case self.props.tab of
+            Published -> query { author = Just self.props.username }
+            Favorited -> query { favorited = Just self.props.username }
       self.setState _ { articles = RemoteData.Loading, pagination = pagination }
-      res <- Utils.makeRequest (Apiary.Route :: ListArticles) Apiary.none query Apiary.none
-      self.setState _ { articles = res # either RemoteData.Failure (Variant.match { ok: RemoteData.Success }) }
+      request \res -> self.setState _ { articles = RemoteData.fromEither res }
     ToggleFavorite ix -> toggleFavorite (preview (_articles ix) self.state) (self.setState <<< set (_articles ix))
     ToggleFollow -> toggleFollow (preview _profile self.state) (self.setState <<< set _profile)
 

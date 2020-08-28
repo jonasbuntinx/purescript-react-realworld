@@ -1,10 +1,7 @@
 module Conduit.Page.Settings (mkSettingsPage) where
 
 import Prelude
-import Apiary.Route (Route(..)) as Apiary
-import Apiary.Types (none) as Apiary
-import Conduit.Api.Endpoints (UpdateUser)
-import Conduit.Api.Utils as Utils
+import Conduit.Api.Request (updateUser)
 import Conduit.Capability.Auth (logout, updateProfile)
 import Conduit.Capability.Routing (navigate, redirect)
 import Conduit.Component.App as App
@@ -25,8 +22,6 @@ import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Monoid (guard)
 import Data.Symbol (SProxy(..))
 import Data.Validation.Semigroup (andThen, toEither, unV)
-import Data.Variant as Variant
-import Foreign.Object as Object
 import Network.RemoteData as RemoteData
 import React.Basic.DOM as R
 import React.Basic.DOM.Events (targetValue)
@@ -85,19 +80,12 @@ mkSettingsPage =
         Left _ -> self.setState (const state)
         Right validated -> do
           self.setState _ { submitResponse = RemoteData.Loading }
-          res <- Utils.makeSecureRequest (Apiary.Route :: UpdateUser) Apiary.none Apiary.none { user: validated }
-          case res of
-            Left _ -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown error:" [ "request failed" ]) }
-            Right success ->
-              success
-                # Variant.match
-                    { ok:
-                        \{ user } -> do
-                          self.setState _ { submitResponse = RemoteData.Success unit }
-                          updateProfile $ Record.delete (SProxy :: _ "token") user
-                          navigate Home
-                    , unprocessableEntity: \{ errors } -> self.setState _ { submitResponse = RemoteData.Failure errors }
-                    }
+          updateUser validated case _ of
+            Right user -> do
+              self.setState _ { submitResponse = RemoteData.Success unit }
+              updateProfile $ Record.delete (SProxy :: _ "token") user
+              navigate Home
+            Left err -> self.setState _ { submitResponse = RemoteData.Failure err }
     Logout -> logout *> redirect Home
 
   validate values = ado

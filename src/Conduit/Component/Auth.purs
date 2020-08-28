@@ -17,7 +17,6 @@ import Data.Tuple.Nested (type (/\), (/\))
 import Data.Variant as Variant
 import Effect (Effect)
 import Effect.Aff (launchAff_)
-import Effect.Aff.Class (liftAff)
 import Effect.Class (liftEffect)
 import Effect.Timer as Timer
 import Foreign.Day (now)
@@ -55,11 +54,10 @@ mkAuthManager = do
     auth <- read authSignal
     for_ auth \{ token } -> do
       launchAff_ do
-        res <- liftAff $ Apiary.makeRequest (Apiary.Route :: GetUser) (addBaseUrl <<< addToken token) Apiary.none Apiary.none Apiary.none
-        liftEffect
-          $ case res of
-              Left _ -> reset authSignal
-              Right success -> success # Variant.match { ok: updateToken authSignal <<< _.token <<< _.user }
+        res <- getUser token
+        liftEffect case res of
+          Left _ -> reset authSignal
+          Right user -> updateToken authSignal user.token
 
   checkAuthStatus authSignal = do
     auth <- read authSignal
@@ -99,8 +97,8 @@ mkAuthManager = do
               token <- liftEffect $ read tokenSignal
               token
                 # maybe (pure Nothing) \t -> do
-                    res <- hush <$> Apiary.makeRequest (Apiary.Route :: GetUser) (addBaseUrl <<< addToken t) Apiary.none Apiary.none Apiary.none
-                    for res (Variant.match { ok: pure <<< Record.delete (SProxy :: _ "token") <<< _.user })
+                    res <- hush <$> getUser t
+                    for res (pure <<< Record.delete (SProxy :: _ "token"))
         , save: const $ pure unit
         }
     Selector.create
@@ -114,3 +112,7 @@ mkAuthManager = do
             Selector.write tokenSignal (_.token <$> auth)
             Selector.write profileSignal (_.profile =<< auth)
       }
+
+  getUser token = do
+    res <- Apiary.makeRequest (Apiary.Route :: GetUser) (addBaseUrl <<< addToken token) Apiary.none Apiary.none Apiary.none
+    pure $ res >>= (\success -> success # Variant.match { ok: Right <<< _.user })

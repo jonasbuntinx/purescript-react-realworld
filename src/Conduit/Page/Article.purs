@@ -1,25 +1,23 @@
 module Conduit.Page.Article (Props, mkArticlePage) where
 
 import Prelude
-import Apiary.Route (Route(..)) as Apiary
-import Apiary.Types (none) as Apiary
-import Conduit.Api.Endpoints (CreateComment, DeleteArticle, DeleteComment, GetArticle, ListComments)
-import Conduit.Api.Utils as Utils
-import Conduit.Capability.Routing (navigate, toRouteURL)
+import Conduit.Api.Request (createComment, deleteArticle, deleteComment, getArticle, listComments, toggleFavorite, toggleFollow)
+import Conduit.Capability.Routing (navigate, redirect, toRouteURL)
 import Conduit.Component.App as App
 import Conduit.Component.Buttons (ButtonSize(..), favoriteButton, followButton)
 import Conduit.Component.Link as Link
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Comment (CommentId)
+import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Slug (Slug)
 import Conduit.Data.Username as Username
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Conduit.Hook.Auth (useAuth)
-import Conduit.Page.Utils (_article, _author, toggleFavorite, toggleFollow)
+import Conduit.Page.Utils (_article, _author)
 import Control.Comonad (extract)
-import Data.Either (Either(..), either)
+import Data.Either (Either(..))
 import Data.Foldable (traverse_)
 import Data.Lens (preview, set)
 import Data.Lens.Record as LR
@@ -27,10 +25,8 @@ import Data.Maybe (Maybe(..), maybe)
 import Data.Monoid (guard)
 import Data.Symbol (SProxy(..))
 import Data.Validation.Semigroup (toEither, unV)
-import Data.Variant as Variant
 import Foreign.Day (toDisplay)
 import Foreign.NanoMarkdown (nmd)
-import Foreign.Object as Object
 import Network.RemoteData (_Success)
 import Network.RemoteData as RemoteData
 import React.Basic.DOM as R
@@ -67,53 +63,35 @@ mkArticlePage =
     , comments: RemoteData.NotAsked
     , body: pure ""
     , submitResponse: RemoteData.NotAsked
-    , isModalOpen: false
     }
 
   update self = case _ of
     Initialize -> do
       self.setState _ { article = RemoteData.Loading }
-      res <- Utils.makeRequest (Apiary.Route :: GetArticle) { slug: self.props.slug } Apiary.none Apiary.none
-      case res of
+      getArticle self.props.slug case _ of
+        Left (NotFound _) -> redirect Home
         Left error -> self.setState _ { article = RemoteData.Failure error }
-        Right success ->
-          success
-            # Variant.match
-                { ok: \{ article } -> self.setState _ { article = RemoteData.Success article }
-                , notFound: \_ -> navigate Home
-                }
+        Right article -> self.setState _ { article = RemoteData.Success article }
     LoadComments -> do
       self.setState _ { comments = RemoteData.Loading }
-      loadComments self
+      listComments self.props.slug \res -> self.setState _ { comments = RemoteData.fromEither res }
     DeleteArticle -> do
       self.setState _ { submitResponse = RemoteData.Loading }
-      res <- Utils.makeSecureRequest (Apiary.Route :: DeleteArticle) { slug: self.props.slug } Apiary.none Apiary.none
-      case res of
-        Left error -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown error:" [ "request failed" ]) }
-        Right success ->
-          success
-            # Variant.match
-                { ok:
-                    \_ -> do
-                      self.setState _ { submitResponse = RemoteData.Success unit, isModalOpen = false }
-                      navigate Home
-                }
+      deleteArticle self.props.slug case _ of
+        Right res -> do
+          self.setState _ { submitResponse = RemoteData.Success res }
+          navigate Home
+        Left err -> self.setState _ { submitResponse = RemoteData.Failure err }
     ToggleFollow -> toggleFollow (preview _author self.state) (self.setState <<< set _author)
     ToggleFavorite -> toggleFavorite (preview _article self.state) (self.setState <<< set _article)
     UpdateBody body -> self.setState _ { body = V.Modified body }
     DeleteComment id -> do
       self.setState _ { submitResponse = RemoteData.Loading }
-      res <- Utils.makeSecureRequest (Apiary.Route :: DeleteComment) { slug: self.props.slug, id } Apiary.none Apiary.none
-      case res of
-        Left error -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown error:" [ "request failed" ]) }
-        Right success ->
-          success
-            # Variant.match
-                { ok:
-                    \_ -> do
-                      self.setState _ { submitResponse = RemoteData.Success unit }
-                      loadComments self
-                }
+      deleteComment self.props.slug id case _ of
+        Right _ -> do
+          self.setState _ { submitResponse = RemoteData.Success unit }
+          listComments self.props.slug \res -> self.setState _ { comments = RemoteData.fromEither res }
+        Left err -> self.setState _ { submitResponse = RemoteData.Failure err }
     SubmitComment ->
       let
         state = V.setModified self.state
@@ -122,25 +100,11 @@ mkArticlePage =
           Left _ -> self.setState (const state)
           Right validated -> do
             self.setState _ { submitResponse = RemoteData.Loading }
-            res <- Utils.makeSecureRequest (Apiary.Route :: CreateComment) { slug: self.props.slug } Apiary.none { comment: validated }
-            case res of
-              Left _ -> self.setState _ { submitResponse = RemoteData.Failure (Object.singleton "unknown error:" [ "request failed" ]) }
-              Right success ->
-                success
-                  # Variant.match
-                      { ok:
-                          \_ -> do
-                            self.setState
-                              _
-                                { submitResponse = RemoteData.Success unit
-                                , body = pure ""
-                                }
-                            loadComments self
-                      }
-
-  loadComments self = do
-    res <- Utils.makeRequest (Apiary.Route :: ListComments) { slug: self.props.slug } Apiary.none Apiary.none
-    self.setState _ { comments = res # either RemoteData.Failure (Variant.match { ok: RemoteData.Success <<< _.comments }) }
+            createComment self.props.slug validated case _ of
+              Right _ -> do
+                self.setState _ { submitResponse = RemoteData.Success unit, body = pure "" }
+                listComments self.props.slug \res -> self.setState _ { comments = RemoteData.fromEither res }
+              Left err -> self.setState _ { submitResponse = RemoteData.Failure err }
 
   validate values = ado
     body <- values.body # V.validated (LR.prop (SProxy :: _ "body")) F.nonEmpty

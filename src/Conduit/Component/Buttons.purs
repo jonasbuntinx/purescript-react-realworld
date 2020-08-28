@@ -32,19 +32,17 @@ favoriteButton { size, favorited, count, onClick } =
             , children: []
             }
         , R.span_
-            [ R.text
-                $ case favorited, size of
-                    true, Medium -> " Unfavorite Article"
-                    _, Medium -> " Favorite Article"
-                    _, _ -> " "
+            [ R.text case favorited, size of
+                true, Medium -> " Unfavorite Article"
+                _, Medium -> " Favorite Article"
+                _, _ -> " "
             ]
         , R.span
             { className: "counter"
             , children:
-                [ R.text
-                    $ case size of
-                        Icon -> " " <> writeJSON count
-                        _ -> " (" <> writeJSON count <> ")"
+                [ R.text case size of
+                    Icon -> " " <> writeJSON count
+                    _ -> " (" <> writeJSON count <> ")"
                 ]
             }
         ]

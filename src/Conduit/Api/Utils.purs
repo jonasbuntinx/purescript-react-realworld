@@ -1,4 +1,4 @@
-module Conduit.Api.Utils (Error(..), addBaseUrl, addToken, makeRequest, makeSecureRequest) where
+module Conduit.Api.Utils (addBaseUrl, addToken, makeRequest, makeSecureRequest) where
 
 import Prelude
 import Apiary.Client (makeRequest) as Apiary
@@ -8,6 +8,7 @@ import Apiary.Types (Error(..)) as Apiary
 import Conduit.Capability.Auth (class MonadAuth, read)
 import Conduit.Capability.Routing (class MonadRouting, redirect)
 import Conduit.Config as Config
+import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..))
 import Control.Comonad (extract)
 import Data.Bifunctor (lmap)
@@ -21,10 +22,6 @@ import Effect.Exception as Exception
 import Foreign (renderForeignError)
 import Foreign.Object as Object
 import Milkis as Milkis
-
-data Error
-  = NotAuthorized
-  | ApiaryError Apiary.Error
 
 makeRequest ::
   forall m rep body query path route response.

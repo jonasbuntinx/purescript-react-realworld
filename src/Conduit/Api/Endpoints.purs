@@ -11,7 +11,7 @@ import Conduit.Data.Username (Username)
 import Foreign.Object (Object)
 
 -- | User
-type Login
+type LoginUser
   = POST "/api/users/login"
       { body :: JSON { user :: { email :: String, password :: String } }
       , response ::
@@ -20,7 +20,7 @@ type Login
           }
       }
 
-type Register
+type RegisterUser
   = POST "/api/users"
       { body :: JSON { user :: { username :: Username, email :: String, password :: String } }
       , response ::
