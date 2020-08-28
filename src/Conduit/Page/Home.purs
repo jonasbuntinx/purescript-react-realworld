@@ -73,7 +73,7 @@ mkHomePage =
     container (guard (isNothing auth) banner)
       [ mainView
       , R.div
-          { className: "col-md-3"
+          { className: "col-md-3 col-xs-12"
           , children:
               [ R.div
                   { className: "sidebar"
@@ -88,7 +88,7 @@ mkHomePage =
     where
     mainView =
       R.div
-        { className: "col-md-9"
+        { className: "col-md-9 col-xs-12"
         , children:
             [ Tabs.tabs
                 { className: "feed-toggle"
