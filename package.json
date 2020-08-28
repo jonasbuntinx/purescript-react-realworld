@@ -14,7 +14,7 @@
     "bundle": "npm rum bundle:build && npm rum bundle:dce && npm rum bundle:parcel",
     "bundle:build": "spago build --purs-args '--codegen corefn'",
     "bundle:dce": "zephyr -f Main.main",
-    "bundle:parcel": "parcel build index.html",
+    "bundle:parcel": "parcel build index.html --no-source-maps",
     "clean": "rm -Rf .cache dist serve output dce-output node_modules .spago *-lock.json",
     "id": "pscid",
     "pscid:build": "npm rum build",
