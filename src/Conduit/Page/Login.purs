@@ -1,7 +1,7 @@
 module Conduit.Page.Login (mkLoginPage) where
 
 import Prelude
-import Conduit.Api.Request (loginUser)
+import Conduit.Capability.Api (loginUser)
 import Conduit.Capability.Auth (login)
 import Conduit.Capability.Routing (redirect, toRouteURL)
 import Conduit.Component.App as App
@@ -50,7 +50,7 @@ mkLoginPage =
         Left _ -> self.setState (const state)
         Right validated -> do
           self.setState _ { submitResponse = RemoteData.Loading }
-          loginUser validated case _ of
+          bind (loginUser validated) case _ of
             Right user -> do
               self.setState _ { submitResponse = RemoteData.Success unit }
               login user.token $ Record.delete (SProxy :: _ "token") user

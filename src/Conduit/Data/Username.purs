@@ -16,8 +16,7 @@ derive newtype instance writeForeignUsername :: WriteForeign Username
 
 instance readForeignUsername :: ReadForeign Username where
   readImpl =
-    readImpl
-      >=> fromString
+    readImpl >=> fromString
       >>> case _ of
           Just username -> pure username
           Nothing -> throwError $ pure $ ForeignError "Failed to decode username"

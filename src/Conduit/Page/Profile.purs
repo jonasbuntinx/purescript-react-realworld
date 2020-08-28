@@ -1,7 +1,7 @@
 module Conduit.Page.Profile (Props, Tab(..), mkProfilePage) where
 
 import Prelude
-import Conduit.Api.Request (getProfile, listArticles, toggleFavorite, toggleFollow)
+import Conduit.Capability.Api (getProfile, listArticles, toggleFavorite, toggleFollow)
 import Conduit.Capability.Routing (redirect)
 import Conduit.Component.App as App
 import Conduit.Component.ArticleList (articleList)
@@ -17,6 +17,7 @@ import Conduit.Data.Username as Username
 import Conduit.Hook.Auth (useAuth)
 import Conduit.Page.Utils (_articles, _profile)
 import Data.Either (Either(..))
+import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Monoid (guard)
@@ -65,7 +66,7 @@ mkProfilePage =
   update self = case _ of
     Initialize -> do
       self.setState _ { profile = RemoteData.Loading }
-      getProfile self.props.username case _ of
+      bind (getProfile self.props.username) case _ of
         Left (NotFound _) -> redirect Home
         Left error -> self.setState _ { profile = RemoteData.Failure error }
         Right profile -> self.setState _ { profile = RemoteData.Success profile }
@@ -78,9 +79,9 @@ mkProfilePage =
             Published -> query { author = Just self.props.username }
             Favorited -> query { favorited = Just self.props.username }
       self.setState _ { articles = RemoteData.Loading, pagination = pagination }
-      request \res -> self.setState _ { articles = RemoteData.fromEither res }
-    ToggleFavorite ix -> toggleFavorite (preview (_articles ix) self.state) (self.setState <<< set (_articles ix))
-    ToggleFollow -> toggleFollow (preview _profile self.state) (self.setState <<< set _profile)
+      request >>= \res -> self.setState _ { articles = RemoteData.fromEither res }
+    ToggleFavorite ix -> for_ (preview (_articles ix) self.state) (toggleFavorite >=> traverse_ (self.setState <<< set (_articles ix)))
+    ToggleFollow -> for_ (preview _profile self.state) (toggleFollow >=> traverse_ (self.setState <<< set _profile))
 
   render env auth store props =
     guard (not $ RemoteData.isLoading store.state.profile) container userInfo

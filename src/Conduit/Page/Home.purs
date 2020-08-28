@@ -1,7 +1,7 @@
 module Conduit.Page.Home (mkHomePage) where
 
 import Prelude
-import Conduit.Api.Request (listArticles, listFeed, listTags, toggleFavorite)
+import Conduit.Capability.Api (listArticles, listFeed, listTags, toggleFavorite)
 import Conduit.Component.App as App
 import Conduit.Component.ArticleList (articleList)
 import Conduit.Component.Pagination (pagination)
@@ -9,6 +9,7 @@ import Conduit.Component.Tabs as Tabs
 import Conduit.Data.Article (defaultArticlesQuery)
 import Conduit.Hook.Auth (useAuth)
 import Conduit.Page.Utils (_articles)
+import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
 import Data.Maybe (Maybe(..), isJust, isNothing)
 import Data.Monoid (guard)
@@ -55,7 +56,7 @@ mkHomePage =
   update self = case _ of
     LoadTags -> do
       self.setState _ { tags = RemoteData.Loading }
-      listTags \res -> self.setState _ { tags = RemoteData.fromEither res }
+      listTags >>= \res -> self.setState _ { tags = RemoteData.fromEither res }
     LoadArticles tab pagination -> do
       let
         query = defaultArticlesQuery { offset = Just pagination.offset, limit = Just pagination.limit }
@@ -65,8 +66,8 @@ mkHomePage =
           Global -> listArticles query
           Tag tag -> listArticles (query { tag = Just tag })
       self.setState _ { articles = RemoteData.Loading, tab = tab, pagination = pagination }
-      request \res -> self.setState _ { articles = RemoteData.fromEither res }
-    ToggleFavorite ix -> toggleFavorite (preview (_articles ix) self.state) (self.setState <<< set (_articles ix))
+      request >>= \res -> self.setState _ { articles = RemoteData.fromEither res }
+    ToggleFavorite ix -> for_ (preview (_articles ix) self.state) (toggleFavorite >=> traverse_ (self.setState <<< set (_articles ix)))
 
   render env auth store props =
     container (guard (isNothing auth) banner)

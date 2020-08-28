@@ -18,8 +18,7 @@ derive instance eqSlug :: Eq Slug
 
 instance readForeignSlug :: ReadForeign Slug where
   readImpl =
-    readImpl
-      >=> fromString
+    readImpl >=> fromString
       >>> case _ of
           Just slug -> pure slug
           Nothing -> throwError $ pure $ ForeignError "Failed to decode slug"

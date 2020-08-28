@@ -1,7 +1,7 @@
 module Conduit.Page.Article (Props, mkArticlePage) where
 
 import Prelude
-import Conduit.Api.Request (createComment, deleteArticle, deleteComment, getArticle, listComments, toggleFavorite, toggleFollow)
+import Conduit.Capability.Api (createComment, deleteArticle, deleteComment, getArticle, listComments, toggleFavorite, toggleFollow)
 import Conduit.Capability.Routing (navigate, redirect, toRouteURL)
 import Conduit.Component.App as App
 import Conduit.Component.Buttons (ButtonSize(..), favoriteButton, followButton)
@@ -18,7 +18,7 @@ import Conduit.Hook.Auth (useAuth)
 import Conduit.Page.Utils (_article, _author)
 import Control.Comonad (extract)
 import Data.Either (Either(..))
-import Data.Foldable (traverse_)
+import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
 import Data.Lens.Record as LR
 import Data.Maybe (Maybe(..), maybe)
@@ -68,29 +68,29 @@ mkArticlePage =
   update self = case _ of
     Initialize -> do
       self.setState _ { article = RemoteData.Loading }
-      getArticle self.props.slug case _ of
+      bind (getArticle self.props.slug) case _ of
         Left (NotFound _) -> redirect Home
         Left error -> self.setState _ { article = RemoteData.Failure error }
         Right article -> self.setState _ { article = RemoteData.Success article }
     LoadComments -> do
       self.setState _ { comments = RemoteData.Loading }
-      listComments self.props.slug \res -> self.setState _ { comments = RemoteData.fromEither res }
+      listComments self.props.slug >>= \res -> self.setState _ { comments = RemoteData.fromEither res }
     DeleteArticle -> do
       self.setState _ { submitResponse = RemoteData.Loading }
-      deleteArticle self.props.slug case _ of
+      bind (deleteArticle self.props.slug) case _ of
         Right res -> do
           self.setState _ { submitResponse = RemoteData.Success res }
           navigate Home
         Left err -> self.setState _ { submitResponse = RemoteData.Failure err }
-    ToggleFollow -> toggleFollow (preview _author self.state) (self.setState <<< set _author)
-    ToggleFavorite -> toggleFavorite (preview _article self.state) (self.setState <<< set _article)
+    ToggleFollow -> for_ (preview _author self.state) (toggleFollow >=> traverse_ (self.setState <<< set _author))
+    ToggleFavorite -> for_ (preview _article self.state) (toggleFavorite >=> traverse_ (self.setState <<< set _article))
     UpdateBody body -> self.setState _ { body = V.Modified body }
     DeleteComment id -> do
       self.setState _ { submitResponse = RemoteData.Loading }
-      deleteComment self.props.slug id case _ of
+      bind (deleteComment self.props.slug id) case _ of
         Right _ -> do
           self.setState _ { submitResponse = RemoteData.Success unit }
-          listComments self.props.slug \res -> self.setState _ { comments = RemoteData.fromEither res }
+          listComments self.props.slug >>= \res -> self.setState _ { comments = RemoteData.fromEither res }
         Left err -> self.setState _ { submitResponse = RemoteData.Failure err }
     SubmitComment ->
       let
@@ -100,10 +100,10 @@ mkArticlePage =
           Left _ -> self.setState (const state)
           Right validated -> do
             self.setState _ { submitResponse = RemoteData.Loading }
-            createComment self.props.slug validated case _ of
+            bind (createComment self.props.slug validated) case _ of
               Right _ -> do
                 self.setState _ { submitResponse = RemoteData.Success unit, body = pure "" }
-                listComments self.props.slug \res -> self.setState _ { comments = RemoteData.fromEither res }
+                listComments self.props.slug >>= \res -> self.setState _ { comments = RemoteData.fromEither res }
               Left err -> self.setState _ { submitResponse = RemoteData.Failure err }
 
   validate values = ado

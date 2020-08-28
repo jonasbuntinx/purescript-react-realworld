@@ -1,7 +1,7 @@
 module Conduit.Page.Settings (mkSettingsPage) where
 
 import Prelude
-import Conduit.Api.Request (updateUser)
+import Conduit.Capability.Api (updateUser)
 import Conduit.Capability.Auth (logout, updateProfile)
 import Conduit.Capability.Routing (navigate, redirect)
 import Conduit.Component.App as App
@@ -80,7 +80,7 @@ mkSettingsPage =
         Left _ -> self.setState (const state)
         Right validated -> do
           self.setState _ { submitResponse = RemoteData.Loading }
-          updateUser validated case _ of
+          bind (updateUser validated) case _ of
             Right user -> do
               self.setState _ { submitResponse = RemoteData.Success unit }
               updateProfile $ Record.delete (SProxy :: _ "token") user

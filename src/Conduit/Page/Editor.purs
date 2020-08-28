@@ -1,7 +1,7 @@
 module Conduit.Page.Editor (Props, mkEditorPage) where
 
 import Prelude
-import Conduit.Api.Request (getArticle, submitArticle)
+import Conduit.Capability.Api (getArticle, submitArticle)
 import Conduit.Capability.Routing (navigate, redirect)
 import Conduit.Component.App as App
 import Conduit.Component.ResponseErrors (responseErrors)
@@ -61,7 +61,7 @@ mkEditorPage =
     Initialize ->
       for_ self.props.slug \slug -> do
         self.setState _ { article = RemoteData.Loading }
-        getArticle slug case _ of
+        bind (getArticle slug) case _ of
           Left (NotFound _) -> redirect Home
           Left error -> self.setState _ { article = RemoteData.Failure error }
           Right article ->
@@ -84,7 +84,7 @@ mkEditorPage =
         Left _ -> self.setState (const state)
         Right validated -> do
           self.setState _ { submitResponse = RemoteData.Loading }
-          submitArticle self.props.slug validated case _ of
+          bind (submitArticle self.props.slug validated) case _ of
             Right article -> do
               self.setState _ { submitResponse = RemoteData.Success unit }
               navigate $ ViewArticle article.slug
