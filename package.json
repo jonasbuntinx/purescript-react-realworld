@@ -24,7 +24,7 @@
     "test": "spago test --no-install"
   },
   "devDependencies": {
-    "parcel": "^2.0.0-beta.1",
+    "parcel": "^1.12.4",
     "pscid": "^2.9.3",
     "purescript": "^0.13.8",
     "purescript-psa": "^0.7.3",
