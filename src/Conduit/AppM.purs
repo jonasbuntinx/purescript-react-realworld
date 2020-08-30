@@ -16,7 +16,6 @@ import Control.Monad.Reader (class MonadAsk, ReaderT, ask, asks, runReaderT)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.Variant (expand, match)
-import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Type.Equality (class TypeEquals, from)
@@ -59,7 +58,7 @@ instance monadRoutingAppM :: MonadEffect m => MonadRouting Route (AppM m) where
   navigate route = ask >>= \{ routing } -> liftEffect $ routing.navigate route
   redirect route = ask >>= \{ routing } -> liftEffect $ routing.redirect route
 
-instance monadUserApiAppM :: MonadUserApi (AppM Aff) where
+instance monadUserApiAppM :: MonadAff m => MonadUserApi (AppM m) where
   loginUser user = do
     res <- makeRequest (Apiary.Route :: Endpoints.LoginUser) Apiary.none Apiary.none { user }
     pure $ res >>= match { ok: Right <<< _.user, unprocessableEntity: Left <<< UnprocessableEntity <<< _.errors }
@@ -70,7 +69,7 @@ instance monadUserApiAppM :: MonadUserApi (AppM Aff) where
     res <- makeSecureRequest (Apiary.Route :: Endpoints.UpdateUser) Apiary.none Apiary.none { user }
     pure $ res >>= (match { ok: Right <<< _.user, unprocessableEntity: Left <<< UnprocessableEntity <<< _.errors })
 
-instance monadArticleApiAppM :: MonadArticleApi (AppM Aff) where
+instance monadArticleApiAppM :: MonadAff m => MonadArticleApi (AppM m) where
   listArticles query = do
     res <- makeRequest (Apiary.Route :: Endpoints.ListArticles) Apiary.none query Apiary.none
     pure $ res >>= match { ok: Right }
@@ -89,7 +88,7 @@ instance monadArticleApiAppM :: MonadArticleApi (AppM Aff) where
     res <- makeSecureRequest (Apiary.Route :: Endpoints.DeleteArticle) { slug } Apiary.none Apiary.none
     pure $ res >>= (match { ok: const $ Right unit })
 
-instance monadFavoriteApiAppM :: MonadFavoriteApi (AppM Aff) where
+instance monadFavoriteApiAppM :: MonadAff m => MonadFavoriteApi (AppM m) where
   toggleFavorite { slug, favorited } = do
     res <-
       if favorited then
@@ -98,7 +97,7 @@ instance monadFavoriteApiAppM :: MonadFavoriteApi (AppM Aff) where
         makeSecureRequest (Apiary.Route :: Endpoints.FavoriteArticle) { slug } Apiary.none Apiary.none
     pure $ res >>= match { ok: Right <<< _.article }
 
-instance monadCommentApiAppM :: MonadCommentApi (AppM Aff) where
+instance monadCommentApiAppM :: MonadAff m => MonadCommentApi (AppM m) where
   listComments slug = do
     res <- makeRequest (Apiary.Route :: Endpoints.ListComments) { slug } Apiary.none Apiary.none
     pure $ res >>= match { ok: Right <<< _.comments }
@@ -109,12 +108,12 @@ instance monadCommentApiAppM :: MonadCommentApi (AppM Aff) where
     res <- makeSecureRequest (Apiary.Route :: Endpoints.DeleteComment) { slug, id } Apiary.none Apiary.none
     pure $ res >>= (match { ok: const $ Right unit })
 
-instance monadProfileApiAppM :: MonadProfileApi (AppM Aff) where
+instance monadProfileApiAppM :: MonadAff m => MonadProfileApi (AppM m) where
   getProfile username = do
     res <- makeRequest (Apiary.Route :: Endpoints.GetProfile) { username } Apiary.none Apiary.none
     pure $ res >>= (match { ok: Right <<< _.profile, notFound: Left <<< NotFound })
 
-instance monadFollowApiAppM :: MonadFollowApi (AppM Aff) where
+instance monadFollowApiAppM :: MonadAff m => MonadFollowApi (AppM m) where
   toggleFollow { username, following } = do
     res <-
       if following then
@@ -123,7 +122,7 @@ instance monadFollowApiAppM :: MonadFollowApi (AppM Aff) where
         makeSecureRequest (Apiary.Route :: Endpoints.FollowProfile) { username } Apiary.none Apiary.none
     pure $ res >>= match { ok: Right <<< _.profile }
 
-instance monadTagApiAppM :: MonadTagApi (AppM Aff) where
+instance monadTagApiAppM :: MonadAff m => MonadTagApi (AppM m) where
   listTags = do
     res <- makeRequest (Apiary.Route :: Endpoints.ListTags) Apiary.none Apiary.none Apiary.none
     pure $ res >>= match { ok: Right <<< _.tags }
