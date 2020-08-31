@@ -3,6 +3,7 @@ module Conduit.Data.Avatar where
 import Prelude
 import Data.Maybe (Maybe(..))
 import Data.String as String
+import Foreign.Assets as Assets
 import Simple.JSON (class ReadForeign, class WriteForeign)
 
 newtype Avatar
@@ -28,7 +29,7 @@ withDefault (Just av)
 withDefault Nothing = default
 
 default :: Avatar
-default = fromString "https://static.productionready.io/images/smiley-cyrus.jpg"
+default = fromString Assets.smileyCyrus
 
 blank :: Avatar
 blank = fromString "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
