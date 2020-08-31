@@ -179,7 +179,7 @@ mkEditorPage =
                         { className: "row"
                         , children:
                             [ R.div
-                                { className: "col-md-6 offset-md-3 col-xs12"
+                                { className: "col-md-6 offset-md-3 col-xs-12"
                                 , children
                                 }
                             ]
