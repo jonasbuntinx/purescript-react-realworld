@@ -100,7 +100,7 @@ mkEditorPage =
     let
       errors = validate store.state # unV identity (const mempty) :: { title :: _, description :: _, body :: _ }
     in
-      guard (not $ RemoteData.isLoading store.state.article) container
+      guard (RemoteData.isSuccess store.state.article) container
         [ responseErrors store.state.submitResponse
         , R.form
             { children:

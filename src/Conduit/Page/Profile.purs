@@ -84,7 +84,7 @@ mkProfilePage =
     ToggleFollow -> for_ (preview _profile self.state) (toggleFollow >=> traverse_ (self.setState <<< set _profile))
 
   render env auth store props =
-    guard (not $ RemoteData.isLoading store.state.profile) container userInfo
+    guard (RemoteData.isSuccess store.state.profile) container userInfo
       [ Tabs.tabs
           { className: "articles-toggle"
           , selectedTab: Just props.tab
