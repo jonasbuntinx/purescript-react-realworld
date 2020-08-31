@@ -4,6 +4,7 @@ import Prelude
 import Conduit.Capability.Routing (toRouteURL)
 import Conduit.Component.Buttons (ButtonSize(..), favoriteButton)
 import Conduit.Component.Link as Link
+import Conduit.Component.Loading as Loading
 import Conduit.Data.Article (Article)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Route (Route(..))
@@ -25,16 +26,6 @@ type Props err
 
 articleList :: forall err. Props err -> React.JSX
 articleList props = case props.articles of
-  NotAsked ->
-    R.div
-      { className: "article-preview"
-      , children: [ R.text "Articles not yet loaded" ]
-      }
-  Loading ->
-    R.div
-      { className: "article-preview"
-      , children: [ R.text "Loading..." ]
-      }
   Failure _ ->
     R.div
       { className: "article-preview"
@@ -47,6 +38,11 @@ articleList props = case props.articles of
         , children: [ R.text "No articles are here...yet!" ]
         }
   Success articles -> React.fragment $ Array.mapWithIndex preview articles
+  _ ->
+    R.div
+      { className: "article-preview"
+      , children: [ Loading.loading ]
+      }
   where
   preview ix article =
     R.div
