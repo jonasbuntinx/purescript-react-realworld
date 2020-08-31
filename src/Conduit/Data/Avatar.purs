@@ -1,9 +1,9 @@
 module Conduit.Data.Avatar where
 
 import Prelude
+import Conduit.Assets as Assets
 import Data.Maybe (Maybe(..))
 import Data.String as String
-import Foreign.Assets as Assets
 import Simple.JSON (class ReadForeign, class WriteForeign)
 
 newtype Avatar

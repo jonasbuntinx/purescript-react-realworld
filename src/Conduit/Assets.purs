@@ -1,3 +1,3 @@
-module Foreign.Assets where
+module Conduit.Assets where
 
 foreign import smileyCyrus :: String
