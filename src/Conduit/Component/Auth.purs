@@ -25,13 +25,11 @@ import Record as Record
 import Web.HTML (window)
 import Web.HTML.Window as Window
 import Web.Storage.Storage as Storage
-import Wire.React.Atom.Async as Async
 import Wire.React.Atom.Class (modify, read)
-import Wire.React.Atom.Selector as Selector
 import Wire.React.Atom.Sync as Sync
 
 type AuthEnv
-  = { signal :: Selector.Selector (Maybe Auth)
+  = { signal :: Sync.Sync (Maybe Auth)
     }
 
 mkAuthManager ::
@@ -53,64 +51,37 @@ mkAuthManager = do
     auth <- read authSignal
     for_ auth \{ token } -> do
       launchAff_ do
-        res <- getUser token
-        liftEffect case res of
-          Nothing -> reset authSignal
-          Just user -> updateToken authSignal user.token
+        res <- Apiary.makeRequest (Apiary.Route :: GetUser) (addBaseUrl <<< addToken token) Apiary.none Apiary.none Apiary.none
+        liftEffect case hush $ Variant.match { ok: _.user } <$> res of
+          Nothing -> resetAuth authSignal
+          Just user -> writeAuth authSignal user
 
   checkAuthStatus authSignal = do
     auth <- read authSignal
     for_ auth \{ expirationTime } -> do
       now <- now
       if now > expirationTime then
-        reset authSignal
+        resetAuth authSignal
       else
         refreshToken authSignal
 
-  updateToken authSignal token = modify authSignal $ map $ _ { token = token }
+  writeAuth authSignal user = modify authSignal $ const $ toAuth user.token (Just $ Record.delete (SProxy :: _ "token") user)
 
-  reset authSignal = modify authSignal $ const Nothing
+  resetAuth authSignal = modify authSignal $ const Nothing
 
-  create = do
-    tokenSignal <-
-      Sync.create
-        { load:
-            do
-              localStorage <- Window.localStorage =<< window
-              item <- Storage.getItem "token" localStorage
-              pure $ (hush <<< runExcept <<< decodeJSON) =<< item
-        , save:
-            case _ of
-              Nothing -> do
-                localStorage <- Window.localStorage =<< window
-                Storage.removeItem "token" localStorage
-              Just token -> do
-                localStorage <- Window.localStorage =<< window
-                Storage.setItem "token" (encodeJSON token) localStorage
-        }
-    profileSignal <-
-      Async.create
-        { initial: Nothing
-        , load:
-            do
-              token <- liftEffect $ read tokenSignal
-              case token of
-                Nothing -> pure Nothing
-                Just t -> (getUser >=> map (Record.delete (SProxy :: _ "token")) >>> pure) t
-        , save: const $ pure unit
-        }
-    Selector.create
-      { select:
+  create =
+    Sync.create
+      { load:
           do
-            token <- Selector.select tokenSignal
-            profile <- Selector.select profileSignal
-            pure $ token >>= flip toAuth profile
-      , update:
-          \auth -> do
-            Selector.write tokenSignal (_.token <$> auth)
-            Selector.write profileSignal (_.profile =<< auth)
+            localStorage <- Window.localStorage =<< window
+            item <- Storage.getItem "token" localStorage
+            pure $ flip toAuth Nothing =<< (hush <<< runExcept <<< decodeJSON) =<< item
+      , save:
+          case _ of
+            Nothing -> do
+              localStorage <- Window.localStorage =<< window
+              Storage.removeItem "token" localStorage
+            Just { token } -> do
+              localStorage <- Window.localStorage =<< window
+              Storage.setItem "token" (encodeJSON token) localStorage
       }
-
-  getUser token = do
-    res <- Apiary.makeRequest (Apiary.Route :: GetUser) (addBaseUrl <<< addToken token) Apiary.none Apiary.none Apiary.none
-    pure $ hush $ Variant.match { ok: _.user } <$> res
