@@ -8,11 +8,10 @@ import Conduit.Api.Endpoints (GetUser)
 import Conduit.Api.Utils (addBaseUrl, addToken)
 import Conduit.Data.Auth (Auth, toAuth)
 import Control.Monad.Except (runExcept)
-import Data.Either (Either(..), hush)
+import Data.Either (hush)
 import Data.Foldable (for_, traverse_)
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
-import Data.Traversable (for)
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Variant as Variant
 import Effect (Effect)
@@ -56,8 +55,8 @@ mkAuthManager = do
       launchAff_ do
         res <- getUser token
         liftEffect case res of
-          Left _ -> reset authSignal
-          Right user -> updateToken authSignal user.token
+          Nothing -> reset authSignal
+          Just user -> updateToken authSignal user.token
 
   checkAuthStatus authSignal = do
     auth <- read authSignal
@@ -95,10 +94,9 @@ mkAuthManager = do
         , load:
             do
               token <- liftEffect $ read tokenSignal
-              token
-                # maybe (pure Nothing) \t -> do
-                    res <- hush <$> getUser t
-                    for res (pure <<< Record.delete (SProxy :: _ "token"))
+              case token of
+                Nothing -> pure Nothing
+                Just t -> (getUser >=> map (Record.delete (SProxy :: _ "token")) >>> pure) t
         , save: const $ pure unit
         }
     Selector.create
@@ -115,4 +113,4 @@ mkAuthManager = do
 
   getUser token = do
     res <- Apiary.makeRequest (Apiary.Route :: GetUser) (addBaseUrl <<< addToken token) Apiary.none Apiary.none Apiary.none
-    pure $ res >>= (\success -> success # Variant.match { ok: Right <<< _.user })
+    pure $ hush $ Variant.match { ok: _.user } <$> res
