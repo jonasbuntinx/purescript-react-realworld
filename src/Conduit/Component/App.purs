@@ -3,7 +3,7 @@ module Conduit.Component.App where
 import Prelude
 import Conduit.AppM (AppM, runAppM)
 import Conduit.Env (Env)
-import Control.Monad.Reader (ReaderT, ask)
+import Control.Monad.Reader (ask)
 import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
@@ -11,7 +11,7 @@ import React.Basic.Hooks as React
 import React.Store (Instance, Store, UseStore, useStore)
 
 type Component props
-  = ReaderT Env Effect (props -> React.JSX)
+  = AppM Effect (props -> React.JSX)
 
 component ::
   forall props state action hooks.

@@ -1,11 +1,11 @@
 module Main where
 
 import Prelude
+import Conduit.AppM (runAppM)
 import Conduit.Component.Auth as Auth
 import Conduit.Component.Routing as Routing
 import Conduit.Data.Route (Route(..), routeCodec)
 import Conduit.Root as Root
-import Control.Monad.Reader (runReaderT)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
@@ -24,5 +24,5 @@ main = do
     Just c -> do
       auth /\ authManager <- Auth.mkAuthManager
       routing /\ routingManager <- Routing.mkRoutingManager routeCodec Error
-      root <- runReaderT Root.mkRoot { auth, routing }
+      root <- runAppM { auth, routing } Root.mkRoot
       render (authManager (routingManager (root unit))) c
