@@ -54,10 +54,7 @@ jobs:
 
       # COPY ASSETS
       - name: Copy assets
-        uses: canastro/copy-file-action@master
-        with:
-          source: "assets/netlify.toml"
-          target: "dist/netlify.toml"
+        run: cp assets/netlify.toml dist/netlify.toml
 
       # PUBLISH
       - name: Publish to demo branch
