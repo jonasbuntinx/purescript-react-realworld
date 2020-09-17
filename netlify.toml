@@ -1,0 +1,12 @@
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[build]
+  command   = "#"
+  publish   = "out_publish"
+
+[dev]
+  publish   = "dist"
+  framework = "#static"

@@ -52,9 +52,18 @@ jobs:
       - name: Run bundle
         run: npm run bundle
 
-      # COPY ASSETS
-      - name: Copy assets
-        run: cp assets/netlify.toml dist/netlify.toml
+      # CREATE DEMO
+      - name: Create demo
+        run: mkdir demo
+
+      - name: Create out_publish
+        run: mkdir demo/out_publish
+
+      - name: Copy toml
+        run: cp netlify.toml demo/netlify.toml
+
+      - name: Copy dist files
+        run: cp -r dist/* demo/out_publish
 
       # PUBLISH
       - name: Publish to demo branch
@@ -62,5 +71,5 @@ jobs:
         env:
           REPO: self
           BRANCH: demo
-          FOLDER: dist
+          FOLDER: demo
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
