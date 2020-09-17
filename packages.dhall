@@ -119,7 +119,7 @@ let additions =
 
 
 let upstream =
-      https://github.com/purescript/package-sets/releases/download/psc-0.13.8-20200724/packages.dhall sha256:bb941d30820a49345a0e88937094d2b9983d939c9fd3a46969b85ce44953d7d9
+      https://github.com/purescript/package-sets/releases/download/psc-0.13.8-20200911-2/packages.dhall sha256:872c06349ed9c8210be43982dc6466c2ca7c5c441129826bcb9bf3672938f16e
 
 let overrides =
       { simple-json =
@@ -127,7 +127,7 @@ let overrides =
           //  { repo = "https://github.com/robertdp/purescript-simple-json.git"
               , version = "v7.0.1"
               }
-      ,  react-basic-hooks =
+      , react-basic-hooks =
               upstream.react-basic-hooks
           //  { version = "v6.1.1"
               }
@@ -145,22 +145,22 @@ let additions =
         }
       , react-store =
         { dependencies =
-          [ "avar"
-          , "console"
-          , "prelude"
-          , "react-basic-hooks"
-          ]
+            [ "avar"
+            , "console"
+            , "prelude"
+            , "react-basic-hooks"
+            ]
         , repo = "https://github.com/robertdp/purescript-react-store"
         , version = "v0.2.4"
         }
       , wire =
         { dependencies =
-          [ "aff"
-          , "filterable"
-          , "foreign-object"
-          , "refs"
-          , "unsafe-reference"
-          ]
+            [ "aff"
+            , "filterable"
+            , "foreign-object"
+            , "refs"
+            , "unsafe-reference"
+            ]
         , repo = "https://github.com/robertdp/purescript-wire"
         , version = "v0.4.2"
         }

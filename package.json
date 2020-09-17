@@ -11,15 +11,15 @@
   "license": "MIT",
   "scripts": {
     "build": "spago build",
-    "bundle": "npm rum bundle:build && npm rum bundle:dce && npm rum bundle:parcel",
+    "bundle": "npm run bundle:build && npm run bundle:dce && npm run bundle:parcel",
     "bundle:build": "spago build --purs-args '--codegen corefn'",
     "bundle:dce": "zephyr -f Main.main",
     "bundle:parcel": "parcel build index.html --no-source-maps",
     "clean": "rm -Rf .cache dist serve output dce-output node_modules .spago *-lock.json",
     "id": "pscid",
-    "pscid:build": "npm rum build",
+    "pscid:build": "npm run build",
     "postinstall": "spago install",
-    "serve": "npm rum build && npm rum serve:parcel",
+    "serve": "npm run build && npm run serve:parcel",
     "serve:parcel": "parcel serve --no-source-maps --out-dir serve index.html",
     "test": "spago test --no-install"
   },
@@ -33,9 +33,9 @@
     "zephyr": "https://github.com/jonasbuntinx/zephyr.git"
   },
   "dependencies": {
-    "dayjs": "^1.8.34",
-    "nano-markdown": "^1.2.0",
-    "preact": "^10.4.7"
+    "dayjs": "^1.8.35",
+    "nano-markdown": "^1.2.1",
+    "preact": "^10.4.8"
   },
   "alias": {
     "react": "preact/compat",
