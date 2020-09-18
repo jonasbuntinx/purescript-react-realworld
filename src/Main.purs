@@ -14,21 +14,29 @@ import Conduit.Capability.Resource.User (UserInstance)
 import Conduit.Capability.Routing (redirect)
 import Conduit.Component.Auth as Auth
 import Conduit.Component.Routing as Routing
+import Conduit.Config as Config
 import Conduit.Data.Auth (toAuth)
 import Conduit.Data.Error (Error(..))
-import Conduit.Data.Route (Route(..))
+import Conduit.Data.Route (Route(..), routeCodec)
 import Conduit.Root as Root
-import Data.Either (Either(..), either)
-import Data.Maybe (Maybe(..))
+import Data.Either (Either(..), either, hush)
+import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Nullable (Nullable, null)
 import Data.Symbol (SProxy(..))
 import Data.Variant (expand, match)
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Exception as Exception
+import Effect.Uncurried (EffectFn2, EffectFn3, mkEffectFn3, runEffectFn2)
+import FRP.Event as Event
+import Foreign (Foreign)
 import React.Basic as React
-import React.Basic.DOM (render)
+import React.Basic.DOM (hydrate, render)
+import React.Basic.DOM as R
+import React.Basic.DOM.Server (renderToString)
 import Record as Record
+import Routing.Duplex (parse)
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)
 import Web.HTML.HTMLDocument (toNonElementParentNode)
@@ -63,7 +71,98 @@ main = do
             , tag: tagInstance
             }
             Root.mkRoot
-        liftEffect $ render (React.fragment [ routing.component, auth.component, root unit ]) c
+        liftEffect
+          $ (if Config.nodeEnv == "production" then hydrate else render)
+              (React.fragment [ routing.component, auth.component, root unit ])
+              c
+
+handler ::
+  forall r.
+  EffectFn3
+    { path :: String | r }
+    Foreign
+    (EffectFn2 (Nullable Foreign) { body :: String, statusCode :: Int } Unit)
+    Unit
+handler =
+  mkEffectFn3 \{ path } _ callback -> do
+    auth <- do
+      { event } <- Event.create
+      pure
+        { event
+        , read: pure Nothing
+        , modify: \_ -> pure Nothing
+        }
+    routing <- do
+      { event } <- Event.create
+      pure
+        { event
+        , read: pure $ fromMaybe Error $ hush $ parse routeCodec path
+        , navigate: \_ -> pure unit
+        , redirect: \_ -> pure unit
+        }
+    launchAff_ do
+      root <-
+        runAppM
+          { auth:
+              { readAuth: liftEffect auth.read
+              , readAuthEvent: liftEffect $ pure auth.event
+              , modifyAuth: liftEffect <<< auth.modify
+              }
+          , routing:
+              { readRoute: liftEffect routing.read
+              , readRoutingEvent: liftEffect $ pure routing.event
+              , navigate: liftEffect <<< routing.navigate
+              , redirect: liftEffect <<< routing.redirect
+              }
+          , user: userInstance
+          , article: articleInstance
+          , comment: commentInstance
+          , profile: profileInstance
+          , tag: tagInstance
+          }
+          Root.mkRoot
+      liftEffect
+        $ runEffectFn2 callback null
+            { statusCode: 200
+            , body: renderToString (document $ root unit)
+            }
+  where
+  document content =
+    R.html
+      { children:
+          [ R.head
+              { children:
+                  [ R.meta { charSet: "utf-8" }
+                  , R.meta { name: "viewport", content: "width=device-width, initial-scale=1" }
+                  , R.title { children: [ R.text "Conduit" ] }
+                  , R.link
+                      { href: "//code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css"
+                      , rel: "stylesheet"
+                      , type: "text/css"
+                      , media: "all"
+                      }
+                  , R.link
+                      { href: "//fonts.googleapis.com/css?family=Titillium+Web:700|Source+Serif+Pro:400,700|Merriweather+Sans:400,700|Source+Sans+Pro:400,300,600,700,300italic,400italic,600italic,700italic"
+                      , rel: "stylesheet"
+                      , type: "text/css"
+                      , media: "all"
+                      }
+                  , R.link
+                      { href: "//demo.productionready.io/main.css"
+                      , rel: "stylesheet"
+                      , type: "text/css"
+                      , media: "all"
+                      }
+                  ]
+              }
+          , R.body
+              { children:
+                  [ R.div { id: "conduit", children: [ content ] }
+                  , R.script { src: "/index.js" }
+                  ]
+              }
+          ]
+      }
 
 userInstance :: UserInstance AppM
 userInstance =

@@ -1,12 +1,20 @@
 [[redirects]]
+  from = "/"
+  to = "/.netlify/functions/ssr"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/*"
-  to = "/index.html"
+  to = "/.netlify/functions/ssr"
   status = 200
 
 [build]
   command   = "#"
+  functions = "out_functions"
   publish   = "out_publish"
 
 [dev]
+  functions = "dist"
   publish   = "dist"
   framework = "#static"
