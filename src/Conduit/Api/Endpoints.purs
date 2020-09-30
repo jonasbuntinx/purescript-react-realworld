@@ -1,8 +1,6 @@
 module Conduit.Api.Endpoints where
 
-import Apiary.Media (JSON)
-import Apiary.Route (GET, POST, PUT, DELETE)
-import Apiary.Types (None)
+import Apiary (DELETE, GET, JSON, None, POST, PUT)
 import Conduit.Data.Article (Article, ArticleRep, ArticlesQuery)
 import Conduit.Data.Comment (Comment, CommentId)
 import Conduit.Data.Profile (ProfileRep, User, Profile)

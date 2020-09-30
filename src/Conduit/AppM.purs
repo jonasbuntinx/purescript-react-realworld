@@ -1,8 +1,7 @@
 module Conduit.AppM where
 
 import Prelude
-import Apiary.Route (Route(..)) as Apiary
-import Apiary.Types (none) as Apiary
+import Apiary as Apiary
 import Conduit.Api.Endpoints as Endpoints
 import Conduit.Api.Utils (makeRequest, makeSecureRequest)
 import Conduit.Capability.Api (class MonadArticleApi, class MonadCommentApi, class MonadFavoriteApi, class MonadFollowApi, class MonadProfileApi, class MonadTagApi, class MonadUserApi)

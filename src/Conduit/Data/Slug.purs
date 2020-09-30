@@ -1,7 +1,7 @@
 module Conduit.Data.Slug where
 
 import Prelude
-import Apiary.Url as Url
+import Apiary (class EncodeParam)
 import Control.Monad.Error.Class (throwError)
 import Data.Either (fromRight)
 import Data.Maybe (Maybe(..))
@@ -23,7 +23,7 @@ instance readForeignSlug :: ReadForeign Slug where
           Just slug -> pure slug
           Nothing -> throwError $ pure $ ForeignError "Failed to decode slug"
 
-derive newtype instance encodeParamSlug :: Url.EncodeParam Slug
+derive newtype instance encodeParamSlug :: EncodeParam Slug
 
 fromString :: String -> Maybe Slug
 fromString str = if Regex.test slugRegex str then Just $ Slug str else Nothing

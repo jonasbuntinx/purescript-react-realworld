@@ -1,7 +1,7 @@
 module Conduit.Data.Comment where
 
 import Prelude
-import Apiary.Url as Url
+import Apiary (class EncodeParam, encodeParam)
 import Conduit.Data.Profile (Profile)
 import Data.Newtype (class Newtype, unwrap, wrap)
 import Foreign.Day (DateTime)
@@ -28,5 +28,5 @@ instance readForeignCommentId :: ReadForeign CommentId where
 instance writeForeignCommentId :: WriteForeign CommentId where
   writeImpl = writeImpl <<< unwrap
 
-instance encodeParamCommentId :: Url.EncodeParam CommentId where
-  encodeParam = Url.encodeParam <<< unwrap
+instance encodeParamCommentId :: EncodeParam CommentId where
+  encodeParam = encodeParam <<< unwrap

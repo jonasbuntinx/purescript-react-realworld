@@ -1,16 +1,13 @@
 module Conduit.Api.Utils (addBaseUrl, addToken, makeRequest, makeSecureRequest) where
 
 import Prelude
-import Apiary.Client (makeRequest) as Apiary
-import Apiary.Client.Request (class BuildRequest) as Apiary
-import Apiary.Client.Response (class DecodeResponse) as Apiary
-import Apiary.Types (Error(..)) as Apiary
+import Apiary as Apiary
 import Conduit.Capability.Auth (class MonadAuth, read)
 import Conduit.Capability.Routing (class MonadRouting, redirect)
 import Conduit.Config as Config
 import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..))
-import Control.Comonad (extract)
+import Data.Array as Array
 import Data.Bifunctor (lmap)
 import Data.Bitraversable (lfor)
 import Data.Either (Either(..))
@@ -18,10 +15,6 @@ import Data.Maybe (Maybe(..))
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect)
 import Effect.Class.Console as Console
-import Effect.Exception as Exception
-import Foreign (renderForeignError)
-import Foreign.Object as Object
-import Milkis as Milkis
 
 makeRequest ::
   forall m rep body query path route response.
@@ -61,19 +54,17 @@ makeSecureRequest route path query body = do
       void $ lfor res onError
       pure $ lmap ApiaryError res
 
-addBaseUrl :: forall r. { url :: Milkis.URL | r } -> { url :: Milkis.URL | r }
-addBaseUrl request@{ url: Milkis.URL url } = request { url = Milkis.URL (Config.apiEndpoint <> url) }
+addBaseUrl :: forall r. { url :: String | r } -> { url :: String | r }
+addBaseUrl request@{ url } = request { url = Config.apiEndpoint <> url }
 
-addToken :: forall r. String -> { headers :: Object.Object String | r } -> { headers :: Object.Object String | r }
-addToken token request@{ headers } = request { headers = Object.insert "Authorization" ("Token " <> token) headers }
+addToken :: forall r. String -> { headers :: Array Apiary.RequestHeader | r } -> { headers :: Array Apiary.RequestHeader | r }
+addToken token request@{ headers } = request { headers = Array.snoc headers (Apiary.RequestHeader "Authorization" ("Token " <> token)) }
 
 onError :: forall m. MonadEffect m => Apiary.Error -> m Unit
 onError error = do
   when (Config.nodeEnv /= "production") do
     Console.log $ toLogMessage error
   where
-  toLogMessage (Apiary.RuntimeError exc) = "Runtime error: " <> Exception.message exc
-
-  toLogMessage (Apiary.DecodeError req res errs) = "Decode error: " <> (renderForeignError $ extract errs)
-
   toLogMessage (Apiary.UnexpectedResponse req { status, body }) = ("Unexpected API response (" <> show status <> "): ") <> body
+
+  toLogMessage err = show err

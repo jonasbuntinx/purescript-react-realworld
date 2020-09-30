@@ -1,7 +1,7 @@
 module Conduit.Data.Username where
 
 import Prelude
-import Apiary.Url as Url
+import Apiary (class EncodeParam)
 import Control.Monad.Error.Class (throwError)
 import Data.Maybe (Maybe(..))
 import Foreign (ForeignError(..))
@@ -21,7 +21,7 @@ instance readForeignUsername :: ReadForeign Username where
           Just username -> pure username
           Nothing -> throwError $ pure $ ForeignError "Failed to decode username"
 
-derive newtype instance encodeParamUsername :: Url.EncodeParam Username
+derive newtype instance encodeParamUsername :: EncodeParam Username
 
 fromString :: String -> Maybe Username
 fromString "" = Nothing

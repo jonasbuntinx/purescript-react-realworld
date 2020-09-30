@@ -1,6 +1,6 @@
 module Conduit.Data.Error where
 
-import Apiary.Types (Error) as Apiary
+import Apiary as Apiary
 import Foreign.Object (Object)
 
 data Error

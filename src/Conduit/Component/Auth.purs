@@ -1,9 +1,7 @@
 module Conduit.Component.Auth where
 
 import Prelude
-import Apiary.Client (makeRequest) as Apiary
-import Apiary.Route (Route(..)) as Apiary
-import Apiary.Types (none) as Apiary
+import Apiary as Apiary
 import Conduit.Api.Endpoints (GetUser)
 import Conduit.Api.Utils (addBaseUrl, addToken)
 import Conduit.Data.Auth (Auth, toAuth)
