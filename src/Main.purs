@@ -6,8 +6,7 @@ import Conduit.Component.Auth as Auth
 import Conduit.Data.Route (Route(..), routeCodec)
 import Conduit.Root as Root
 import Control.Monad.Reader (runReaderT)
-import Data.Either (hush)
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Exception (throw)
 import React.Basic as React
@@ -28,14 +27,17 @@ main = do
     Just c -> do
       { signal: authSignal, authManager } <- Auth.mkAuthManager
       interface <- PushState.makeInterface
-      location <- interface.locationState
       { signal: routerSignal, router, navigate, redirect } <-
         Router.makeRouter
           { interface
-          , initial: fromMaybe Error $ hush $ parse routeCodec location.path
+          , default: Error
           , decode: parse routeCodec
           , encode: toRouteURL
           , onRouteChange: const $ Router.continue
           }
-      root <- runReaderT Root.mkRoot { auth: { signal: authSignal }, router: { signal: routerSignal, navigate, redirect } }
+      root <-
+        runReaderT Root.mkRoot
+          { auth: { signal: authSignal }
+          , router: { signal: routerSignal, navigate, redirect }
+          }
       render (React.fragment [ router, authManager, root unit ]) c
