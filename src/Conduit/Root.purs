@@ -1,8 +1,6 @@
 module Conduit.Root where
 
 import Prelude
-import Conduit.AppM (runAppM)
-import Conduit.Capability.Routing (redirect)
 import Conduit.Component.App as App
 import Conduit.Component.Footer as Footer
 import Conduit.Component.Header as Header
@@ -33,13 +31,13 @@ mkRoot = do
     auth <- useAuth env
     route <- useRoute env
     React.useEffect (route /\ (isJust auth)) do
-      runAppM env case route, auth of
-        Login, Just _ -> redirect Home
-        Register, Just _ -> redirect Home
-        Settings, Nothing -> redirect Home
-        CreateArticle, Nothing -> redirect Home
-        UpdateArticle _, Nothing -> redirect Home
-        Error, _ -> redirect Home
+      case route, auth of
+        Login, Just _ -> env.router.redirect Home
+        Register, Just _ -> env.router.redirect Home
+        Settings, Nothing -> env.router.redirect Home
+        CreateArticle, Nothing -> env.router.redirect Home
+        UpdateArticle _, Nothing -> env.router.redirect Home
+        Error, _ -> env.router.redirect Home
         _, _ -> pure unit
       mempty
     pure

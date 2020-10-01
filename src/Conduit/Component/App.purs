@@ -1,8 +1,8 @@
 module Conduit.Component.App where
 
 import Prelude
-import Conduit.AppM (AppM, runAppM)
 import Conduit.Env (Env)
+import Conduit.StoreM (StoreM, runStoreM)
 import Control.Monad.Reader (ReaderT, ask)
 import Effect (Effect)
 import Effect.Aff (Aff)
@@ -17,15 +17,15 @@ component ::
   forall props state action hooks.
   String ->
   { init :: state
-  , update :: Instance props state (AppM Aff) -> action -> AppM Aff Unit
+  , update :: Instance props state (StoreM Aff) -> action -> StoreM Aff Unit
   } ->
-  (Env -> Store state action -> props -> React.Render (UseStore props state action (AppM Aff) Unit) hooks React.JSX) ->
+  (Env -> Store state action -> props -> React.Render (UseStore props state action (StoreM Aff) Unit) hooks React.JSX) ->
   Component props
 component name { init, update } renderFn = do
   env <- ask
   liftEffect
     $ React.component name \props -> React.do
-        store <- useStore { init, props, update, launch: runAppM env }
+        store <- useStore { init, props, update, launch: runStoreM env }
         renderFn env store props
 
 component' ::
