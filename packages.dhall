@@ -174,6 +174,19 @@ let additions =
         , repo = "https://github.com/robertdp/purescript-wire-react"
         , version = "v0.0.1"
         }
+      , wire-react-router =
+        { dependencies =
+          [ "aff"
+          , "indexed-monad"
+          , "freet"
+          , "profunctor-lenses"
+          , "react-basic-hooks"
+          , "routing"
+          , "wire"
+          ]
+        , repo = "https://github.com/robertdp/purescript-wire-react-router"
+        , version = "v0.0.2"
+        }
       }
 
 in  upstream // overrides // additions

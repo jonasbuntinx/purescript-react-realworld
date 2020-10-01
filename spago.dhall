@@ -17,6 +17,7 @@
     , "web-uievents"
     , "wire"
     , "wire-react"
+    , "wire-react-router"
     ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]

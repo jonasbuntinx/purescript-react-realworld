@@ -1,20 +1,25 @@
 module Main where
 
 import Prelude
+import Conduit.Capability.Routing (toRouteURL)
 import Conduit.Component.Auth as Auth
-import Conduit.Component.Routing as Routing
 import Conduit.Data.Route (Route(..), routeCodec)
 import Conduit.Root as Root
 import Control.Monad.Reader (runReaderT)
-import Data.Maybe (Maybe(..))
+import Data.Either (hush)
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Exception (throw)
+import React.Basic as React
 import React.Basic.DOM (render)
+import Routing.Duplex (parse)
+import Routing.PushState as PushState
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)
 import Web.HTML.HTMLDocument (toNonElementParentNode)
 import Web.HTML.Window (document)
+import Wire.React.Router as Router
 
 main :: Effect Unit
 main = do
@@ -23,6 +28,15 @@ main = do
     Nothing -> throw "Conduit container element not found."
     Just c -> do
       auth /\ authManager <- Auth.mkAuthManager
-      routing /\ routingManager <- Routing.mkRoutingManager routeCodec Error
-      root <- runReaderT Root.mkRoot { auth, routing }
-      render (authManager (routingManager (root unit))) c
+      interface <- PushState.makeInterface
+      location <- interface.locationState
+      { signal, router, navigate, redirect } <-
+        Router.makeRouter
+          { interface
+          , initial: fromMaybe Error $ hush $ parse routeCodec location.path
+          , decode: parse routeCodec
+          , encode: toRouteURL
+          , onRouteChange: const $ Router.continue
+          }
+      root <- runReaderT Root.mkRoot { auth, routing: { signal, navigate, redirect } }
+      render (React.fragment [ router, authManager (root unit) ]) c
