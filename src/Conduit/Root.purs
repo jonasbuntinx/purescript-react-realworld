@@ -8,7 +8,7 @@ import Conduit.Component.Footer as Footer
 import Conduit.Component.Header as Header
 import Conduit.Data.Route (Route(..))
 import Conduit.Hook.Auth (useAuth)
-import Conduit.Hook.Routing (useRoute)
+import Conduit.Hook.Router (useRoute)
 import Conduit.Page.Article (mkArticlePage)
 import Conduit.Page.Editor (mkEditorPage)
 import Conduit.Page.Home (mkHomePage)
@@ -44,7 +44,7 @@ mkRoot = do
       mempty
     pure
       $ React.fragment
-          [ Header.header { auth, currentRoute: route, onNavigate: env.routing.navigate }
+          [ Header.header { auth, currentRoute: route, onNavigate: env.router.navigate }
           , case route of
               Home -> homePage unit
               Login -> loginPage unit

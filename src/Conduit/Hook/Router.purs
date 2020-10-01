@@ -1,4 +1,4 @@
-module Conduit.Hook.Routing where
+module Conduit.Hook.Router where
 
 import Prelude
 import Conduit.Data.Route (Route)
@@ -10,4 +10,4 @@ import Wire.React.Router (_Route)
 import Wire.React.Router as Router
 
 useRoute :: Env -> React.Hook (UseSignal (Router.Route Route)) Route
-useRoute { routing } = view _Route <$> useSignal routing.signal
+useRoute { router } = view _Route <$> useSignal router.signal

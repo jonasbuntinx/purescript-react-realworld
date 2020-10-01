@@ -8,7 +8,6 @@ import Conduit.Root as Root
 import Control.Monad.Reader (runReaderT)
 import Data.Either (hush)
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Exception (throw)
 import React.Basic as React
@@ -27,10 +26,10 @@ main = do
   case container of
     Nothing -> throw "Conduit container element not found."
     Just c -> do
-      auth /\ authManager <- Auth.mkAuthManager
+      { signal: authSignal, authManager } <- Auth.mkAuthManager
       interface <- PushState.makeInterface
       location <- interface.locationState
-      { signal, router, navigate, redirect } <-
+      { signal: routerSignal, router, navigate, redirect } <-
         Router.makeRouter
           { interface
           , initial: fromMaybe Error $ hush $ parse routeCodec location.path
@@ -38,5 +37,5 @@ main = do
           , encode: toRouteURL
           , onRouteChange: const $ Router.continue
           }
-      root <- runReaderT Root.mkRoot { auth, routing: { signal, navigate, redirect } }
-      render (React.fragment [ router, authManager (root unit) ]) c
+      root <- runReaderT Root.mkRoot { auth: { signal: authSignal }, router: { signal: routerSignal, navigate, redirect } }
+      render (React.fragment [ router, authManager, root unit ]) c

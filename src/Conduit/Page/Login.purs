@@ -77,7 +77,7 @@ mkLoginPage =
                 [ Link.link
                     { className: ""
                     , href: toRouteURL Register
-                    , onClick: env.routing.navigate Register
+                    , onClick: env.router.navigate Register
                     , children: [ R.text "Need an account?" ]
                     }
                 ]

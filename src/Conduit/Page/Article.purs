@@ -189,14 +189,14 @@ mkArticlePage =
                                           [ Link.link
                                               { className: ""
                                               , href: toRouteURL Login
-                                              , onClick: env.routing.navigate Login
+                                              , onClick: env.router.navigate Login
                                               , children: [ R.text "Sign in" ]
                                               }
                                           , R.text " or "
                                           , Link.link
                                               { className: ""
                                               , href: toRouteURL Register
-                                              , onClick: env.routing.navigate Register
+                                              , onClick: env.router.navigate Register
                                               , children: [ R.text "sign up" ]
                                               }
                                           , R.text " to add comments on this article."
@@ -217,7 +217,7 @@ mkArticlePage =
             [ Link.link
                 { className: ""
                 , href: toRouteURL $ Profile article.author.username
-                , onClick: env.routing.navigate $ Profile article.author.username
+                , onClick: env.router.navigate $ Profile article.author.username
                 , children:
                     [ R.img
                         { src: Avatar.toString $ Avatar.withDefault article.author.image
@@ -231,7 +231,7 @@ mkArticlePage =
                     [ Link.link
                         { className: "author"
                         , href: toRouteURL $ Profile article.author.username
-                        , onClick: env.routing.navigate $ Profile article.author.username
+                        , onClick: env.router.navigate $ Profile article.author.username
                         , children: [ R.text $ Username.toString article.author.username ]
                         }
                     , R.span
@@ -249,7 +249,7 @@ mkArticlePage =
                       [ Link.link
                           { className: "btn btn-outline-secondary btn-sm"
                           , href: toRouteURL $ UpdateArticle article.slug
-                          , onClick: env.routing.navigate $ UpdateArticle article.slug
+                          , onClick: env.router.navigate $ UpdateArticle article.slug
                           , children:
                               [ R.i
                                   { className: "ion-edit"
@@ -309,7 +309,7 @@ mkArticlePage =
                       [ Link.link
                           { className: "comment-author"
                           , href: toRouteURL $ Profile comment.author.username
-                          , onClick: env.routing.navigate $ Profile comment.author.username
+                          , onClick: env.router.navigate $ Profile comment.author.username
                           , children:
                               [ R.img
                                   { className: "comment-author-img"
@@ -321,7 +321,7 @@ mkArticlePage =
                       , Link.link
                           { className: "comment-author"
                           , href: toRouteURL $ Profile comment.author.username
-                          , onClick: env.routing.navigate $ Profile comment.author.username
+                          , onClick: env.router.navigate $ Profile comment.author.username
                           , children:
                               [ R.text $ Username.toString comment.author.username ]
                           }

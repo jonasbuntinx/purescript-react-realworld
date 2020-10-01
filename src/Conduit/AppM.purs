@@ -54,8 +54,8 @@ instance monadAuthAppM :: MonadEffect m => MonadAuth (AppM m) where
   updateProfile profile = ask >>= \{ auth } -> liftEffect $ modify auth.signal $ map $ _ { profile = Just profile }
 
 instance monadRoutingAppM :: MonadEffect m => MonadRouting Route (AppM m) where
-  navigate route = ask >>= \{ routing } -> liftEffect $ routing.navigate route
-  redirect route = ask >>= \{ routing } -> liftEffect $ routing.redirect route
+  navigate route = ask >>= \{ router } -> liftEffect $ router.navigate route
+  redirect route = ask >>= \{ router } -> liftEffect $ router.redirect route
 
 instance monadUserApiAppM :: MonadAff m => MonadUserApi (AppM m) where
   loginUser user = do

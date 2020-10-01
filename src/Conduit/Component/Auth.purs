@@ -10,7 +10,7 @@ import Data.Either (hush)
 import Data.Foldable (for_, traverse_)
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
-import Data.Tuple.Nested (type (/\), (/\))
+import Data.Tuple.Nested ((/\))
 import Data.Variant as Variant
 import Effect (Effect)
 import Effect.Aff (launchAff_)
@@ -26,24 +26,23 @@ import Web.Storage.Storage as Storage
 import Wire.React.Atom.Class (modify, read)
 import Wire.React.Atom.Sync as Sync
 
-type AuthEnv
-  = { signal :: Sync.Sync (Maybe Auth)
-    }
-
 mkAuthManager ::
-  Effect (AuthEnv /\ (React.JSX -> React.JSX))
+  Effect
+    { signal :: Sync.Sync (Maybe Auth)
+    , authManager :: React.JSX
+    }
 mkAuthManager = do
   authSignal <- create
   component <-
-    React.component "AuthManager" \content -> React.do
+    React.component "AuthManager" \_ -> React.do
       state /\ setState <- React.useState { interval: Nothing }
       React.useEffectOnce do
         checkAuthStatus authSignal
         authCheckInterval <- Timer.setInterval 900_0000 (checkAuthStatus authSignal)
         setState _ { interval = Just authCheckInterval }
         pure $ traverse_ Timer.clearInterval state.interval
-      pure content
-  pure $ { signal: authSignal } /\ component
+      pure React.empty
+  pure { signal: authSignal, authManager: component unit }
   where
   refreshToken authSignal = do
     auth <- read authSignal
