@@ -130,7 +130,7 @@ mkHomePage =
       R.div_
         [ articleList
             { articles: store.state.articles <#> _.articles
-            , onNavigate: env.routing.navigate
+            , onNavigate: env.router.navigate
             , onFavoriteToggle: store.dispatch <<< ToggleFavorite
             }
         , store.state.articles

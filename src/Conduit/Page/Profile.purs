@@ -102,8 +102,8 @@ mkProfilePage =
               ]
           , onChange:
               case _ of
-                Published -> env.routing.navigate $ Profile props.username
-                Favorited -> env.routing.navigate $ Favorites props.username
+                Published -> env.router.navigate $ Profile props.username
+                Favorited -> env.router.navigate $ Favorites props.username
           }
       ]
     where
@@ -111,7 +111,7 @@ mkProfilePage =
       R.div_
         [ articleList
             { articles: store.state.articles <#> _.articles
-            , onNavigate: env.routing.navigate
+            , onNavigate: env.router.navigate
             , onFavoriteToggle: store.dispatch <<< ToggleFavorite
             }
         , store.state.articles
@@ -148,7 +148,7 @@ mkProfilePage =
                                     , if (Just props.username == map _.username auth) then
                                         R.button
                                           { className: "btn btn-sm action-btn btn-outline-secondary"
-                                          , onClick: handler_ $ env.routing.navigate Settings
+                                          , onClick: handler_ $ env.router.navigate Settings
                                           , children:
                                               [ R.i
                                                   { className: "ion-gear-a"
