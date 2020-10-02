@@ -3,8 +3,8 @@ module Conduit.Page.Article (Props, mkArticlePage) where
 import Prelude
 import Conduit.Capability.Api (createComment, deleteArticle, deleteComment, getArticle, listComments, toggleFavorite, toggleFollow)
 import Conduit.Capability.Routing (navigate, redirect, toRouteURL)
-import Conduit.Component.App as App
 import Conduit.Component.Buttons (ButtonSize(..), favoriteButton, followButton)
+import Conduit.Component.Env as Env
 import Conduit.Component.Link as Link
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Comment (CommentId)
@@ -48,9 +48,9 @@ data Action
   | DeleteComment CommentId
   | SubmitComment
 
-mkArticlePage :: App.Component Props
+mkArticlePage :: Env.Component Props
 mkArticlePage =
-  App.component "ArticlePage" { init, update } \env store props -> React.do
+  Env.component "ArticlePage" { init, update } \env store props -> React.do
     auth <- useAuth env
     React.useEffect props.slug do
       store.dispatch Initialize

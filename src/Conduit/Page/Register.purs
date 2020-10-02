@@ -4,7 +4,7 @@ import Prelude
 import Conduit.Capability.Api (registerUser)
 import Conduit.Capability.Auth (login)
 import Conduit.Capability.Routing (redirect, toRouteURL)
-import Conduit.Component.App as App
+import Conduit.Component.Env as Env
 import Conduit.Component.Link as Link
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Data.Route (Route(..))
@@ -30,9 +30,9 @@ data Action
   | UpdatePassword String
   | Submit
 
-mkRegisterPage :: App.Component Unit
+mkRegisterPage :: Env.Component Unit
 mkRegisterPage =
-  App.component "RegisterPage" { init, update } \env store props -> React.do
+  Env.component "RegisterPage" { init, update } \env store props -> React.do
     pure $ render env store props
   where
   init =

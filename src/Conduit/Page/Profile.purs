@@ -3,9 +3,9 @@ module Conduit.Page.Profile (Props, Tab(..), mkProfilePage) where
 import Prelude
 import Conduit.Capability.Api (getProfile, listArticles, toggleFavorite, toggleFollow)
 import Conduit.Capability.Routing (redirect)
-import Conduit.Component.App as App
 import Conduit.Component.ArticleList (articleList)
 import Conduit.Component.Buttons (followButton)
+import Conduit.Component.Env as Env
 import Conduit.Component.Pagination (pagination)
 import Conduit.Component.Tabs as Tabs
 import Conduit.Data.Article (defaultArticlesQuery)
@@ -44,9 +44,9 @@ data Action
   | ToggleFavorite Int
   | ToggleFollow
 
-mkProfilePage :: App.Component Props
+mkProfilePage :: Env.Component Props
 mkProfilePage =
-  App.component "ProfilePage" { init, update } \env store props -> React.do
+  Env.component "ProfilePage" { init, update } \env store props -> React.do
     auth <- useAuth env
     React.useEffect props.username do
       store.dispatch Initialize

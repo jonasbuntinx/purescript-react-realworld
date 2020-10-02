@@ -3,7 +3,7 @@ module Conduit.Page.Editor (Props, mkEditorPage) where
 import Prelude
 import Conduit.Capability.Api (getArticle, submitArticle)
 import Conduit.Capability.Routing (navigate, redirect)
-import Conduit.Component.App as App
+import Conduit.Component.Env as Env
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Component.TagInput (tagInput)
 import Conduit.Data.Error (Error(..))
@@ -40,9 +40,9 @@ data Action
   | UpdateTagList (Set String)
   | Submit
 
-mkEditorPage :: App.Component Props
+mkEditorPage :: Env.Component Props
 mkEditorPage =
-  App.component "SettingsPage" { init, update } \env store props -> React.do
+  Env.component "SettingsPage" { init, update } \env store props -> React.do
     React.useEffect props.slug do
       store.dispatch Initialize
       mempty

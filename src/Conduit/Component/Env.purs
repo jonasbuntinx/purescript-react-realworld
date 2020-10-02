@@ -1,7 +1,7 @@
-module Conduit.Component.App where
+module Conduit.Component.Env where
 
 import Prelude
-import Conduit.Env (Env)
+import Conduit.Data.Env (Env)
 import Conduit.StoreM (StoreM, runStoreM)
 import Control.Monad.Reader (ReaderT, ask)
 import Effect (Effect)

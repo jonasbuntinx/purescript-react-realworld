@@ -2,8 +2,8 @@ module Conduit.Page.Home (mkHomePage) where
 
 import Prelude
 import Conduit.Capability.Api (listArticles, listFeed, listTags, toggleFavorite)
-import Conduit.Component.App as App
 import Conduit.Component.ArticleList (articleList)
+import Conduit.Component.Env as Env
 import Conduit.Component.Pagination (pagination)
 import Conduit.Component.Tabs as Tabs
 import Conduit.Data.Article (defaultArticlesQuery)
@@ -32,9 +32,9 @@ data Action
   | LoadArticles Tab { offset :: Int, limit :: Int }
   | ToggleFavorite Int
 
-mkHomePage :: App.Component Unit
+mkHomePage :: Env.Component Unit
 mkHomePage =
-  App.component "HomePage" { init, update } \env store props -> React.do
+  Env.component "HomePage" { init, update } \env store props -> React.do
     auth <- useAuth env
     React.useEffect (isJust auth) do
       case auth of

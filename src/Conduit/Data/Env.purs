@@ -1,4 +1,4 @@
-module Conduit.Env where
+module Conduit.Data.Env where
 
 import Prelude
 import Conduit.Data.Auth (Auth)

@@ -1,7 +1,7 @@
 module Conduit.Root where
 
 import Prelude
-import Conduit.Component.App as App
+import Conduit.Component.Env as Env
 import Conduit.Component.Footer as Footer
 import Conduit.Component.Header as Header
 import Conduit.Data.Route (Route(..))
@@ -18,7 +18,7 @@ import Data.Maybe (Maybe(..), isJust)
 import Data.Tuple.Nested ((/\))
 import React.Basic.Hooks as React
 
-mkRoot :: App.Component Unit
+mkRoot :: Env.Component Unit
 mkRoot = do
   homePage <- mkHomePage
   loginPage <- mkLoginPage
@@ -27,7 +27,7 @@ mkRoot = do
   editorPage <- mkEditorPage
   articlePage <- mkArticlePage
   profilePage <- mkProfilePage
-  App.component' "Root" \env props -> React.do
+  Env.component' "Root" \env props -> React.do
     auth <- useAuth env
     route <- useRoute env
     React.useEffect (route /\ (isJust auth)) do

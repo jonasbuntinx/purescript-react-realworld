@@ -2,7 +2,7 @@ module Conduit.Hook.Router where
 
 import Prelude
 import Conduit.Data.Route (Route)
-import Conduit.Env (Env)
+import Conduit.Data.Env (Env)
 import Data.Lens (view)
 import React.Basic.Hooks as React
 import Wire.React.Hooks (UseSignal, useSignal)

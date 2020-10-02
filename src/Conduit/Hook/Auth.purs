@@ -3,7 +3,7 @@ module Conduit.Hook.Auth where
 import Prelude
 import Conduit.Data.Auth (Auth)
 import Conduit.Data.Profile (UserProfile)
-import Conduit.Env (Env)
+import Conduit.Data.Env (Env)
 import Data.Maybe (Maybe)
 import React.Basic.Hooks as React
 import Wire.React.Hooks (UseAtom, useAtomValue)
