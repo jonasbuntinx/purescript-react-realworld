@@ -60,9 +60,9 @@ Provides useStore, an asynchronous, scheduled reducer.
 
 Event/State library for reactive state.
 
-#### [Routing](https://github.com/purescript-contrib/purescript-routing)
+#### [Wire React Router](https://github.com/robertdp/purescript-wire-react-router)
 
-A clean, type-safe routing library for PureScript.
+A clean, type-safe router for React based on PureScript Wire.
 
 #### [Routing Duplex](https://github.com/natefaubion/purescript-routing-duplex)
 
