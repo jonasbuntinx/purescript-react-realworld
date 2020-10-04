@@ -25,19 +25,18 @@ main = do
   case container of
     Nothing -> throw "Conduit container element not found."
     Just c -> do
-      { signal: authSignal, authManager } <- Auth.mkAuthManager
+      auth <- Auth.mkAuthManager
       interface <- PushState.makeInterface
-      { signal: routerSignal, router, navigate, redirect } <-
-        Router.makeRouter
-          { interface
-          , default: Error
-          , decode: parse routeCodec
-          , encode: toRouteURL
-          , onRouteChange: const $ Router.continue
+      router <-
+        Router.makeRouter interface
+          { fallback: Error
+          , parse: parse routeCodec
+          , print: toRouteURL
+          , onRoute: const $ Router.continue
           }
       root <-
         runReaderT Root.mkRoot
-          { auth: { signal: authSignal }
-          , router: { signal: routerSignal, navigate, redirect }
+          { auth: { signal: auth.signal }
+          , router: { signal: router.signal, navigate: router.navigate, redirect: router.redirect }
           }
-      render (React.fragment [ router, authManager, root unit ]) c
+      render (React.fragment [ router.component, auth.component, root unit ]) c

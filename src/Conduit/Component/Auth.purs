@@ -29,42 +29,42 @@ import Wire.React.Atom.Sync as Sync
 mkAuthManager ::
   Effect
     { signal :: Sync.Sync (Maybe Auth)
-    , authManager :: React.JSX
+    , component :: React.JSX
     }
 mkAuthManager = do
-  authSignal <- create
+  signal <- create
   component <-
     React.component "AuthManager" \_ -> React.do
       state /\ setState <- React.useState { interval: Nothing }
       React.useEffectOnce do
-        checkAuthStatus authSignal
-        authCheckInterval <- Timer.setInterval 900_0000 (checkAuthStatus authSignal)
+        checkAuthStatus signal
+        authCheckInterval <- Timer.setInterval 900_0000 (checkAuthStatus signal)
         setState _ { interval = Just authCheckInterval }
         pure $ traverse_ Timer.clearInterval state.interval
       pure React.empty
-  pure { signal: authSignal, authManager: component unit }
+  pure { signal, component: component unit }
   where
-  refreshToken authSignal = do
-    auth <- read authSignal
+  refreshToken signal = do
+    auth <- read signal
     for_ auth \{ token } -> do
       launchAff_ do
         res <- Apiary.makeRequest (Apiary.Route :: GetUser) (addBaseUrl <<< addToken token) Apiary.none Apiary.none Apiary.none
         liftEffect case hush $ Variant.match { ok: _.user } <$> res of
-          Nothing -> resetAuth authSignal
-          Just user -> writeAuth authSignal user
+          Nothing -> resetAuth signal
+          Just user -> writeAuth signal user
 
-  checkAuthStatus authSignal = do
-    auth <- read authSignal
+  checkAuthStatus signal = do
+    auth <- read signal
     for_ auth \{ expirationTime } -> do
       now <- now
       if now > expirationTime then
-        resetAuth authSignal
+        resetAuth signal
       else
-        refreshToken authSignal
+        refreshToken signal
 
-  writeAuth authSignal user = modify authSignal $ const $ toAuth user.token (Just $ Record.delete (SProxy :: _ "token") user)
+  writeAuth signal user = modify signal $ const $ toAuth user.token (Just $ Record.delete (SProxy :: _ "token") user)
 
-  resetAuth authSignal = modify authSignal $ const Nothing
+  resetAuth signal = modify signal $ const Nothing
 
   create =
     Sync.create

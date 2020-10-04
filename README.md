@@ -62,7 +62,7 @@ Event/State library for reactive state.
 
 #### [Wire React Router](https://github.com/robertdp/purescript-wire-react-router)
 
-A clean, type-safe router for React based on PureScript Wire.
+A basic pushstate router for React, with support for asynchronous routing logic. Built using react-basic-hooks and wire.
 
 #### [Routing Duplex](https://github.com/natefaubion/purescript-routing-duplex)
 
