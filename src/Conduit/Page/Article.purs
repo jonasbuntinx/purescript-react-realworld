@@ -2,7 +2,7 @@ module Conduit.Page.Article (Props, mkArticlePage) where
 
 import Prelude
 import Conduit.Capability.Api (createComment, deleteArticle, deleteComment, getArticle, listComments, toggleFavorite, toggleFollow)
-import Conduit.Capability.Routing (navigate, redirect, toRouteURL)
+import Conduit.Capability.Routing (navigate, redirect)
 import Conduit.Component.Buttons (ButtonSize(..), favoriteButton, followButton)
 import Conduit.Component.Env as Env
 import Conduit.Component.Link as Link
@@ -188,15 +188,15 @@ mkArticlePage =
                                         R.p_
                                           [ Link.link
                                               { className: ""
-                                              , href: toRouteURL Login
-                                              , onClick: env.router.navigate Login
+                                              , route: Login
+                                              , onClick: env.router.navigate
                                               , children: [ R.text "Sign in" ]
                                               }
                                           , R.text " or "
                                           , Link.link
                                               { className: ""
-                                              , href: toRouteURL Register
-                                              , onClick: env.router.navigate Register
+                                              , route: Register
+                                              , onClick: env.router.navigate
                                               , children: [ R.text "sign up" ]
                                               }
                                           , R.text " to add comments on this article."
@@ -216,8 +216,8 @@ mkArticlePage =
         , children:
             [ Link.link
                 { className: ""
-                , href: toRouteURL $ Profile article.author.username
-                , onClick: env.router.navigate $ Profile article.author.username
+                , route: Profile article.author.username
+                , onClick: env.router.navigate
                 , children:
                     [ R.img
                         { src: Avatar.toString $ Avatar.withDefault article.author.image
@@ -230,8 +230,8 @@ mkArticlePage =
                 , children:
                     [ Link.link
                         { className: "author"
-                        , href: toRouteURL $ Profile article.author.username
-                        , onClick: env.router.navigate $ Profile article.author.username
+                        , route: Profile article.author.username
+                        , onClick: env.router.navigate
                         , children: [ R.text $ Username.toString article.author.username ]
                         }
                     , R.span
@@ -248,8 +248,8 @@ mkArticlePage =
                     R.span_
                       [ Link.link
                           { className: "btn btn-outline-secondary btn-sm"
-                          , href: toRouteURL $ UpdateArticle article.slug
-                          , onClick: env.router.navigate $ UpdateArticle article.slug
+                          , route: UpdateArticle article.slug
+                          , onClick: env.router.navigate
                           , children:
                               [ R.i
                                   { className: "ion-edit"
@@ -308,8 +308,8 @@ mkArticlePage =
                   , children:
                       [ Link.link
                           { className: "comment-author"
-                          , href: toRouteURL $ Profile comment.author.username
-                          , onClick: env.router.navigate $ Profile comment.author.username
+                          , route: Profile comment.author.username
+                          , onClick: env.router.navigate
                           , children:
                               [ R.img
                                   { className: "comment-author-img"
@@ -320,8 +320,8 @@ mkArticlePage =
                       , R.text " "
                       , Link.link
                           { className: "comment-author"
-                          , href: toRouteURL $ Profile comment.author.username
-                          , onClick: env.router.navigate $ Profile comment.author.username
+                          , route: Profile comment.author.username
+                          , onClick: env.router.navigate
                           , children:
                               [ R.text $ Username.toString comment.author.username ]
                           }

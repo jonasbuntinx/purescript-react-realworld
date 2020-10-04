@@ -1,7 +1,6 @@
 module Conduit.Component.ArticleList where
 
 import Prelude
-import Conduit.Capability.Routing (toRouteURL)
 import Conduit.Component.Buttons (ButtonSize(..), favoriteButton)
 import Conduit.Component.Link as Link
 import Conduit.Component.Loading as Loading
@@ -53,8 +52,8 @@ articleList props = case props.articles of
               , children:
                   [ Link.link
                       { className: ""
-                      , href: toRouteURL $ Profile article.author.username
-                      , onClick: props.onNavigate $ Profile article.author.username
+                      , route: Profile article.author.username
+                      , onClick: props.onNavigate
                       , children:
                           [ R.img
                               { src: Avatar.toString $ Avatar.withDefault article.author.image
@@ -67,8 +66,8 @@ articleList props = case props.articles of
                       , children:
                           [ Link.link
                               { className: "author"
-                              , href: toRouteURL $ Profile article.author.username
-                              , onClick: props.onNavigate $ Profile article.author.username
+                              , route: Profile article.author.username
+                              , onClick: props.onNavigate
                               , children: [ R.text $ Username.toString article.author.username ]
                               }
                           , R.span
@@ -92,8 +91,8 @@ articleList props = case props.articles of
               }
           , Link.link
               { className: "preview-link"
-              , href: toRouteURL $ ViewArticle article.slug
-              , onClick: props.onNavigate $ ViewArticle article.slug
+              , route: ViewArticle article.slug
+              , onClick: props.onNavigate
               , children:
                   [ R.h1_ [ R.text article.title ]
                   , R.p_ [ R.text article.description ]

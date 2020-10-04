@@ -3,7 +3,7 @@ module Conduit.Page.Login (mkLoginPage) where
 import Prelude
 import Conduit.Capability.Api (loginUser)
 import Conduit.Capability.Auth (login)
-import Conduit.Capability.Routing (redirect, toRouteURL)
+import Conduit.Capability.Routing (redirect)
 import Conduit.Component.Env as Env
 import Conduit.Component.Link as Link
 import Conduit.Component.ResponseErrors (responseErrors)
@@ -76,8 +76,8 @@ mkLoginPage =
             , children:
                 [ Link.link
                     { className: ""
-                    , href: toRouteURL Register
-                    , onClick: env.router.navigate Register
+                    , route: Register
+                    , onClick: env.router.navigate
                     , children: [ R.text "Need an account?" ]
                     }
                 ]
