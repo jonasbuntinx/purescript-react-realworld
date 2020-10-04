@@ -1,4 +1,4 @@
-module Conduit.Page.Article (Props, mkArticlePage) where
+module Conduit.Page.Article (Props, makeArticlePage) where
 
 import Prelude
 import Conduit.Capability.Api (createComment, deleteArticle, deleteComment, getArticle, listComments, toggleFavorite, toggleFollow)
@@ -48,8 +48,8 @@ data Action
   | DeleteComment CommentId
   | SubmitComment
 
-mkArticlePage :: Env.Component Props
-mkArticlePage =
+makeArticlePage :: Env.Component Props
+makeArticlePage =
   Env.component "ArticlePage" { init, update } \env store props -> React.do
     auth <- useAuth env
     React.useEffect props.slug do

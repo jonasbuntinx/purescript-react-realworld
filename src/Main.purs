@@ -25,7 +25,7 @@ main = do
   case container of
     Nothing -> throw "Conduit container element not found."
     Just c -> do
-      auth <- Auth.mkAuthManager
+      auth <- Auth.makeAuthManager
       interface <- PushState.makeInterface
       router <-
         Router.makeRouter interface
@@ -35,7 +35,7 @@ main = do
           , onRoute: const $ Router.continue
           }
       root <-
-        runReaderT Root.mkRoot
+        runReaderT Root.makeRoot
           { auth: { signal: auth.signal }
           , router: { signal: router.signal, navigate: router.navigate, redirect: router.redirect }
           }

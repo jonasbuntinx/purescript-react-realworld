@@ -1,4 +1,4 @@
-module Conduit.Page.Register (mkRegisterPage) where
+module Conduit.Page.Register (makeRegisterPage) where
 
 import Prelude
 import Conduit.Capability.Api (registerUser)
@@ -30,8 +30,8 @@ data Action
   | UpdatePassword String
   | Submit
 
-mkRegisterPage :: Env.Component Unit
-mkRegisterPage =
+makeRegisterPage :: Env.Component Unit
+makeRegisterPage =
   Env.component "RegisterPage" { init, update } \env store props -> React.do
     pure $ render env store props
   where

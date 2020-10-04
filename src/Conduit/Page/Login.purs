@@ -1,4 +1,4 @@
-module Conduit.Page.Login (mkLoginPage) where
+module Conduit.Page.Login (makeLoginPage) where
 
 import Prelude
 import Conduit.Capability.Api (loginUser)
@@ -29,8 +29,8 @@ data Action
   | UpdatePassword String
   | Submit
 
-mkLoginPage :: Env.Component Unit
-mkLoginPage =
+makeLoginPage :: Env.Component Unit
+makeLoginPage =
   Env.component "LoginPage" { init, update } \env store props -> React.do
     pure $ render env store props
   where

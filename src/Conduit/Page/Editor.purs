@@ -1,4 +1,4 @@
-module Conduit.Page.Editor (Props, mkEditorPage) where
+module Conduit.Page.Editor (Props, makeEditorPage) where
 
 import Prelude
 import Conduit.Capability.Api (getArticle, submitArticle)
@@ -40,8 +40,8 @@ data Action
   | UpdateTagList (Set String)
   | Submit
 
-mkEditorPage :: Env.Component Props
-mkEditorPage =
+makeEditorPage :: Env.Component Props
+makeEditorPage =
   Env.component "SettingsPage" { init, update } \env store props -> React.do
     React.useEffect props.slug do
       store.dispatch Initialize

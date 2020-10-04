@@ -1,4 +1,4 @@
-module Conduit.Page.Home (mkHomePage) where
+module Conduit.Page.Home (makeHomePage) where
 
 import Prelude
 import Conduit.Capability.Api (listArticles, listFeed, listTags, toggleFavorite)
@@ -32,8 +32,8 @@ data Action
   | LoadArticles Tab { offset :: Int, limit :: Int }
   | ToggleFavorite Int
 
-mkHomePage :: Env.Component Unit
-mkHomePage =
+makeHomePage :: Env.Component Unit
+makeHomePage =
   Env.component "HomePage" { init, update } \env store props -> React.do
     auth <- useAuth env
     React.useEffect (isJust auth) do

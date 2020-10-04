@@ -1,4 +1,4 @@
-module Conduit.Page.Settings (mkSettingsPage) where
+module Conduit.Page.Settings (makeSettingsPage) where
 
 import Prelude
 import Conduit.Capability.Api (updateUser)
@@ -39,8 +39,8 @@ data Action
   | Submit
   | Logout
 
-mkSettingsPage :: Env.Component Unit
-mkSettingsPage =
+makeSettingsPage :: Env.Component Unit
+makeSettingsPage =
   Env.component "SettingsPage" { init, update } \env store props -> React.do
     profile <- useProfile env
     React.useEffect profile do

@@ -7,26 +7,26 @@ import Conduit.Component.Header as Header
 import Conduit.Data.Route (Route(..))
 import Conduit.Hook.Auth (useAuth)
 import Conduit.Hook.Router (useRoute)
-import Conduit.Page.Article (mkArticlePage)
-import Conduit.Page.Editor (mkEditorPage)
-import Conduit.Page.Home (mkHomePage)
-import Conduit.Page.Login (mkLoginPage)
-import Conduit.Page.Profile (Tab(..), mkProfilePage)
-import Conduit.Page.Register (mkRegisterPage)
-import Conduit.Page.Settings (mkSettingsPage)
+import Conduit.Page.Article (makeArticlePage)
+import Conduit.Page.Editor (makeEditorPage)
+import Conduit.Page.Home (makeHomePage)
+import Conduit.Page.Login (makeLoginPage)
+import Conduit.Page.Profile (Tab(..), makeProfilePage)
+import Conduit.Page.Register (makeRegisterPage)
+import Conduit.Page.Settings (makeSettingsPage)
 import Data.Maybe (Maybe(..), isJust)
 import Data.Tuple.Nested ((/\))
 import React.Basic.Hooks as React
 
-mkRoot :: Env.Component Unit
-mkRoot = do
-  homePage <- mkHomePage
-  loginPage <- mkLoginPage
-  registerPage <- mkRegisterPage
-  settingsPage <- mkSettingsPage
-  editorPage <- mkEditorPage
-  articlePage <- mkArticlePage
-  profilePage <- mkProfilePage
+makeRoot :: Env.Component Unit
+makeRoot = do
+  homePage <- makeHomePage
+  loginPage <- makeLoginPage
+  registerPage <- makeRegisterPage
+  settingsPage <- makeSettingsPage
+  editorPage <- makeEditorPage
+  articlePage <- makeArticlePage
+  profilePage <- makeProfilePage
   Env.component' "Root" \env props -> React.do
     auth <- useAuth env
     route <- useRoute env

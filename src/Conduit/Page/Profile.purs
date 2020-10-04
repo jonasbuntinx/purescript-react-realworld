@@ -1,4 +1,4 @@
-module Conduit.Page.Profile (Props, Tab(..), mkProfilePage) where
+module Conduit.Page.Profile (Props, Tab(..), makeProfilePage) where
 
 import Prelude
 import Conduit.Capability.Api (getProfile, listArticles, toggleFavorite, toggleFollow)
@@ -44,8 +44,8 @@ data Action
   | ToggleFavorite Int
   | ToggleFollow
 
-mkProfilePage :: Env.Component Props
-mkProfilePage =
+makeProfilePage :: Env.Component Props
+makeProfilePage =
   Env.component "ProfilePage" { init, update } \env store props -> React.do
     auth <- useAuth env
     React.useEffect props.username do
