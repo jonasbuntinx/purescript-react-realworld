@@ -4,8 +4,8 @@ import Prelude
 import Conduit.Capability.Api (updateUser)
 import Conduit.Capability.Auth (logout, updateProfile)
 import Conduit.Capability.Routing (navigate, redirect)
-import Conduit.Component.Env as Env
 import Conduit.Component.ResponseErrors (responseErrors)
+import Conduit.Component.Store as Store
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Profile (UserProfile)
 import Conduit.Data.Route (Route(..))
@@ -39,9 +39,9 @@ data Action
   | Submit
   | Logout
 
-makeSettingsPage :: Env.Component Unit
+makeSettingsPage :: Store.Component Unit
 makeSettingsPage =
-  Env.component "SettingsPage" { init, update } \env store props -> React.do
+  Store.component "SettingsPage" { init, update } \env store props -> React.do
     profile <- useProfile env
     React.useEffect profile do
       for_ profile $ store.dispatch <<< Initialize

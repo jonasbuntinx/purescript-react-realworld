@@ -27,7 +27,7 @@ makeRoot = do
   editorPage <- makeEditorPage
   articlePage <- makeArticlePage
   profilePage <- makeProfilePage
-  Env.component' "Root" \env props -> React.do
+  Env.component "Root" \env props -> React.do
     auth <- useAuth env
     route <- useRoute env
     React.useEffect (route /\ (isJust auth)) do

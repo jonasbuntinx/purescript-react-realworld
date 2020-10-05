@@ -68,7 +68,7 @@ header { auth, currentRoute, onNavigate } =
       , children:
           [ Link.link
               { className: "nav-link" <> guard (currentRoute == route) " active"
-              , route: route
+              , route
               , onClick: onNavigate
               , children
               }

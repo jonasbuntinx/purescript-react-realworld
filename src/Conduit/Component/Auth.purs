@@ -26,11 +26,7 @@ import Web.Storage.Storage as Storage
 import Wire.React.Atom.Class (modify, read)
 import Wire.React.Atom.Sync as Sync
 
-makeAuthManager ::
-  Effect
-    { signal :: Sync.Sync (Maybe Auth)
-    , component :: React.JSX
-    }
+makeAuthManager :: Effect { signal :: Sync.Sync (Maybe Auth), component :: React.JSX }
 makeAuthManager = do
   signal <- create
   component <-

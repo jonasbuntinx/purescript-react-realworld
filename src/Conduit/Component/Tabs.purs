@@ -11,7 +11,6 @@ import React.Basic.DOM.Events (preventDefault)
 import React.Basic.Events (handler)
 import React.Basic.Hooks as React
 
--- | Component
 type Props a
   = { className :: String
     , selectedTab :: Maybe a
