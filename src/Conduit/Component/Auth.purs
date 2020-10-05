@@ -3,7 +3,7 @@ module Conduit.Component.Auth where
 import Prelude
 import Apiary as Apiary
 import Conduit.Api.Endpoints (GetUser)
-import Conduit.Api.Utils (addBaseUrl, addToken)
+import Conduit.Api.Utils (makeSecureRequest')
 import Conduit.Data.Auth (Auth, toAuth)
 import Control.Monad.Except (runExcept)
 import Data.Either (hush)
@@ -44,7 +44,7 @@ makeAuthManager = do
     auth <- read signal
     for_ auth \{ token } -> do
       launchAff_ do
-        res <- Apiary.makeRequest (Apiary.Route :: GetUser) (addBaseUrl <<< addToken token) Apiary.none Apiary.none Apiary.none
+        res <- makeSecureRequest' token (Apiary.Route :: GetUser) Apiary.none Apiary.none Apiary.none
         liftEffect case hush $ Variant.match { ok: _.user } <$> res of
           Nothing -> resetAuth signal
           Just user -> writeAuth signal user

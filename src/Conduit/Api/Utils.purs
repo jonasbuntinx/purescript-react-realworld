@@ -1,9 +1,9 @@
-module Conduit.Api.Utils (addBaseUrl, addToken, makeRequest, makeSecureRequest) where
+module Conduit.Api.Utils (makeRequest, makeSecureRequest, makeSecureRequest') where
 
 import Prelude
 import Apiary as Apiary
-import Conduit.Capability.Auth (class MonadAuth, read)
-import Conduit.Capability.Routing (class MonadRouting, redirect)
+import Conduit.Capability.Auth (class Auth, read)
+import Conduit.Capability.Routing (class Routing, redirect)
 import Conduit.Config as Config
 import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..))
@@ -33,8 +33,8 @@ makeRequest route path query body = do
 
 makeSecureRequest ::
   forall m rep body query path route response.
-  MonadAuth m =>
-  MonadRouting Route m =>
+  Auth m =>
+  Routing Route m =>
   MonadAff m =>
   Apiary.BuildRequest route path query body rep =>
   Apiary.DecodeResponse rep response =>
@@ -50,9 +50,23 @@ makeSecureRequest route path query body = do
       redirect Register
       pure $ Left $ NotAuthorized
     Just { token } -> do
-      res <- liftAff $ Apiary.makeRequest route (addBaseUrl <<< addToken token) path query body
-      void $ lfor res onError
-      pure $ lmap ApiaryError res
+      makeSecureRequest' token route path query body
+
+makeSecureRequest' ::
+  forall m rep body query path route response.
+  MonadAff m =>
+  Apiary.BuildRequest route path query body rep =>
+  Apiary.DecodeResponse rep response =>
+  String ->
+  route ->
+  path ->
+  query ->
+  body ->
+  m (Either Error response)
+makeSecureRequest' token route path query body = do
+  res <- liftAff $ Apiary.makeRequest route (addBaseUrl <<< addToken token) path query body
+  void $ lfor res onError
+  pure $ lmap ApiaryError res
 
 addBaseUrl :: forall r. { url :: String | r } -> { url :: String | r }
 addBaseUrl request@{ url } = request { url = Config.apiEndpoint <> url }
