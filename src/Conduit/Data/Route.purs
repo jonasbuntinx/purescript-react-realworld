@@ -1,6 +1,5 @@
 module Conduit.Data.Route (Route(..), routeCodec) where
 
-import Conduit.Capability.Routing (class IsRoute)
 import Conduit.Data.Slug (Slug)
 import Conduit.Data.Slug as Slug
 import Conduit.Data.Username (Username)
@@ -8,7 +7,7 @@ import Conduit.Data.Username as Username
 import Data.Either (note)
 import Data.Generic.Rep (class Generic)
 import Prelude (class Eq, ($), (>>>))
-import Routing.Duplex (RouteDuplex', as, default, print, root, segment)
+import Routing.Duplex (RouteDuplex', as, default, root, segment)
 import Routing.Duplex.Generic (noArgs, sum)
 import Routing.Duplex.Generic.Syntax ((/))
 
@@ -27,9 +26,6 @@ data Route
 derive instance genericRoute :: Generic Route _
 
 derive instance eqRoute :: Eq Route
-
-instance isRouteRoute :: IsRoute Route where
-  toRouteURL = print routeCodec
 
 routeCodec :: RouteDuplex' Route
 routeCodec =

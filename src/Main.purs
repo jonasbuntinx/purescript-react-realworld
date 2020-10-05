@@ -1,7 +1,6 @@
 module Main where
 
 import Prelude
-import Conduit.Capability.Routing (toRouteURL)
 import Conduit.Component.Auth as Auth
 import Conduit.Data.Route (Route(..), routeCodec)
 import Conduit.Root as Root
@@ -11,7 +10,7 @@ import Effect (Effect)
 import Effect.Exception (throw)
 import React.Basic as React
 import React.Basic.DOM (render)
-import Routing.Duplex (parse)
+import Routing.Duplex (parse, print)
 import Routing.PushState as PushState
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)
@@ -31,7 +30,7 @@ main = do
         Router.makeRouter interface
           { fallback: Error
           , parse: parse routeCodec
-          , print: toRouteURL
+          , print: print routeCodec
           , onRoute: const $ Router.continue
           }
       root <-

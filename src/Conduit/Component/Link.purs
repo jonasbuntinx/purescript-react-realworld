@@ -1,7 +1,7 @@
 module Conduit.Component.Link where
 
 import Prelude
-import Conduit.Capability.Routing (class IsRoute, toRouteURL)
+import Conduit.Data.Route (routeCodec)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Uncurried (runEffectFn1)
@@ -9,6 +9,7 @@ import React.Basic.DOM as R
 import React.Basic.DOM.Events (altKey, button, ctrlKey, metaKey, preventDefault, shiftKey, stopPropagation)
 import React.Basic.Events (handler, merge, syntheticEvent)
 import React.Basic.Hooks as React
+import Routing.Duplex (print)
 
 type Props route
   = { className :: String
@@ -17,11 +18,11 @@ type Props route
     , children :: Array React.JSX
     }
 
-link :: forall route. IsRoute route => Props route -> React.JSX
+link :: forall route. Props route -> React.JSX
 link props =
   R.a
     { className: props.className
-    , href: toRouteURL props.route
+    , href: print routeCodec props.route
     , onClick:
         handler (merge { button, metaKey, altKey, ctrlKey, shiftKey, syntheticEvent }) \{ button, metaKey, altKey, ctrlKey, shiftKey, syntheticEvent } -> do
           case button, metaKey, altKey, ctrlKey, shiftKey of
