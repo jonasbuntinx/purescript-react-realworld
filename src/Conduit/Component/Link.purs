@@ -1,7 +1,7 @@
 module Conduit.Component.Link where
 
 import Prelude
-import Conduit.Data.Route (routeCodec)
+import Conduit.Data.Route (Route, routeCodec)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Uncurried (runEffectFn1)
@@ -11,14 +11,14 @@ import React.Basic.Events (handler, merge, syntheticEvent)
 import React.Basic.Hooks as React
 import Routing.Duplex (print)
 
-type Props route
+type Props
   = { className :: String
-    , route :: route
-    , onClick :: route -> Effect Unit
+    , route :: Route
+    , onClick :: Route -> Effect Unit
     , children :: Array React.JSX
     }
 
-link :: forall route. Props route -> React.JSX
+link :: Props -> React.JSX
 link props =
   R.a
     { className: props.className
