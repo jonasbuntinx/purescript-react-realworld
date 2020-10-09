@@ -36,10 +36,6 @@ derive newtype instance bindStoreM :: Bind m => Bind (StoreM m)
 
 derive newtype instance monadStoreM :: Monad m => Monad (StoreM m)
 
-derive newtype instance semigroupStoreM :: (Semigroup a, Apply m) => Semigroup (StoreM m a)
-
-derive newtype instance monoidStoreM :: (Monoid a, Applicative m) => Monoid (StoreM m a)
-
 derive newtype instance monadEffectStoreM :: MonadEffect m => MonadEffect (StoreM m)
 
 derive newtype instance monadAffStoreM :: MonadAff m => MonadAff (StoreM m)
