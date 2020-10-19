@@ -185,7 +185,7 @@ let additions =
           , "wire"
           ]
         , repo = "https://github.com/robertdp/purescript-wire-react-router"
-        , version = "v0.1.0"
+        , version = "v0.2.1"
         }
       }
 

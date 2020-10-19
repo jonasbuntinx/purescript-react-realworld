@@ -6,7 +6,6 @@ import Conduit.Data.Route (Route)
 import Data.Maybe (Maybe)
 import Effect (Effect)
 import Wire.React.Atom.Sync as Sync
-import Wire.React.Router as Router
 import Wire.Signal as Signal
 
 type Env
@@ -14,7 +13,7 @@ type Env
         { signal :: Sync.Sync (Maybe Auth)
         }
     , router ::
-        { signal :: Signal.Signal (Router.Route Route)
+        { signal :: Signal.Signal Route
         , navigate :: Route -> Effect Unit
         , redirect :: Route -> Effect Unit
         }
