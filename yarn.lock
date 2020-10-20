@@ -1950,10 +1950,10 @@ data-urls@^1.1.0:
     whatwg-mimetype "^2.2.0"
     whatwg-url "^7.0.0"
 
-dayjs@^1.9.1:
-  version "1.9.1"
-  resolved "https://registry.yarnpkg.com/dayjs/-/dayjs-1.9.1.tgz#201a755f7db5103ed6de63ba93a984141c754541"
-  integrity sha512-01NCTBg8cuMJG1OQc6PR7T66+AFYiPwgDvdJmvJBn29NGzIG+DIFxPLNjHzwz3cpFIvG+NcwIjP9hSaPVoOaDg==
+dayjs@^1.9.3:
+  version "1.9.3"
+  resolved "https://registry.yarnpkg.com/dayjs/-/dayjs-1.9.3.tgz#b7f94b22ad2a136a4ca02a01ab68ae893fe1a268"
+  integrity sha512-V+1SyIvkS+HmNbN1G7A9+ERbFTV9KTXu6Oor98v2xHmzzpp52OIJhQuJSTywWuBY5pyAEmlwbCi1Me87n/SLOw==
 
 deasync@^0.1.14:
   version "0.1.20"
@@ -4408,10 +4408,10 @@ posthtml@^0.13.1:
     posthtml-parser "^0.5.0"
     posthtml-render "^1.2.3"
 
-preact@^10.5.4:
-  version "10.5.4"
-  resolved "https://registry.yarnpkg.com/preact/-/preact-10.5.4.tgz#1e4d148f949fa54656df6c9bc9218bd4e12016e3"
-  integrity sha512-u0LnVtL9WWF61RLzIbEsVFOdsahoTQkQqeRwyf4eWuLMFrxTH/C47tqcnizbUH54E4KG8UzuuZaMc9KarHmpqQ==
+preact@^10.5.5:
+  version "10.5.5"
+  resolved "https://registry.yarnpkg.com/preact/-/preact-10.5.5.tgz#c6c172ca751df27483350b8ab622abc12956e997"
+  integrity sha512-5ONLNH1SXMzzbQoExZX4TELemNt+TEDb622xXFNfZngjjM9qtrzseJt+EfiUu4TZ6EJ95X5sE1ES4yqHFSIdhg==
 
 prelude-ls@~1.1.2:
   version "1.1.2"

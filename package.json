@@ -33,9 +33,9 @@
     "zephyr": "https://github.com/jonasbuntinx/zephyr.git"
   },
   "dependencies": {
-    "dayjs": "^1.9.1",
+    "dayjs": "^1.9.3",
     "nano-markdown": "^1.2.1",
-    "preact": "^10.5.4"
+    "preact": "^10.5.5"
   },
   "alias": {
     "react": "preact/compat",
