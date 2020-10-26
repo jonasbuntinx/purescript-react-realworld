@@ -119,7 +119,7 @@ let additions =
 
 
 let upstream =
-      https://github.com/purescript/package-sets/releases/download/psc-0.13.8-20200922/packages.dhall sha256:5edc9af74593eab8834d7e324e5868a3d258bbab75c5531d2eb770d4324a2900
+      https://github.com/purescript/package-sets/releases/download/psc-0.13.8-20201021/packages.dhall sha256:55ebdbda1bd6ede4d5307fbc1ef19988c80271b4225d833c8d6fb9b6fb1aa6d8
 
 let overrides =
       { simple-json =
@@ -127,63 +127,32 @@ let overrides =
           //  { repo = "https://github.com/robertdp/purescript-simple-json.git"
               , version = "v7.0.1"
               }
-      , react-basic-hooks =
-              upstream.react-basic-hooks
-          //  { version = "v6.1.1"
-              }
       }
 
 let additions =
       { apiary =
-        { dependencies =
-          [ "affjax"
-          , "media-types"
-          , "simple-json"
-          ]
+        { dependencies = [ "affjax", "media-types", "simple-json" ]
         , repo = "https://github.com/robertdp/purescript-apiary"
         , version = "v0.2.0"
         }
-      , react-store =
+      , react-halo =
         { dependencies =
-            [ "avar"
-            , "console"
-            , "prelude"
-            , "react-basic-hooks"
-            ]
-        , repo = "https://github.com/robertdp/purescript-react-store"
-        , version = "v0.2.4"
+          [ "aff", "free", "freeap", "react-basic-hooks", "wire" ]
+        , repo = "https://github.com/robertdp/purescript-react-halo"
+        , version = "v0.2.3"
         }
       , wire =
-        { dependencies =
-            [ "aff"
-            , "filterable"
-            , "foreign-object"
-            , "refs"
-            , "unsafe-reference"
-            ]
+        { dependencies = [ "aff", "filterable", "refs", "unsafe-reference" ]
         , repo = "https://github.com/robertdp/purescript-wire"
         , version = "v0.4.2"
         }
       , wire-react =
-        { dependencies =
-          [ "wire"
-          , "free"
-          , "freet"
-          , "react-basic-hooks"
-          ]
+        { dependencies = [ "wire", "free", "freet", "react-basic-hooks" ]
         , repo = "https://github.com/robertdp/purescript-wire-react"
         , version = "v0.0.1"
         }
       , wire-react-router =
-        { dependencies =
-          [ "aff"
-          , "indexed-monad"
-          , "freet"
-          , "profunctor-lenses"
-          , "react-basic-hooks"
-          , "routing"
-          , "wire"
-          ]
+        { dependencies = [ "aff", "indexed-monad", "freet", "profunctor-lenses", "react-basic-hooks", "routing", "wire" ]
         , repo = "https://github.com/robertdp/purescript-wire-react-router"
         , version = "v0.2.1"
         }

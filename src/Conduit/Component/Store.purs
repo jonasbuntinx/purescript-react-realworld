@@ -5,10 +5,12 @@ import Conduit.Component.Env as Env
 import Conduit.Data.Env (Env)
 import Conduit.StoreM (StoreM, runStoreM)
 import Control.Monad.Reader (ask)
+import Data.Tuple.Nested ((/\))
+import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import React.Basic.Hooks as React
-import React.Store (Instance, Store, UseStore, useStore)
+import React.Halo as Halo
 
 type Component props
   = Env.Component props
@@ -17,13 +19,27 @@ component ::
   forall props state action hooks.
   String ->
   { init :: state
-  , update :: Instance props state (StoreM Aff) -> action -> StoreM Aff Unit
+  , update :: { props :: props, state :: state, setState :: (state -> state) -> Halo.HaloM props state action (StoreM Aff) Unit } -> action -> Halo.HaloM props state action (StoreM Aff) Unit
   } ->
-  (Env -> Store state action -> props -> React.Render (UseStore props state action (StoreM Aff) Unit) hooks React.JSX) ->
-  Component props
+  (Env -> { dispatch :: action -> Effect Unit, state :: state } -> props -> React.Render (Halo.UseHalo props state action Unit) hooks React.JSX) ->
+  Env.Component props
 component name { init, update } renderFn = do
   env <- ask
   liftEffect
     $ React.component name \props -> React.do
-        store <- useStore { init, props, update, launch: runStoreM env }
-        renderFn env store props
+        state /\ send <-
+          Halo.useHalo
+            { initialState: init
+            , props
+            , eval:
+                Halo.hoist (runStoreM env)
+                  <<< Halo.makeEval
+                      _
+                        { onAction =
+                          \action -> do
+                            state <- Halo.get
+                            props' <- Halo.props
+                            update { props: props', state, setState: Halo.modify_ } action
+                        }
+            }
+        renderFn env { state, dispatch: send } props
