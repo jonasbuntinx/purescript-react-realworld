@@ -16,6 +16,7 @@ import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
 import Conduit.Hook.Auth (useAuth)
 import Conduit.Page.Utils (_articles, _profile)
+import Control.Monad.State (modify_)
 import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
@@ -65,11 +66,11 @@ makeProfilePage =
 
   update self = case _ of
     Initialize -> do
-      self.setState _ { profile = RemoteData.Loading }
+      modify_ _ { profile = RemoteData.Loading }
       bind (getProfile self.props.username) case _ of
         Left (NotFound _) -> redirect Home
-        Left error -> self.setState _ { profile = RemoteData.Failure error }
-        Right profile -> self.setState _ { profile = RemoteData.Success profile }
+        Left error -> modify_ _ { profile = RemoteData.Failure error }
+        Right profile -> modify_ _ { profile = RemoteData.Success profile }
     LoadArticles pagination -> do
       let
         query = defaultArticlesQuery { offset = Just pagination.offset, limit = Just pagination.limit }
@@ -78,10 +79,10 @@ makeProfilePage =
           listArticles case self.props.tab of
             Published -> query { author = Just self.props.username }
             Favorited -> query { favorited = Just self.props.username }
-      self.setState _ { articles = RemoteData.Loading, pagination = pagination }
-      request >>= \res -> self.setState _ { articles = RemoteData.fromEither res }
-    ToggleFavorite ix -> for_ (preview (_articles ix) self.state) (toggleFavorite >=> traverse_ (self.setState <<< set (_articles ix)))
-    ToggleFollow -> for_ (preview _profile self.state) (toggleFollow >=> traverse_ (self.setState <<< set _profile))
+      modify_ _ { articles = RemoteData.Loading, pagination = pagination }
+      request >>= \res -> modify_ _ { articles = RemoteData.fromEither res }
+    ToggleFavorite ix -> for_ (preview (_articles ix) self.state) (toggleFavorite >=> traverse_ (modify_ <<< set (_articles ix)))
+    ToggleFollow -> for_ (preview _profile self.state) (toggleFollow >=> traverse_ (modify_ <<< set _profile))
 
   render env auth store props =
     guard (RemoteData.isSuccess store.state.profile) container userInfo

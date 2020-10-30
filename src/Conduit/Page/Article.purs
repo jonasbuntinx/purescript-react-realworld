@@ -17,6 +17,7 @@ import Conduit.Form.Validator as F
 import Conduit.Hook.Auth (useAuth)
 import Conduit.Page.Utils (_article, _author)
 import Control.Comonad (extract)
+import Control.Monad.State (modify_)
 import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
@@ -67,44 +68,44 @@ makeArticlePage =
 
   update self = case _ of
     Initialize -> do
-      self.setState _ { article = RemoteData.Loading }
+      modify_ _ { article = RemoteData.Loading }
       bind (getArticle self.props.slug) case _ of
         Left (NotFound _) -> redirect Home
-        Left error -> self.setState _ { article = RemoteData.Failure error }
-        Right article -> self.setState _ { article = RemoteData.Success article }
+        Left error -> modify_ _ { article = RemoteData.Failure error }
+        Right article -> modify_ _ { article = RemoteData.Success article }
     LoadComments -> do
-      self.setState _ { comments = RemoteData.Loading }
-      listComments self.props.slug >>= \res -> self.setState _ { comments = RemoteData.fromEither res }
+      modify_ _ { comments = RemoteData.Loading }
+      listComments self.props.slug >>= \res -> modify_ _ { comments = RemoteData.fromEither res }
     DeleteArticle -> do
-      self.setState _ { submitResponse = RemoteData.Loading }
+      modify_ _ { submitResponse = RemoteData.Loading }
       bind (deleteArticle self.props.slug) case _ of
         Right res -> do
-          self.setState _ { submitResponse = RemoteData.Success res }
+          modify_ _ { submitResponse = RemoteData.Success res }
           navigate Home
-        Left err -> self.setState _ { submitResponse = RemoteData.Failure err }
-    ToggleFollow -> for_ (preview _author self.state) (toggleFollow >=> traverse_ (self.setState <<< set _author))
-    ToggleFavorite -> for_ (preview _article self.state) (toggleFavorite >=> traverse_ (self.setState <<< set _article))
-    UpdateBody body -> self.setState _ { body = V.Modified body }
+        Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
+    ToggleFollow -> for_ (preview _author self.state) (toggleFollow >=> traverse_ (modify_ <<< set _author))
+    ToggleFavorite -> for_ (preview _article self.state) (toggleFavorite >=> traverse_ (modify_ <<< set _article))
+    UpdateBody body -> modify_ _ { body = V.Modified body }
     DeleteComment id -> do
-      self.setState _ { submitResponse = RemoteData.Loading }
+      modify_ _ { submitResponse = RemoteData.Loading }
       bind (deleteComment self.props.slug id) case _ of
         Right _ -> do
-          self.setState _ { submitResponse = RemoteData.Success unit }
-          listComments self.props.slug >>= \res -> self.setState _ { comments = RemoteData.fromEither res }
-        Left err -> self.setState _ { submitResponse = RemoteData.Failure err }
+          modify_ _ { submitResponse = RemoteData.Success unit }
+          listComments self.props.slug >>= \res -> modify_ _ { comments = RemoteData.fromEither res }
+        Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
     SubmitComment ->
       let
         state = V.setModified self.state
       in
         case toEither (validate state) of
-          Left _ -> self.setState (const state)
+          Left _ -> modify_ (const state)
           Right validated -> do
-            self.setState _ { submitResponse = RemoteData.Loading }
+            modify_ _ { submitResponse = RemoteData.Loading }
             bind (createComment self.props.slug validated) case _ of
               Right _ -> do
-                self.setState _ { submitResponse = RemoteData.Success unit, body = pure "" }
-                listComments self.props.slug >>= \res -> self.setState _ { comments = RemoteData.fromEither res }
-              Left err -> self.setState _ { submitResponse = RemoteData.Failure err }
+                modify_ _ { submitResponse = RemoteData.Success unit, body = pure "" }
+                listComments self.props.slug >>= \res -> modify_ _ { comments = RemoteData.fromEither res }
+              Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
 
   validate values = ado
     body <- values.body # V.validated (LR.prop (SProxy :: _ "body")) F.nonEmpty

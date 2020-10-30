@@ -11,6 +11,7 @@ import Conduit.Data.Route (Route(..))
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Control.Comonad (extract)
+import Control.Monad.State (modify_)
 import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Foldable (traverse_)
@@ -41,21 +42,21 @@ makeLoginPage =
     }
 
   update self = case _ of
-    UpdateEmail email -> self.setState _ { email = V.Modified email }
-    UpdatePassword password -> self.setState _ { password = V.Modified password }
+    UpdateEmail email -> modify_ _ { email = V.Modified email }
+    UpdatePassword password -> modify_ _ { password = V.Modified password }
     Submit -> do
       let
         state = V.setModified self.state
       case toEither (validate state) of
-        Left _ -> self.setState (const state)
+        Left _ -> modify_ (const state)
         Right validated -> do
-          self.setState _ { submitResponse = RemoteData.Loading }
+          modify_ _ { submitResponse = RemoteData.Loading }
           bind (loginUser validated) case _ of
             Right user -> do
-              self.setState _ { submitResponse = RemoteData.Success unit }
+              modify_ _ { submitResponse = RemoteData.Success unit }
               login user.token $ Record.delete (SProxy :: _ "token") user
               redirect Home
-            Left err -> self.setState _ { submitResponse = RemoteData.Failure err }
+            Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
 
   validate values = ado
     email <- values.email # V.validated (LR.prop (SProxy :: _ "email")) \email -> F.nonEmpty email `andThen` F.validEmail

@@ -14,6 +14,7 @@ import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Conduit.Hook.Auth (useProfile)
 import Control.Comonad (extract)
+import Control.Monad.State (modify_)
 import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
@@ -60,7 +61,7 @@ makeSettingsPage =
 
   update self = case _ of
     Initialize profile ->
-      self.setState
+      modify_
         _
           { profile = Just profile
           , image = Avatar.toString <$> profile.image
@@ -68,24 +69,24 @@ makeSettingsPage =
           , bio = profile.bio
           , email = pure profile.email
           }
-    UpdateImage image -> self.setState _ { image = Just image }
-    UpdateUsername username -> self.setState _ { username = V.Modified username }
-    UpdateBio bio -> self.setState _ { bio = Just bio }
-    UpdateEmail email -> self.setState _ { email = V.Modified email }
-    UpdatePassword password -> self.setState _ { password = V.Modified password }
+    UpdateImage image -> modify_ _ { image = Just image }
+    UpdateUsername username -> modify_ _ { username = V.Modified username }
+    UpdateBio bio -> modify_ _ { bio = Just bio }
+    UpdateEmail email -> modify_ _ { email = V.Modified email }
+    UpdatePassword password -> modify_ _ { password = V.Modified password }
     Submit -> do
       let
         state = V.setModified self.state
       case toEither (validate state) of
-        Left _ -> self.setState (const state)
+        Left _ -> modify_ (const state)
         Right validated -> do
-          self.setState _ { submitResponse = RemoteData.Loading }
+          modify_ _ { submitResponse = RemoteData.Loading }
           bind (updateUser validated) case _ of
             Right user -> do
-              self.setState _ { submitResponse = RemoteData.Success unit }
+              modify_ _ { submitResponse = RemoteData.Success unit }
               updateProfile $ Record.delete (SProxy :: _ "token") user
               navigate Home
-            Left err -> self.setState _ { submitResponse = RemoteData.Failure err }
+            Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
     Logout -> logout *> redirect Home
 
   validate values = ado

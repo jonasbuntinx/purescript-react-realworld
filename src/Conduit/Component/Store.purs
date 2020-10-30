@@ -19,7 +19,7 @@ component ::
   forall props state action hooks.
   String ->
   { init :: state
-  , update :: { props :: props, state :: state, setState :: (state -> state) -> Halo.HaloM props state action (StoreM Aff) Unit } -> action -> Halo.HaloM props state action (StoreM Aff) Unit
+  , update :: { props :: props, state :: state } -> action -> Halo.HaloM props state action (StoreM Aff) Unit
   } ->
   (Env -> { dispatch :: action -> Effect Unit, state :: state } -> props -> React.Render (Halo.UseHalo props state action Unit) hooks React.JSX) ->
   Env.Component props
@@ -39,7 +39,7 @@ component name { init, update } renderFn = do
                           \action -> do
                             state <- Halo.get
                             props' <- Halo.props
-                            update { props: props', state, setState: Halo.modify_ } action
+                            update { props: props', state } action
                         }
             }
         renderFn env { state, dispatch: send } props

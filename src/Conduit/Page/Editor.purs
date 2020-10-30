@@ -12,6 +12,7 @@ import Conduit.Data.Slug (Slug)
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Control.Comonad (extract)
+import Control.Monad.State (modify_)
 import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
@@ -60,12 +61,12 @@ makeEditorPage =
   update self = case _ of
     Initialize ->
       for_ self.props.slug \slug -> do
-        self.setState _ { article = RemoteData.Loading }
+        modify_ _ { article = RemoteData.Loading }
         bind (getArticle slug) case _ of
           Left (NotFound _) -> redirect Home
-          Left error -> self.setState _ { article = RemoteData.Failure error }
+          Left error -> modify_ _ { article = RemoteData.Failure error }
           Right article ->
-            self.setState
+            modify_
               _
                 { article = RemoteData.Success article
                 , title = pure article.title
@@ -73,22 +74,22 @@ makeEditorPage =
                 , body = pure article.body
                 , tagList = Set.fromFoldable article.tagList
                 }
-    UpdateTitle title -> self.setState _ { title = V.Modified title }
-    UpdateDescription description -> self.setState _ { description = V.Modified description }
-    UpdateBody body -> self.setState _ { body = V.Modified body }
-    UpdateTagList tagList -> self.setState _ { tagList = tagList }
+    UpdateTitle title -> modify_ _ { title = V.Modified title }
+    UpdateDescription description -> modify_ _ { description = V.Modified description }
+    UpdateBody body -> modify_ _ { body = V.Modified body }
+    UpdateTagList tagList -> modify_ _ { tagList = tagList }
     Submit -> do
       let
         state = V.setModified self.state
       case toEither (validate state) of
-        Left _ -> self.setState (const state)
+        Left _ -> modify_ (const state)
         Right validated -> do
-          self.setState _ { submitResponse = RemoteData.Loading }
+          modify_ _ { submitResponse = RemoteData.Loading }
           bind (submitArticle self.props.slug validated) case _ of
             Right article -> do
-              self.setState _ { submitResponse = RemoteData.Success unit }
+              modify_ _ { submitResponse = RemoteData.Success unit }
               navigate $ ViewArticle article.slug
-            Left err -> self.setState _ { submitResponse = RemoteData.Failure err }
+            Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
 
   validate values = ado
     title <- values.title # V.validated (LR.prop (SProxy :: _ "title")) F.nonEmpty
