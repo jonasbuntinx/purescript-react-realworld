@@ -43,13 +43,13 @@ data Action
 
 makeEditorPage :: Store.Component Props
 makeEditorPage =
-  Store.component "SettingsPage" { init, update } \env store props -> React.do
+  Store.component "SettingsPage" { initialState, update } \env store props -> React.do
     React.useEffect props.slug do
       store.dispatch Initialize
       mempty
     pure $ render store props
   where
-  init =
+  initialState =
     { article: RemoteData.NotAsked
     , title: pure ""
     , description: pure ""

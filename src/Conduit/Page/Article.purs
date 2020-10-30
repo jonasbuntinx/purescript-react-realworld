@@ -51,7 +51,7 @@ data Action
 
 makeArticlePage :: Store.Component Props
 makeArticlePage =
-  Store.component "ArticlePage" { init, update } \env store props -> React.do
+  Store.component "ArticlePage" { initialState, update } \env store props -> React.do
     auth <- useAuth env
     React.useEffect props.slug do
       store.dispatch Initialize
@@ -59,7 +59,7 @@ makeArticlePage =
       mempty
     pure $ render env auth store props
   where
-  init =
+  initialState =
     { article: RemoteData.NotAsked
     , comments: RemoteData.NotAsked
     , body: pure ""

@@ -42,14 +42,14 @@ data Action
 
 makeSettingsPage :: Store.Component Unit
 makeSettingsPage =
-  Store.component "SettingsPage" { init, update } \env store props -> React.do
+  Store.component "SettingsPage" { initialState, update } \env store props -> React.do
     profile <- useProfile env
     React.useEffect profile do
       for_ profile $ store.dispatch <<< Initialize
       mempty
     pure $ render store props
   where
-  init =
+  initialState =
     { profile: Nothing
     , image: Nothing
     , username: pure ""

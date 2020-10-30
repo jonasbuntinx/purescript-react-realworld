@@ -35,7 +35,7 @@ data Action
 
 makeHomePage :: Store.Component Unit
 makeHomePage =
-  Store.component "HomePage" { init, update } \env store props -> React.do
+  Store.component "HomePage" { initialState, update } \env store props -> React.do
     auth <- useAuth env
     React.useEffect (isJust auth) do
       case auth of
@@ -47,7 +47,7 @@ makeHomePage =
       mempty
     pure $ render env auth store props
   where
-  init =
+  initialState =
     { tags: NotAsked
     , articles: NotAsked
     , pagination: { offset: 0, limit: 10 }
@@ -122,7 +122,7 @@ makeHomePage =
                               }
                             ]
                           _ -> []
-                , onChange: \tab -> store.dispatch $ LoadArticles tab init.pagination
+                , onChange: \tab -> store.dispatch $ LoadArticles tab initialState.pagination
                 }
             ]
         }

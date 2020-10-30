@@ -32,10 +32,10 @@ data Action
 
 makeLoginPage :: Store.Component Unit
 makeLoginPage =
-  Store.component "LoginPage" { init, update } \env store props -> React.do
+  Store.component "LoginPage" { initialState, update } \env store props -> React.do
     pure $ render env store props
   where
-  init =
+  initialState =
     { email: pure ""
     , password: pure ""
     , submitResponse: RemoteData.NotAsked

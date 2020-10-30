@@ -47,17 +47,17 @@ data Action
 
 makeProfilePage :: Store.Component Props
 makeProfilePage =
-  Store.component "ProfilePage" { init, update } \env store props -> React.do
+  Store.component "ProfilePage" { initialState, update } \env store props -> React.do
     auth <- useAuth env
     React.useEffect props.username do
       store.dispatch Initialize
       mempty
     React.useEffect (props.username /\ props.tab) do
-      store.dispatch $ LoadArticles init.pagination
+      store.dispatch $ LoadArticles initialState.pagination
       mempty
     pure $ render env auth store props
   where
-  init =
+  initialState =
     { selectedTab: Nothing
     , profile: RemoteData.NotAsked
     , articles: RemoteData.NotAsked

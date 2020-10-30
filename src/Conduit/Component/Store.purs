@@ -18,18 +18,18 @@ type Component props
 component ::
   forall props state action hooks.
   String ->
-  { init :: state
+  { initialState :: state
   , update :: { props :: props, state :: state } -> action -> Halo.HaloM props state action (StoreM Aff) Unit
   } ->
   (Env -> { dispatch :: action -> Effect Unit, state :: state } -> props -> React.Render (Halo.UseHalo props state action Unit) hooks React.JSX) ->
   Env.Component props
-component name { init, update } renderFn = do
+component name { initialState, update } renderFn = do
   env <- ask
   liftEffect
     $ React.component name \props -> React.do
         state /\ send <-
           Halo.useHalo
-            { initialState: init
+            { initialState
             , props
             , eval:
                 Halo.hoist (runStoreM env)

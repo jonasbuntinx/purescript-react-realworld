@@ -33,10 +33,10 @@ data Action
 
 makeRegisterPage :: Store.Component Unit
 makeRegisterPage =
-  Store.component "RegisterPage" { init, update } \env store props -> React.do
+  Store.component "RegisterPage" { initialState, update } \env store props -> React.do
     pure $ render env store props
   where
-  init =
+  initialState =
     { username: pure ""
     , email: pure ""
     , password: pure ""
