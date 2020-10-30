@@ -32,8 +32,8 @@ data Action
 
 makeLoginPage :: Store.Component Unit
 makeLoginPage =
-  Store.component "LoginPage" { initialState, update } \env store props -> React.do
-    pure $ render env store props
+  Store.component "LoginPage" { initialState, update } \store -> React.do
+    pure $ render store
   where
   initialState =
     { email: pure ""
@@ -63,9 +63,9 @@ makeLoginPage =
     password <- values.password # V.validated (LR.prop (SProxy :: _ "password")) \password -> F.nonEmpty password `andThen` (F.minimumLength 3 *> F.maximunLength 20)
     in { email, password }
 
-  render env store props =
+  render { env, props, state, send } =
     let
-      errors = validate store.state # unV identity (const mempty) :: { email :: _, password :: _ }
+      errors = validate state # unV identity (const mempty) :: { email :: _, password :: _ }
     in
       container
         [ R.h1
@@ -83,7 +83,7 @@ makeLoginPage =
                     }
                 ]
             }
-        , responseErrors store.state.submitResponse
+        , responseErrors state.submitResponse
         , R.form
             { children:
                 [ R.fieldset_
@@ -94,9 +94,9 @@ makeLoginPage =
                                 { className: "form-control form-control-lg"
                                 , autoComplete: "UserName"
                                 , type: "email"
-                                , value: extract store.state.email
+                                , value: extract state.email
                                 , placeholder: "Email"
-                                , onChange: handler targetValue $ traverse_ $ store.send <<< UpdateEmail
+                                , onChange: handler targetValue $ traverse_ $ send <<< UpdateEmail
                                 }
                             , guard (not $ Array.null errors.email) R.div
                                 { className: "error-messages"
@@ -111,9 +111,9 @@ makeLoginPage =
                                 { className: "form-control form-control-lg"
                                 , autoComplete: "Password"
                                 , type: "password"
-                                , value: extract store.state.password
+                                , value: extract state.password
                                 , placeholder: "Password"
-                                , onChange: handler targetValue $ traverse_ $ store.send <<< UpdatePassword
+                                , onChange: handler targetValue $ traverse_ $ send <<< UpdatePassword
                                 }
                             , guard (not $ Array.null errors.email) R.div
                                 { className: "error-messages"
@@ -124,7 +124,7 @@ makeLoginPage =
                     , R.button
                         { className: "btn btn-lg btn-primary pull-xs-right"
                         , type: "button"
-                        , onClick: handler_ $ store.send Submit
+                        , onClick: handler_ $ send Submit
                         , children: [ R.text "Sign in" ]
                         }
                     ]

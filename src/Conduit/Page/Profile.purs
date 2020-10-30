@@ -47,15 +47,15 @@ data Action
 
 makeProfilePage :: Store.Component Props
 makeProfilePage =
-  Store.component "ProfilePage" { initialState, update } \env store props -> React.do
-    auth <- useAuth env
-    React.useEffect props.username do
+  Store.component "ProfilePage" { initialState, update } \store -> React.do
+    auth <- useAuth store.env
+    React.useEffect store.props.username do
       store.send Initialize
       mempty
-    React.useEffect (props.username /\ props.tab) do
+    React.useEffect (store.props.username /\ store.props.tab) do
       store.send $ LoadArticles initialState.pagination
       mempty
-    pure $ render env auth store props
+    pure $ render auth store
   where
   initialState =
     { selectedTab: Nothing
@@ -84,8 +84,8 @@ makeProfilePage =
     ToggleFavorite ix -> for_ (preview (_articles ix) self.state) (toggleFavorite >=> traverse_ (modify_ <<< set (_articles ix)))
     ToggleFollow -> for_ (preview _profile self.state) (toggleFollow >=> traverse_ (modify_ <<< set _profile))
 
-  render env auth store props =
-    guard (RemoteData.isSuccess store.state.profile) container userInfo
+  render auth { env, props, state, send } =
+    guard (RemoteData.isSuccess state.profile) container userInfo
       [ Tabs.tabs
           { className: "articles-toggle"
           , selectedTab: Just props.tab
@@ -111,17 +111,17 @@ makeProfilePage =
     tabContent =
       R.div_
         [ articleList
-            { articles: store.state.articles <#> _.articles
+            { articles: state.articles <#> _.articles
             , onNavigate: env.router.navigate
-            , onFavoriteToggle: store.send <<< ToggleFavorite
+            , onFavoriteToggle: send <<< ToggleFavorite
             }
-        , store.state.articles
+        , state.articles
             # RemoteData.maybe React.empty \{ articlesCount } ->
                 pagination
-                  { offset: store.state.pagination.offset
-                  , limit: store.state.pagination.limit
+                  { offset: state.pagination.offset
+                  , limit: state.pagination.limit
                   , totalCount: articlesCount
-                  , onChange: store.send <<< LoadArticles
+                  , onChange: send <<< LoadArticles
                   , focusWindow: 3
                   , marginPages: 1
                   }
@@ -142,10 +142,10 @@ makeProfilePage =
                                 , children:
                                     [ R.img
                                         { className: "user-img"
-                                        , src: Avatar.toString $ RemoteData.maybe Avatar.blank (Avatar.withDefault <<< _.image) store.state.profile
+                                        , src: Avatar.toString $ RemoteData.maybe Avatar.blank (Avatar.withDefault <<< _.image) state.profile
                                         }
                                     , R.h4_ [ R.text $ Username.toString props.username ]
-                                    , maybe React.empty (\bio -> R.p_ [ R.text bio ]) (RemoteData.toMaybe store.state.profile >>= _.bio)
+                                    , maybe React.empty (\bio -> R.p_ [ R.text bio ]) (RemoteData.toMaybe state.profile >>= _.bio)
                                     , if (Just props.username == map _.username auth) then
                                         R.button
                                           { className: "btn btn-sm action-btn btn-outline-secondary"
@@ -160,9 +160,9 @@ makeProfilePage =
                                           }
                                       else
                                         followButton
-                                          { following: RemoteData.maybe false _.following store.state.profile
+                                          { following: RemoteData.maybe false _.following state.profile
                                           , username: props.username
-                                          , onClick: handler_ $ store.send ToggleFollow
+                                          , onClick: handler_ $ send ToggleFollow
                                           }
                                     ]
                                 }

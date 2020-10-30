@@ -51,13 +51,13 @@ data Action
 
 makeArticlePage :: Store.Component Props
 makeArticlePage =
-  Store.component "ArticlePage" { initialState, update } \env store props -> React.do
-    auth <- useAuth env
-    React.useEffect props.slug do
+  Store.component "ArticlePage" { initialState, update } \store -> React.do
+    auth <- useAuth store.env
+    React.useEffect store.props.slug do
       store.send Initialize
       store.send LoadComments
       mempty
-    pure $ render env auth store props
+    pure $ render auth store
   where
   initialState =
     { article: RemoteData.NotAsked
@@ -111,11 +111,11 @@ makeArticlePage =
     body <- values.body # V.validated (LR.prop (SProxy :: _ "body")) F.nonEmpty
     in { body }
 
-  render env auth store props =
+  render auth { env, props, state, send } =
     let
-      errors = validate store.state # unV identity (const mempty) :: { body :: _ }
+      errors = validate state # unV identity (const mempty) :: { body :: _ }
     in
-      store.state.article
+      state.article
         # RemoteData.maybe React.empty \article ->
             React.fragment
               [ container (banner article)
@@ -155,7 +155,7 @@ makeArticlePage =
                                       Just _ ->
                                         R.form
                                           { className: "card comment-form"
-                                          , onSubmit: handler preventDefault $ const $ store.send SubmitComment
+                                          , onSubmit: handler preventDefault $ const $ send SubmitComment
                                           , children:
                                               [ R.div
                                                   { className: "card-block"
@@ -163,9 +163,9 @@ makeArticlePage =
                                                       [ R.textarea
                                                           { className: "form-control"
                                                           , rows: 3
-                                                          , value: extract store.state.body
+                                                          , value: extract state.body
                                                           , placeholder: "Write a comment..."
-                                                          , onChange: handler targetValue $ traverse_ $ store.send <<< UpdateBody
+                                                          , onChange: handler targetValue $ traverse_ $ send <<< UpdateBody
                                                           }
                                                       ]
                                                   }
@@ -202,7 +202,7 @@ makeArticlePage =
                                               }
                                           , R.text " to add comments on this article."
                                           ]
-                                  , (preview _Success store.state.comments)
+                                  , (preview _Success state.comments)
                                       # maybe React.empty (React.fragment <<< commentList)
                                   ]
                               }
@@ -262,7 +262,7 @@ makeArticlePage =
                       , R.text " "
                       , R.button
                           { className: "btn btn-outline-danger btn-sm"
-                          , onClick: handler_ $ store.send DeleteArticle
+                          , onClick: handler_ $ send DeleteArticle
                           , children:
                               [ R.i
                                   { className: "ion-trash-a"
@@ -277,14 +277,14 @@ makeArticlePage =
                     [ followButton
                         { following: article.author.following
                         , username: article.author.username
-                        , onClick: handler_ $ store.send ToggleFollow
+                        , onClick: handler_ $ send ToggleFollow
                         }
                     , R.text " "
                     , favoriteButton
                         { size: Medium
                         , favorited: article.favorited
                         , count: article.favoritesCount
-                        , onClick: handler_ $ store.send ToggleFavorite
+                        , onClick: handler_ $ send ToggleFavorite
                         }
                     ]
             ]
@@ -337,7 +337,7 @@ makeArticlePage =
                           , children:
                               [ R.i
                                   { className: "ion-trash-a"
-                                  , onClick: handler_ $ store.send $ DeleteComment comment.id
+                                  , onClick: handler_ $ send $ DeleteComment comment.id
                                   , children: []
                                   }
                               ]

@@ -42,12 +42,12 @@ data Action
 
 makeSettingsPage :: Store.Component Unit
 makeSettingsPage =
-  Store.component "SettingsPage" { initialState, update } \env store props -> React.do
-    profile <- useProfile env
+  Store.component "SettingsPage" { initialState, update } \store -> React.do
+    profile <- useProfile store.env
     React.useEffect profile do
       for_ profile $ store.send <<< Initialize
       mempty
-    pure $ render store props
+    pure $ render store
   where
   initialState =
     { profile: Nothing
@@ -95,16 +95,16 @@ makeSettingsPage =
     password <- values.password # V.validated (LR.prop (SProxy :: _ "password")) \password -> F.nonEmpty password `andThen` (F.minimumLength 3 *> F.maximunLength 20)
     in { image: Avatar.fromString <$> values.image, username, bio: values.bio, email, password }
 
-  render store props =
+  render { props, state, send } =
     let
-      errors = validate store.state # unV identity (const mempty) :: { username :: _, email :: _, password :: _ }
+      errors = validate state # unV identity (const mempty) :: { username :: _, email :: _, password :: _ }
     in
-      guard (isJust store.state.profile) container
+      guard (isJust state.profile) container
         [ R.h1
             { className: "text-xs-center"
             , children: [ R.text "Your Settings" ]
             }
-        , responseErrors store.state.submitResponse
+        , responseErrors state.submitResponse
         , R.form
             { children:
                 [ R.fieldset_
@@ -114,9 +114,9 @@ makeSettingsPage =
                             [ R.input
                                 { className: "form-control"
                                 , type: "text"
-                                , value: fromMaybe "" store.state.image
+                                , value: fromMaybe "" state.image
                                 , placeholder: "URL of profile picture"
-                                , onChange: handler targetValue $ traverse_ $ store.send <<< UpdateImage
+                                , onChange: handler targetValue $ traverse_ $ send <<< UpdateImage
                                 }
                             ]
                         }
@@ -126,9 +126,9 @@ makeSettingsPage =
                             [ R.input
                                 { className: "form-control"
                                 , type: "text"
-                                , value: extract store.state.username
+                                , value: extract state.username
                                 , placeholder: "Your name"
-                                , onChange: handler targetValue $ traverse_ $ store.send <<< UpdateUsername
+                                , onChange: handler targetValue $ traverse_ $ send <<< UpdateUsername
                                 }
                             , guard (not $ Array.null errors.username) R.div
                                 { className: "error-messages"
@@ -142,9 +142,9 @@ makeSettingsPage =
                             [ R.textarea
                                 { className: "form-control"
                                 , rows: 8
-                                , value: fromMaybe "" store.state.bio
+                                , value: fromMaybe "" state.bio
                                 , placeholder: "Short bio about you"
-                                , onChange: handler targetValue $ traverse_ $ store.send <<< UpdateBio
+                                , onChange: handler targetValue $ traverse_ $ send <<< UpdateBio
                                 }
                             ]
                         }
@@ -155,9 +155,9 @@ makeSettingsPage =
                                 { className: "form-control"
                                 , autoComplete: "UserName"
                                 , type: "email"
-                                , value: extract store.state.email
+                                , value: extract state.email
                                 , placeholder: "Email"
-                                , onChange: handler targetValue $ traverse_ $ store.send <<< UpdateEmail
+                                , onChange: handler targetValue $ traverse_ $ send <<< UpdateEmail
                                 }
                             , guard (not $ Array.null errors.email) R.div
                                 { className: "error-messages"
@@ -172,9 +172,9 @@ makeSettingsPage =
                                 { className: "form-control"
                                 , autoComplete: "Password"
                                 , type: "password"
-                                , value: extract store.state.password
+                                , value: extract state.password
                                 , placeholder: "Password"
-                                , onChange: handler targetValue $ traverse_ $ store.send <<< UpdatePassword
+                                , onChange: handler targetValue $ traverse_ $ send <<< UpdatePassword
                                 }
                             , guard (not $ Array.null errors.password) R.div
                                 { className: "error-messages"
@@ -185,7 +185,7 @@ makeSettingsPage =
                     , R.button
                         { className: "btn btn-primary pull-xs-right"
                         , type: "button"
-                        , onClick: handler_ $ store.send Submit
+                        , onClick: handler_ $ send Submit
                         , children: [ R.text "Update settings" ]
                         }
                     ]
@@ -195,7 +195,7 @@ makeSettingsPage =
         , R.button
             { className: "btn btn-outline-danger"
             , type: "button"
-            , onClick: handler_ $ store.send Logout
+            , onClick: handler_ $ send Logout
             , children: [ R.text "Log out" ]
             }
         ]

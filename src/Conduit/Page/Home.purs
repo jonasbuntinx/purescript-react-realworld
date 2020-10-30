@@ -35,8 +35,8 @@ data Action
 
 makeHomePage :: Store.Component Unit
 makeHomePage =
-  Store.component "HomePage" { initialState, update } \env store props -> React.do
-    auth <- useAuth env
+  Store.component "HomePage" { initialState, update } \store -> React.do
+    auth <- useAuth store.env
     React.useEffect (isJust auth) do
       case auth of
         Nothing -> store.send $ LoadArticles store.state.tab store.state.pagination
@@ -45,7 +45,7 @@ makeHomePage =
     React.useEffectOnce do
       store.send LoadTags
       mempty
-    pure $ render env auth store props
+    pure $ render auth store
   where
   initialState =
     { tags: NotAsked
@@ -70,7 +70,7 @@ makeHomePage =
       request >>= \res -> modify_ _ { articles = RemoteData.fromEither res }
     ToggleFavorite ix -> for_ (preview (_articles ix) self.state) (toggleFavorite >=> traverse_ (modify_ <<< set (_articles ix)))
 
-  render env auth store props =
+  render auth { env, props, state, send } =
     container (guard (isNothing auth) banner)
       [ mainView
       , R.div
@@ -93,7 +93,7 @@ makeHomePage =
         , children:
             [ Tabs.tabs
                 { className: "feed-toggle"
-                , selectedTab: Just store.state.tab
+                , selectedTab: Just state.tab
                 , tabs:
                     [ { id: Feed
                       , label: R.text "Your Feed"
@@ -106,7 +106,7 @@ makeHomePage =
                       , content: tabContent
                       }
                     ]
-                      <> case store.state.tab of
+                      <> case state.tab of
                           Tag tag ->
                             [ { id: Tag tag
                               , label:
@@ -122,7 +122,7 @@ makeHomePage =
                               }
                             ]
                           _ -> []
-                , onChange: \tab -> store.send $ LoadArticles tab initialState.pagination
+                , onChange: \tab -> send $ LoadArticles tab initialState.pagination
                 }
             ]
         }
@@ -130,23 +130,23 @@ makeHomePage =
     tabContent =
       R.div_
         [ articleList
-            { articles: store.state.articles <#> _.articles
+            { articles: state.articles <#> _.articles
             , onNavigate: env.router.navigate
-            , onFavoriteToggle: store.send <<< ToggleFavorite
+            , onFavoriteToggle: send <<< ToggleFavorite
             }
-        , store.state.articles
+        , state.articles
             # RemoteData.maybe React.empty \{ articlesCount } ->
                 pagination
-                  { offset: store.state.pagination.offset
-                  , limit: store.state.pagination.limit
+                  { offset: state.pagination.offset
+                  , limit: state.pagination.limit
                   , totalCount: articlesCount
-                  , onChange: store.send <<< (LoadArticles store.state.tab)
+                  , onChange: send <<< (LoadArticles state.tab)
                   , focusWindow: 3
                   , marginPages: 1
                   }
         ]
 
-    renderTags = case store.state.tags of
+    renderTags = case state.tags of
       NotAsked -> R.div_ [ R.text "Tags not loaded" ]
       Loading -> R.div_ [ R.text "Loading Tags" ]
       Failure err -> R.div_ [ R.text $ "Failed loading tags" ]
@@ -156,7 +156,7 @@ makeHomePage =
       R.a
         { className: "tag-default tag-pill"
         , href: "#"
-        , onClick: handler preventDefault $ const $ store.send $ LoadArticles (Tag tag) store.state.pagination
+        , onClick: handler preventDefault $ const $ send $ LoadArticles (Tag tag) state.pagination
         , children: [ R.text tag ]
         }
 

@@ -43,11 +43,11 @@ data Action
 
 makeEditorPage :: Store.Component Props
 makeEditorPage =
-  Store.component "SettingsPage" { initialState, update } \env store props -> React.do
-    React.useEffect props.slug do
+  Store.component "SettingsPage" { initialState, update } \store -> React.do
+    React.useEffect store.props.slug do
       store.send Initialize
       mempty
-    pure $ render store props
+    pure $ render store
   where
   initialState =
     { article: RemoteData.NotAsked
@@ -97,12 +97,12 @@ makeEditorPage =
     body <- values.body # V.validated (LR.prop (SProxy :: _ "body")) \body -> F.nonEmpty body `andThen` F.minimumLength 3
     in { title, description, body, tagList: Set.toUnfoldable values.tagList }
 
-  render store props =
+  render { props, state, send } =
     let
-      errors = validate store.state # unV identity (const mempty) :: { title :: _, description :: _, body :: _ }
+      errors = validate state # unV identity (const mempty) :: { title :: _, description :: _, body :: _ }
     in
-      guard (not $ RemoteData.isLoading store.state.article) container
-        [ responseErrors store.state.submitResponse
+      guard (not $ RemoteData.isLoading state.article) container
+        [ responseErrors state.submitResponse
         , R.form
             { children:
                 [ R.fieldset_
@@ -112,9 +112,9 @@ makeEditorPage =
                             [ R.input
                                 { className: "form-control"
                                 , type: "text"
-                                , value: extract store.state.title
+                                , value: extract state.title
                                 , placeholder: "Article title"
-                                , onChange: handler targetValue $ traverse_ $ store.send <<< UpdateTitle
+                                , onChange: handler targetValue $ traverse_ $ send <<< UpdateTitle
                                 }
                             , guard (not $ Array.null errors.title) R.div
                                 { className: "error-messages"
@@ -128,9 +128,9 @@ makeEditorPage =
                             [ R.input
                                 { className: "form-control"
                                 , type: "text"
-                                , value: extract store.state.description
+                                , value: extract state.description
                                 , placeholder: "What is this article about?"
-                                , onChange: handler targetValue $ traverse_ $ store.send <<< UpdateDescription
+                                , onChange: handler targetValue $ traverse_ $ send <<< UpdateDescription
                                 }
                             , guard (not $ Array.null errors.description) R.div
                                 { className: "error-messages"
@@ -144,9 +144,9 @@ makeEditorPage =
                             [ R.textarea
                                 { className: "form-control"
                                 , rows: 8
-                                , value: extract store.state.body
+                                , value: extract state.body
                                 , placeholder: "Write your article (in markdown)"
-                                , onChange: handler targetValue $ traverse_ $ store.send <<< UpdateBody
+                                , onChange: handler targetValue $ traverse_ $ send <<< UpdateBody
                                 }
                             , guard (not $ Array.null errors.body) R.div
                                 { className: "error-messages"
@@ -155,13 +155,13 @@ makeEditorPage =
                             ]
                         }
                     , tagInput
-                        { tags: store.state.tagList
-                        , onChange: store.send <<< UpdateTagList
+                        { tags: state.tagList
+                        , onChange: send <<< UpdateTagList
                         }
                     , R.button
                         { className: "btn btn-primary pull-xs-right"
                         , type: "button"
-                        , onClick: handler_ $ store.send Submit
+                        , onClick: handler_ $ send Submit
                         , children: [ R.text "Publish article" ]
                         }
                     ]

@@ -21,7 +21,7 @@ component ::
   { initialState :: state
   , update :: { props :: props, state :: state } -> action -> Halo.HaloM props state action (StoreM Aff) Unit
   } ->
-  (Env -> { state :: state, send :: action -> Effect Unit } -> props -> React.Render (Halo.UseHalo props state action Unit) hooks React.JSX) ->
+  ({ env :: Env, props :: props, state :: state, send :: action -> Effect Unit } -> React.Render (Halo.UseHalo props state action Unit) hooks React.JSX) ->
   Env.Component props
 component name { initialState, update } renderFn = do
   env <- ask
@@ -42,4 +42,4 @@ component name { initialState, update } renderFn = do
                             update { props: props', state } action
                         }
             }
-        renderFn env { state, send } props
+        renderFn { env, props, state, send }
