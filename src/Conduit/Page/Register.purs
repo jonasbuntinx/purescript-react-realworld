@@ -99,7 +99,7 @@ makeRegisterPage =
                                 , type: "text"
                                 , value: extract store.state.username
                                 , placeholder: "Your name"
-                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateUsername
+                                , onChange: handler targetValue $ traverse_ $ store.send <<< UpdateUsername
                                 }
                             , guard (not $ Array.null errors.username) R.div
                                 { className: "error-messages"
@@ -116,7 +116,7 @@ makeRegisterPage =
                                 , type: "email"
                                 , value: extract store.state.email
                                 , placeholder: "Email"
-                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateEmail
+                                , onChange: handler targetValue $ traverse_ $ store.send <<< UpdateEmail
                                 }
                             , guard (not $ Array.null errors.email) R.div
                                 { className: "error-messages"
@@ -133,7 +133,7 @@ makeRegisterPage =
                                 , type: "password"
                                 , value: extract store.state.password
                                 , placeholder: "Password"
-                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdatePassword
+                                , onChange: handler targetValue $ traverse_ $ store.send <<< UpdatePassword
                                 }
                             , guard (not $ Array.null errors.password) R.div
                                 { className: "error-messages"
@@ -144,7 +144,7 @@ makeRegisterPage =
                     , R.button
                         { className: "btn btn-lg btn-primary pull-xs-right"
                         , type: "button"
-                        , onClick: handler_ $ store.dispatch Submit
+                        , onClick: handler_ $ store.send Submit
                         , children: [ R.text "Sign up" ]
                         }
                     ]

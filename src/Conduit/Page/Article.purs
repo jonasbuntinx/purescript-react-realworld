@@ -54,8 +54,8 @@ makeArticlePage =
   Store.component "ArticlePage" { initialState, update } \env store props -> React.do
     auth <- useAuth env
     React.useEffect props.slug do
-      store.dispatch Initialize
-      store.dispatch LoadComments
+      store.send Initialize
+      store.send LoadComments
       mempty
     pure $ render env auth store props
   where
@@ -155,7 +155,7 @@ makeArticlePage =
                                       Just _ ->
                                         R.form
                                           { className: "card comment-form"
-                                          , onSubmit: handler preventDefault $ const $ store.dispatch SubmitComment
+                                          , onSubmit: handler preventDefault $ const $ store.send SubmitComment
                                           , children:
                                               [ R.div
                                                   { className: "card-block"
@@ -165,7 +165,7 @@ makeArticlePage =
                                                           , rows: 3
                                                           , value: extract store.state.body
                                                           , placeholder: "Write a comment..."
-                                                          , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateBody
+                                                          , onChange: handler targetValue $ traverse_ $ store.send <<< UpdateBody
                                                           }
                                                       ]
                                                   }
@@ -262,7 +262,7 @@ makeArticlePage =
                       , R.text " "
                       , R.button
                           { className: "btn btn-outline-danger btn-sm"
-                          , onClick: handler_ $ store.dispatch DeleteArticle
+                          , onClick: handler_ $ store.send DeleteArticle
                           , children:
                               [ R.i
                                   { className: "ion-trash-a"
@@ -277,14 +277,14 @@ makeArticlePage =
                     [ followButton
                         { following: article.author.following
                         , username: article.author.username
-                        , onClick: handler_ $ store.dispatch ToggleFollow
+                        , onClick: handler_ $ store.send ToggleFollow
                         }
                     , R.text " "
                     , favoriteButton
                         { size: Medium
                         , favorited: article.favorited
                         , count: article.favoritesCount
-                        , onClick: handler_ $ store.dispatch ToggleFavorite
+                        , onClick: handler_ $ store.send ToggleFavorite
                         }
                     ]
             ]
@@ -337,7 +337,7 @@ makeArticlePage =
                           , children:
                               [ R.i
                                   { className: "ion-trash-a"
-                                  , onClick: handler_ $ store.dispatch $ DeleteComment comment.id
+                                  , onClick: handler_ $ store.send $ DeleteComment comment.id
                                   , children: []
                                   }
                               ]

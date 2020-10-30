@@ -50,10 +50,10 @@ makeProfilePage =
   Store.component "ProfilePage" { initialState, update } \env store props -> React.do
     auth <- useAuth env
     React.useEffect props.username do
-      store.dispatch Initialize
+      store.send Initialize
       mempty
     React.useEffect (props.username /\ props.tab) do
-      store.dispatch $ LoadArticles initialState.pagination
+      store.send $ LoadArticles initialState.pagination
       mempty
     pure $ render env auth store props
   where
@@ -113,7 +113,7 @@ makeProfilePage =
         [ articleList
             { articles: store.state.articles <#> _.articles
             , onNavigate: env.router.navigate
-            , onFavoriteToggle: store.dispatch <<< ToggleFavorite
+            , onFavoriteToggle: store.send <<< ToggleFavorite
             }
         , store.state.articles
             # RemoteData.maybe React.empty \{ articlesCount } ->
@@ -121,7 +121,7 @@ makeProfilePage =
                   { offset: store.state.pagination.offset
                   , limit: store.state.pagination.limit
                   , totalCount: articlesCount
-                  , onChange: store.dispatch <<< LoadArticles
+                  , onChange: store.send <<< LoadArticles
                   , focusWindow: 3
                   , marginPages: 1
                   }
@@ -162,7 +162,7 @@ makeProfilePage =
                                         followButton
                                           { following: RemoteData.maybe false _.following store.state.profile
                                           , username: props.username
-                                          , onClick: handler_ $ store.dispatch ToggleFollow
+                                          , onClick: handler_ $ store.send ToggleFollow
                                           }
                                     ]
                                 }

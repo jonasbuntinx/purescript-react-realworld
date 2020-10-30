@@ -96,7 +96,7 @@ makeLoginPage =
                                 , type: "email"
                                 , value: extract store.state.email
                                 , placeholder: "Email"
-                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateEmail
+                                , onChange: handler targetValue $ traverse_ $ store.send <<< UpdateEmail
                                 }
                             , guard (not $ Array.null errors.email) R.div
                                 { className: "error-messages"
@@ -113,7 +113,7 @@ makeLoginPage =
                                 , type: "password"
                                 , value: extract store.state.password
                                 , placeholder: "Password"
-                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdatePassword
+                                , onChange: handler targetValue $ traverse_ $ store.send <<< UpdatePassword
                                 }
                             , guard (not $ Array.null errors.email) R.div
                                 { className: "error-messages"
@@ -124,7 +124,7 @@ makeLoginPage =
                     , R.button
                         { className: "btn btn-lg btn-primary pull-xs-right"
                         , type: "button"
-                        , onClick: handler_ $ store.dispatch Submit
+                        , onClick: handler_ $ store.send Submit
                         , children: [ R.text "Sign in" ]
                         }
                     ]

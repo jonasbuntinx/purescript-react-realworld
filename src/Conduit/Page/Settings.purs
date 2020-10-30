@@ -45,7 +45,7 @@ makeSettingsPage =
   Store.component "SettingsPage" { initialState, update } \env store props -> React.do
     profile <- useProfile env
     React.useEffect profile do
-      for_ profile $ store.dispatch <<< Initialize
+      for_ profile $ store.send <<< Initialize
       mempty
     pure $ render store props
   where
@@ -116,7 +116,7 @@ makeSettingsPage =
                                 , type: "text"
                                 , value: fromMaybe "" store.state.image
                                 , placeholder: "URL of profile picture"
-                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateImage
+                                , onChange: handler targetValue $ traverse_ $ store.send <<< UpdateImage
                                 }
                             ]
                         }
@@ -128,7 +128,7 @@ makeSettingsPage =
                                 , type: "text"
                                 , value: extract store.state.username
                                 , placeholder: "Your name"
-                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateUsername
+                                , onChange: handler targetValue $ traverse_ $ store.send <<< UpdateUsername
                                 }
                             , guard (not $ Array.null errors.username) R.div
                                 { className: "error-messages"
@@ -144,7 +144,7 @@ makeSettingsPage =
                                 , rows: 8
                                 , value: fromMaybe "" store.state.bio
                                 , placeholder: "Short bio about you"
-                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateBio
+                                , onChange: handler targetValue $ traverse_ $ store.send <<< UpdateBio
                                 }
                             ]
                         }
@@ -157,7 +157,7 @@ makeSettingsPage =
                                 , type: "email"
                                 , value: extract store.state.email
                                 , placeholder: "Email"
-                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateEmail
+                                , onChange: handler targetValue $ traverse_ $ store.send <<< UpdateEmail
                                 }
                             , guard (not $ Array.null errors.email) R.div
                                 { className: "error-messages"
@@ -174,7 +174,7 @@ makeSettingsPage =
                                 , type: "password"
                                 , value: extract store.state.password
                                 , placeholder: "Password"
-                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdatePassword
+                                , onChange: handler targetValue $ traverse_ $ store.send <<< UpdatePassword
                                 }
                             , guard (not $ Array.null errors.password) R.div
                                 { className: "error-messages"
@@ -185,7 +185,7 @@ makeSettingsPage =
                     , R.button
                         { className: "btn btn-primary pull-xs-right"
                         , type: "button"
-                        , onClick: handler_ $ store.dispatch Submit
+                        , onClick: handler_ $ store.send Submit
                         , children: [ R.text "Update settings" ]
                         }
                     ]
@@ -195,7 +195,7 @@ makeSettingsPage =
         , R.button
             { className: "btn btn-outline-danger"
             , type: "button"
-            , onClick: handler_ $ store.dispatch Logout
+            , onClick: handler_ $ store.send Logout
             , children: [ R.text "Log out" ]
             }
         ]

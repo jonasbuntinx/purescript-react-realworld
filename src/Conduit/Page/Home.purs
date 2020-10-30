@@ -39,11 +39,11 @@ makeHomePage =
     auth <- useAuth env
     React.useEffect (isJust auth) do
       case auth of
-        Nothing -> store.dispatch $ LoadArticles store.state.tab store.state.pagination
-        Just _ -> store.dispatch $ LoadArticles Feed store.state.pagination
+        Nothing -> store.send $ LoadArticles store.state.tab store.state.pagination
+        Just _ -> store.send $ LoadArticles Feed store.state.pagination
       mempty
     React.useEffectOnce do
-      store.dispatch LoadTags
+      store.send LoadTags
       mempty
     pure $ render env auth store props
   where
@@ -122,7 +122,7 @@ makeHomePage =
                               }
                             ]
                           _ -> []
-                , onChange: \tab -> store.dispatch $ LoadArticles tab initialState.pagination
+                , onChange: \tab -> store.send $ LoadArticles tab initialState.pagination
                 }
             ]
         }
@@ -132,7 +132,7 @@ makeHomePage =
         [ articleList
             { articles: store.state.articles <#> _.articles
             , onNavigate: env.router.navigate
-            , onFavoriteToggle: store.dispatch <<< ToggleFavorite
+            , onFavoriteToggle: store.send <<< ToggleFavorite
             }
         , store.state.articles
             # RemoteData.maybe React.empty \{ articlesCount } ->
@@ -140,7 +140,7 @@ makeHomePage =
                   { offset: store.state.pagination.offset
                   , limit: store.state.pagination.limit
                   , totalCount: articlesCount
-                  , onChange: store.dispatch <<< (LoadArticles store.state.tab)
+                  , onChange: store.send <<< (LoadArticles store.state.tab)
                   , focusWindow: 3
                   , marginPages: 1
                   }
@@ -156,7 +156,7 @@ makeHomePage =
       R.a
         { className: "tag-default tag-pill"
         , href: "#"
-        , onClick: handler preventDefault $ const $ store.dispatch $ LoadArticles (Tag tag) store.state.pagination
+        , onClick: handler preventDefault $ const $ store.send $ LoadArticles (Tag tag) store.state.pagination
         , children: [ R.text tag ]
         }
 

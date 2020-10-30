@@ -45,7 +45,7 @@ makeEditorPage :: Store.Component Props
 makeEditorPage =
   Store.component "SettingsPage" { initialState, update } \env store props -> React.do
     React.useEffect props.slug do
-      store.dispatch Initialize
+      store.send Initialize
       mempty
     pure $ render store props
   where
@@ -114,7 +114,7 @@ makeEditorPage =
                                 , type: "text"
                                 , value: extract store.state.title
                                 , placeholder: "Article title"
-                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateTitle
+                                , onChange: handler targetValue $ traverse_ $ store.send <<< UpdateTitle
                                 }
                             , guard (not $ Array.null errors.title) R.div
                                 { className: "error-messages"
@@ -130,7 +130,7 @@ makeEditorPage =
                                 , type: "text"
                                 , value: extract store.state.description
                                 , placeholder: "What is this article about?"
-                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateDescription
+                                , onChange: handler targetValue $ traverse_ $ store.send <<< UpdateDescription
                                 }
                             , guard (not $ Array.null errors.description) R.div
                                 { className: "error-messages"
@@ -146,7 +146,7 @@ makeEditorPage =
                                 , rows: 8
                                 , value: extract store.state.body
                                 , placeholder: "Write your article (in markdown)"
-                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateBody
+                                , onChange: handler targetValue $ traverse_ $ store.send <<< UpdateBody
                                 }
                             , guard (not $ Array.null errors.body) R.div
                                 { className: "error-messages"
@@ -156,12 +156,12 @@ makeEditorPage =
                         }
                     , tagInput
                         { tags: store.state.tagList
-                        , onChange: store.dispatch <<< UpdateTagList
+                        , onChange: store.send <<< UpdateTagList
                         }
                     , R.button
                         { className: "btn btn-primary pull-xs-right"
                         , type: "button"
-                        , onClick: handler_ $ store.dispatch Submit
+                        , onClick: handler_ $ store.send Submit
                         , children: [ R.text "Publish article" ]
                         }
                     ]
