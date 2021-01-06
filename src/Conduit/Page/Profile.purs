@@ -60,21 +60,26 @@ makeProfilePage =
 
   eval = case _ of
     Halo.Initialize _ -> do
-      eval $ Halo.Action LoadProfile
-      eval $ Halo.Action $ LoadArticles initialState.pagination
+      handleAction LoadProfile
+      handleAction $ LoadArticles initialState.pagination
     Halo.Update prev next -> do
       guard (prev.username /= next.username) do
-        void $ Halo.fork $ eval $ Halo.Action LoadProfile
+        void $ Halo.fork $ handleAction LoadProfile
       guard (prev.username /= next.username || prev.tab /= next.tab) do
-        void $ Halo.fork $ eval $ Halo.Action $ LoadArticles initialState.pagination
-    Halo.Action LoadProfile -> do
+        void $ Halo.fork $ handleAction $ LoadArticles initialState.pagination
+    Halo.Action action -> do
+      handleAction action
+    Halo.Finalize -> pure unit
+
+  handleAction = case _ of
+    LoadProfile -> do
       props <- Halo.props
       modify_ _ { profile = RemoteData.Loading }
       bind (getProfile props.username) case _ of
         Left (NotFound _) -> redirect Home
         Left error -> modify_ _ { profile = RemoteData.Failure error }
         Right profile -> modify_ _ { profile = RemoteData.Success profile }
-    Halo.Action (LoadArticles pagination) -> do
+    LoadArticles pagination -> do
       props <- Halo.props
       let
         query = defaultArticlesQuery { offset = Just pagination.offset, limit = Just pagination.limit }
@@ -85,13 +90,12 @@ makeProfilePage =
             Favorited -> query { favorited = Just props.username }
       modify_ _ { articles = RemoteData.Loading, pagination = pagination }
       request >>= \res -> modify_ _ { articles = RemoteData.fromEither res }
-    Halo.Action (ToggleFavorite ix) -> do
+    ToggleFavorite ix -> do
       state <- Halo.get
       for_ (preview (_articles ix) state) (toggleFavorite >=> traverse_ (modify_ <<< set (_articles ix)))
-    Halo.Action ToggleFollow -> do
+    ToggleFollow -> do
       state <- Halo.get
       for_ (preview _profile state) (toggleFollow >=> traverse_ (modify_ <<< set _profile))
-    Halo.Finalize -> pure unit
 
   render auth { env, props, state, send } =
     guard (RemoteData.isSuccess state.profile) container userInfo
