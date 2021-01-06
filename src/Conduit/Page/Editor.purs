@@ -12,10 +12,10 @@ import Conduit.Data.Slug (Slug)
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Control.Comonad (extract)
-import Control.Monad.State (modify_)
+import Control.Monad.State (modify_, put)
 import Data.Array as Array
 import Data.Either (Either(..))
-import Data.Foldable (for_, traverse_)
+import Data.Foldable (traverse_)
 import Data.Lens.Record as LR
 import Data.Maybe (Maybe(..))
 import Data.Monoid (guard)
@@ -34,7 +34,7 @@ type Props
     }
 
 data Action
-  = LoadArticle
+  = Initialize
   | UpdateTitle String
   | UpdateDescription String
   | UpdateBody String
@@ -58,29 +58,31 @@ makeEditorPage =
   eval =
     Halo.makeEval
       _
-        { onInitialize = \_ -> Just LoadArticle
-        , onUpdate = \prev next -> if (prev.slug /= next.slug) then Just LoadArticle else Nothing
+        { onInitialize = \_ -> Just Initialize
+        , onUpdate = \prev next -> if (prev.slug /= next.slug) then Just Initialize else Nothing
         , onAction = handleAction
         }
 
   handleAction = case _ of
-    LoadArticle -> do
+    Initialize -> do
       props <- Halo.props
-      for_ props.slug \slug -> do
-        modify_ _ { article = RemoteData.Loading }
-        response <- getArticle slug
-        case response of
-          Left (NotFound _) -> redirect Home
-          Left error -> modify_ _ { article = RemoteData.Failure error }
-          Right article ->
-            modify_
-              _
-                { article = RemoteData.Success article
-                , title = pure article.title
-                , description = pure article.description
-                , body = pure article.body
-                , tagList = Set.fromFoldable article.tagList
-                }
+      case props.slug of
+        Nothing -> put initialState
+        Just slug -> do
+          modify_ _ { article = RemoteData.Loading }
+          response <- getArticle slug
+          case response of
+            Left (NotFound _) -> redirect Home
+            Left error -> modify_ _ { article = RemoteData.Failure error }
+            Right article ->
+              modify_
+                _
+                  { article = RemoteData.Success article
+                  , title = pure article.title
+                  , description = pure article.description
+                  , body = pure article.body
+                  , tagList = Set.fromFoldable article.tagList
+                  }
     UpdateTitle title -> modify_ _ { title = V.Modified title }
     UpdateDescription description -> modify_ _ { description = V.Modified description }
     UpdateBody body -> modify_ _ { body = V.Modified body }

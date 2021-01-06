@@ -30,7 +30,7 @@ data Tab
 derive instance eqTab :: Eq Tab
 
 data Action
-  = LoadTags
+  = Initialize
   | LoadArticles Tab { offset :: Int, limit :: Int }
   | ToggleFavorite Int
 
@@ -55,12 +55,12 @@ makeHomePage =
   eval =
     Halo.makeEval
       _
-        { onInitialize = \_ -> Just $ LoadTags
+        { onInitialize = \_ -> Just Initialize
         , onAction = handleAction
         }
 
   handleAction = case _ of
-    LoadTags -> do
+    Initialize -> do
       modify_ _ { tags = RemoteData.Loading }
       response <- listTags
       modify_ _ { tags = RemoteData.fromEither response }
