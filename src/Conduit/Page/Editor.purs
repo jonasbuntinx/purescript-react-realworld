@@ -105,7 +105,7 @@ makeEditorPage =
     body <- values.body # V.validated (LR.prop (SProxy :: _ "body")) \body -> F.nonEmpty body `andThen` F.minimumLength 3
     in { title, description, body, tagList: Set.toUnfoldable values.tagList }
 
-  render { props, state, send } =
+  render { state, send } =
     let
       errors = validate state # unV identity (const mempty) :: { title :: _, description :: _, body :: _ }
     in

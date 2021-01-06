@@ -1,7 +1,6 @@
 module Main where
 
 import Prelude
-
 import Conduit.Component.Auth as Auth
 import Conduit.Data.Route (Route(..), routeCodec)
 import Conduit.Root as Root
@@ -34,9 +33,10 @@ main = do
           { parse: parse routeCodec
           , print: print routeCodec
           , onRoute: const $ Router.continue
-          , onTransition: case _ of
-              Router.Resolved _ route -> routing.modify $ const route
-              _ -> pure unit
+          , onTransition:
+              case _ of
+                Router.Resolved _ route -> routing.modify $ const route
+                _ -> pure unit
           }
       root <-
         runReaderT Root.makeRoot

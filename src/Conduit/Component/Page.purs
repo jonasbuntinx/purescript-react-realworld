@@ -2,9 +2,8 @@ module Conduit.Component.Page where
 
 import Prelude
 import Conduit.AppM (AppM, runAppM)
-import Conduit.Component.Env as Env
 import Conduit.Data.Env (Env)
-import Control.Monad.Reader (ask)
+import Control.Monad.Reader (ReaderT, ask)
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Class (liftEffect)
@@ -12,7 +11,7 @@ import React.Basic.Hooks as React
 import React.Halo as Halo
 
 type Component props
-  = Env.Component props
+  = ReaderT Env Effect (props -> React.JSX)
 
 component ::
   forall props state action hooks.
@@ -21,7 +20,7 @@ component ::
   , eval :: Halo.Lifecycle props action -> Halo.HaloM props state action AppM Unit
   } ->
   ({ env :: Env, props :: props, state :: state, send :: action -> Effect Unit } -> React.Render (Halo.UseHalo props state action Unit) hooks React.JSX) ->
-  Env.Component props
+  Component props
 component name { initialState, eval } render = do
   env <- ask
   liftEffect

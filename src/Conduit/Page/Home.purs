@@ -36,8 +36,8 @@ data Action
 
 makeHomePage :: Page.Component Unit
 makeHomePage =
-  Page.component "HomePage" { initialState, eval } \self -> React.do
-    auth <- useAuth self.env
+  Page.component "HomePage" { initialState, eval } \self@{ env } -> React.do
+    auth <- useAuth env
     React.useEffect (isJust auth) do
       case auth of
         Nothing -> self.send $ LoadArticles self.state.tab self.state.pagination
@@ -77,7 +77,7 @@ makeHomePage =
       state <- Halo.get
       for_ (preview (_articles ix) state) (toggleFavorite >=> traverse_ (modify_ <<< set (_articles ix)))
 
-  render auth { env, props, state, send } =
+  render auth { env, state, send } =
     container (guard (isNothing auth) banner)
       [ mainView
       , R.div

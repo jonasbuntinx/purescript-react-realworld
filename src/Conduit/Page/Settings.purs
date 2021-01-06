@@ -43,8 +43,8 @@ data Action
 
 makeSettingsPage :: Page.Component Unit
 makeSettingsPage =
-  Page.component "SettingsPage" { initialState, eval } \self -> React.do
-    profile <- useProfile self.env
+  Page.component "SettingsPage" { initialState, eval } \self@{ env } -> React.do
+    profile <- useProfile env
     React.useEffect profile do
       case profile of
         Just profile' -> self.send $ Initialize profile'
@@ -104,7 +104,7 @@ makeSettingsPage =
     password <- values.password # V.validated (LR.prop (SProxy :: _ "password")) \password -> F.nonEmpty password `andThen` (F.minimumLength 3 *> F.maximunLength 20)
     in { image: Avatar.fromString <$> values.image, username, bio: values.bio, email, password }
 
-  render { props, state, send } =
+  render { state, send } =
     let
       errors = validate state # unV identity (const mempty) :: { username :: _, email :: _, password :: _ }
     in

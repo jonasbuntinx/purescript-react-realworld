@@ -70,7 +70,7 @@ makeLoginPage =
     password <- values.password # V.validated (LR.prop (SProxy :: _ "password")) \password -> F.nonEmpty password `andThen` (F.minimumLength 3 *> F.maximunLength 20)
     in { email, password }
 
-  render { env, props, state, send } =
+  render { env, state, send } =
     let
       errors = validate state # unV identity (const mempty) :: { email :: _, password :: _ }
     in
