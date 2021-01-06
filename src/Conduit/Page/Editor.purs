@@ -71,7 +71,8 @@ makeEditorPage =
       props <- Halo.props
       for_ props.slug \slug -> do
         modify_ _ { article = RemoteData.Loading }
-        bind (getArticle slug) case _ of
+        response <- getArticle slug
+        case response of
           Left (NotFound _) -> redirect Home
           Left error -> modify_ _ { article = RemoteData.Failure error }
           Right article ->
@@ -94,7 +95,8 @@ makeEditorPage =
         Left _ -> modify_ (const state)
         Right validated -> do
           modify_ _ { submitResponse = RemoteData.Loading }
-          bind (submitArticle props.slug validated) case _ of
+          response <- submitArticle props.slug validated
+          case response of
             Right article -> do
               modify_ _ { submitResponse = RemoteData.Success unit }
               navigate $ ViewArticle article.slug

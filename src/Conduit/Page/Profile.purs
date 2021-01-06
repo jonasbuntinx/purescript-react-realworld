@@ -81,7 +81,8 @@ makeProfilePage =
     LoadProfile -> do
       props <- Halo.props
       modify_ _ { profile = RemoteData.Loading }
-      bind (getProfile props.username) case _ of
+      response <- getProfile props.username
+      case response of
         Left (NotFound _) -> redirect Home
         Left error -> modify_ _ { profile = RemoteData.Failure error }
         Right profile -> modify_ _ { profile = RemoteData.Success profile }
@@ -89,13 +90,12 @@ makeProfilePage =
       props <- Halo.props
       let
         query = defaultArticlesQuery { offset = Just pagination.offset, limit = Just pagination.limit }
-
-        request =
-          listArticles case props.tab of
-            Published -> query { author = Just props.username }
-            Favorited -> query { favorited = Just props.username }
       modify_ _ { articles = RemoteData.Loading, pagination = pagination }
-      request >>= \res -> modify_ _ { articles = RemoteData.fromEither res }
+      response <-
+        listArticles case props.tab of
+          Published -> query { author = Just props.username }
+          Favorited -> query { favorited = Just props.username }
+      modify_ _ { articles = RemoteData.fromEither response }
     ToggleFavorite ix -> do
       state <- Halo.get
       for_ (preview (_articles ix) state) (toggleFavorite >=> traverse_ (modify_ <<< set (_articles ix)))

@@ -54,7 +54,8 @@ makeRegisterPage =
         Left _ -> modify_ (const state)
         Right validated -> do
           modify_ _ { submitResponse = RemoteData.Loading }
-          bind (registerUser validated) case _ of
+          response <- registerUser validated
+          case response of
             Right user -> do
               modify_ _ { submitResponse = RemoteData.Success unit }
               login user.token $ Record.delete (SProxy :: _ "token") user

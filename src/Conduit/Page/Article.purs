@@ -78,18 +78,21 @@ makeArticlePage =
     LoadArticle -> do
       props <- Halo.props
       modify_ _ { article = RemoteData.Loading }
-      bind (getArticle props.slug) case _ of
+      response <- getArticle props.slug
+      case response of
         Left (NotFound _) -> redirect Home
         Left error -> modify_ _ { article = RemoteData.Failure error }
         Right article -> modify_ _ { article = RemoteData.Success article }
     LoadComments -> do
       props <- Halo.props
       modify_ _ { comments = RemoteData.Loading }
-      listComments props.slug >>= \res -> modify_ _ { comments = RemoteData.fromEither res }
+      response <- listComments props.slug
+      modify_ _ { comments = RemoteData.fromEither response }
     DeleteArticle -> do
       props <- Halo.props
       modify_ _ { submitResponse = RemoteData.Loading }
-      bind (deleteArticle props.slug) case _ of
+      response <- deleteArticle props.slug
+      case response of
         Right res -> do
           modify_ _ { submitResponse = RemoteData.Success res }
           navigate Home
@@ -104,10 +107,12 @@ makeArticlePage =
     DeleteComment id -> do
       props <- Halo.props
       modify_ _ { submitResponse = RemoteData.Loading }
-      bind (deleteComment props.slug id) case _ of
+      response <- deleteComment props.slug id
+      case response of
         Right _ -> do
           modify_ _ { submitResponse = RemoteData.Success unit }
-          listComments props.slug >>= \res -> modify_ _ { comments = RemoteData.fromEither res }
+          response' <- listComments props.slug
+          modify_ _ { comments = RemoteData.fromEither response' }
         Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
     SubmitComment -> do
       props <- Halo.props
@@ -116,10 +121,12 @@ makeArticlePage =
         Left _ -> modify_ (const state)
         Right validated -> do
           modify_ _ { submitResponse = RemoteData.Loading }
-          bind (createComment props.slug validated) case _ of
+          response <- createComment props.slug validated
+          case response of
             Right _ -> do
               modify_ _ { submitResponse = RemoteData.Success unit, body = pure "" }
-              listComments props.slug >>= \res -> modify_ _ { comments = RemoteData.fromEither res }
+              response' <- listComments props.slug
+              modify_ _ { comments = RemoteData.fromEither response' }
             Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
 
   validate values = ado

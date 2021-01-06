@@ -57,17 +57,17 @@ makeHomePage =
   update self = case _ of
     LoadTags -> do
       modify_ _ { tags = RemoteData.Loading }
-      listTags >>= \res -> modify_ _ { tags = RemoteData.fromEither res }
+      response <- listTags
+      modify_ _ { tags = RemoteData.fromEither response }
     LoadArticles tab pagination -> do
+      modify_ _ { articles = RemoteData.Loading, tab = tab, pagination = pagination }
       let
         query = defaultArticlesQuery { offset = Just pagination.offset, limit = Just pagination.limit }
-
-        request = case tab of
-          Feed -> listFeed query
-          Global -> listArticles query
-          Tag tag -> listArticles (query { tag = Just tag })
-      modify_ _ { articles = RemoteData.Loading, tab = tab, pagination = pagination }
-      request >>= \res -> modify_ _ { articles = RemoteData.fromEither res }
+      response <- case tab of
+        Feed -> listFeed query
+        Global -> listArticles query
+        Tag tag -> listArticles (query { tag = Just tag })
+      modify_ _ { articles = RemoteData.fromEither response }
     ToggleFavorite ix -> for_ (preview (_articles ix) self.state) (toggleFavorite >=> traverse_ (modify_ <<< set (_articles ix)))
 
   render auth { env, props, state, send } =

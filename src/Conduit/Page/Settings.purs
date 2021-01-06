@@ -81,7 +81,8 @@ makeSettingsPage =
         Left _ -> modify_ (const state)
         Right validated -> do
           modify_ _ { submitResponse = RemoteData.Loading }
-          bind (updateUser validated) case _ of
+          response <- updateUser validated
+          case response of
             Right user -> do
               modify_ _ { submitResponse = RemoteData.Success unit }
               updateProfile $ Record.delete (SProxy :: _ "token") user
