@@ -23,6 +23,7 @@ import Network.RemoteData as RemoteData
 import React.Basic.DOM as R
 import React.Basic.DOM.Events (targetValue)
 import React.Basic.Events (handler, handler_)
+import React.Halo as Halo
 import Record as Record
 
 data Action
@@ -32,7 +33,7 @@ data Action
 
 makeLoginPage :: Page.Component Unit
 makeLoginPage =
-  Page.component "LoginPage" { initialState, update } \store -> React.do
+  Page.component' "LoginPage" { initialState, eval } \store -> React.do
     pure $ render store
   where
   initialState =
@@ -41,12 +42,17 @@ makeLoginPage =
     , submitResponse: RemoteData.NotAsked
     }
 
-  update self = case _ of
+  eval =
+    Halo.makeEval
+      _
+        { onAction = handleAction
+        }
+
+  handleAction = case _ of
     UpdateEmail email -> modify_ _ { email = V.Modified email }
     UpdatePassword password -> modify_ _ { password = V.Modified password }
     Submit -> do
-      let
-        state = V.setModified self.state
+      state <- V.setModified <$> Halo.get
       case toEither (validate state) of
         Left _ -> modify_ (const state)
         Right validated -> do
