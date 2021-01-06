@@ -36,7 +36,7 @@ data Action
 
 makeHomePage :: Page.Component Unit
 makeHomePage =
-  Page.component' "HomePage" { initialState, eval } \self -> React.do
+  Page.component "HomePage" { initialState, eval } \self -> React.do
     auth <- useAuth self.env
     React.useEffect (isJust auth) do
       case auth of

@@ -34,7 +34,7 @@ data Action
 
 makeRegisterPage :: Page.Component Unit
 makeRegisterPage =
-  Page.component' "RegisterPage" { initialState, eval } \self -> React.do
+  Page.component "RegisterPage" { initialState, eval } \self -> React.do
     pure $ render self
   where
   initialState =

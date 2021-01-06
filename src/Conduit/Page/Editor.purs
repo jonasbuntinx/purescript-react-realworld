@@ -43,7 +43,7 @@ data Action
 
 makeEditorPage :: Page.Component Props
 makeEditorPage =
-  Page.component' "SettingsPage" { initialState, eval } \self -> React.do
+  Page.component "SettingsPage" { initialState, eval } \self -> React.do
     pure $ render self
   where
   initialState =

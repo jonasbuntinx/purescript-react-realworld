@@ -54,7 +54,7 @@ data Action
 
 makeArticlePage :: Page.Component Props
 makeArticlePage =
-  Page.component' "ArticlePage" { initialState, eval } \self -> React.do
+  Page.component "ArticlePage" { initialState, eval } \self -> React.do
     auth <- useAuth self.env
     pure $ render auth self
   where

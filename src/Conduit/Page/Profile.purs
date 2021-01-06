@@ -49,7 +49,7 @@ data Action
 
 makeProfilePage :: Page.Component Props
 makeProfilePage =
-  Page.component' "ProfilePage" { initialState, eval } \self -> React.do
+  Page.component "ProfilePage" { initialState, eval } \self -> React.do
     auth <- useAuth self.env
     pure $ render auth self
   where

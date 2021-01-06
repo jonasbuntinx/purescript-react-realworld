@@ -43,7 +43,7 @@ data Action
 
 makeSettingsPage :: Page.Component Unit
 makeSettingsPage =
-  Page.component' "SettingsPage" { initialState, eval } \self -> React.do
+  Page.component "SettingsPage" { initialState, eval } \self -> React.do
     profile <- useProfile self.env
     React.useEffect profile do
       case profile of
