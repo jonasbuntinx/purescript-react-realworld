@@ -18,6 +18,7 @@ import Conduit.Hook.Auth (useAuth)
 import Conduit.Page.Utils (_article, _author)
 import Control.Comonad (extract)
 import Control.Monad.State (modify_)
+import Control.Parallel (parTraverse_)
 import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
@@ -34,13 +35,15 @@ import React.Basic.DOM as R
 import React.Basic.DOM.Events (preventDefault, targetValue)
 import React.Basic.Events (handler, handler_)
 import React.Basic.Hooks as React
+import React.Halo as Halo
 
 type Props
   = { slug :: Slug
     }
 
 data Action
-  = Initialize
+  = Initialize (Array Action)
+  | LoadArticle
   | LoadComments
   | DeleteArticle
   | ToggleFollow
@@ -51,12 +54,8 @@ data Action
 
 makeArticlePage :: Page.Component Props
 makeArticlePage =
-  Page.component "ArticlePage" { initialState, update } \store -> React.do
+  Page.component' "ArticlePage" { initialState, eval } \store -> React.do
     auth <- useAuth store.env
-    React.useEffect store.props.slug do
-      store.send Initialize
-      store.send LoadComments
-      mempty
     pure $ render auth store
   where
   initialState =
@@ -66,46 +65,62 @@ makeArticlePage =
     , submitResponse: RemoteData.NotAsked
     }
 
-  update self = case _ of
-    Initialize -> do
+  eval =
+    Halo.makeEval
+      _
+        { onInitialize = \_ -> Just $ Initialize [ LoadArticle, LoadComments ]
+        , onUpdate = \prev next -> Just $ Initialize $ guard (prev.slug /= next.slug) [ LoadArticle, LoadComments ]
+        , onAction = handleAction
+        }
+
+  handleAction = case _ of
+    Initialize actions -> parTraverse_ handleAction actions
+    LoadArticle -> do
+      props <- Halo.props
       modify_ _ { article = RemoteData.Loading }
-      bind (getArticle self.props.slug) case _ of
+      bind (getArticle props.slug) case _ of
         Left (NotFound _) -> redirect Home
         Left error -> modify_ _ { article = RemoteData.Failure error }
         Right article -> modify_ _ { article = RemoteData.Success article }
     LoadComments -> do
+      props <- Halo.props
       modify_ _ { comments = RemoteData.Loading }
-      listComments self.props.slug >>= \res -> modify_ _ { comments = RemoteData.fromEither res }
+      listComments props.slug >>= \res -> modify_ _ { comments = RemoteData.fromEither res }
     DeleteArticle -> do
+      props <- Halo.props
       modify_ _ { submitResponse = RemoteData.Loading }
-      bind (deleteArticle self.props.slug) case _ of
+      bind (deleteArticle props.slug) case _ of
         Right res -> do
           modify_ _ { submitResponse = RemoteData.Success res }
           navigate Home
         Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
-    ToggleFollow -> for_ (preview _author self.state) (toggleFollow >=> traverse_ (modify_ <<< set _author))
-    ToggleFavorite -> for_ (preview _article self.state) (toggleFavorite >=> traverse_ (modify_ <<< set _article))
+    ToggleFollow -> do
+      state <- Halo.get
+      for_ (preview _author state) (toggleFollow >=> traverse_ (modify_ <<< set _author))
+    ToggleFavorite -> do
+      state <- Halo.get
+      for_ (preview _article state) (toggleFavorite >=> traverse_ (modify_ <<< set _article))
     UpdateBody body -> modify_ _ { body = V.Modified body }
     DeleteComment id -> do
+      props <- Halo.props
       modify_ _ { submitResponse = RemoteData.Loading }
-      bind (deleteComment self.props.slug id) case _ of
+      bind (deleteComment props.slug id) case _ of
         Right _ -> do
           modify_ _ { submitResponse = RemoteData.Success unit }
-          listComments self.props.slug >>= \res -> modify_ _ { comments = RemoteData.fromEither res }
+          listComments props.slug >>= \res -> modify_ _ { comments = RemoteData.fromEither res }
         Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
-    SubmitComment ->
-      let
-        state = V.setModified self.state
-      in
-        case toEither (validate state) of
-          Left _ -> modify_ (const state)
-          Right validated -> do
-            modify_ _ { submitResponse = RemoteData.Loading }
-            bind (createComment self.props.slug validated) case _ of
-              Right _ -> do
-                modify_ _ { submitResponse = RemoteData.Success unit, body = pure "" }
-                listComments self.props.slug >>= \res -> modify_ _ { comments = RemoteData.fromEither res }
-              Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
+    SubmitComment -> do
+      props <- Halo.props
+      state <- V.setModified <$> Halo.get
+      case toEither (validate state) of
+        Left _ -> modify_ (const state)
+        Right validated -> do
+          modify_ _ { submitResponse = RemoteData.Loading }
+          bind (createComment props.slug validated) case _ of
+            Right _ -> do
+              modify_ _ { submitResponse = RemoteData.Success unit, body = pure "" }
+              listComments props.slug >>= \res -> modify_ _ { comments = RemoteData.fromEither res }
+            Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
 
   validate values = ado
     body <- values.body # V.validated (LR.prop (SProxy :: _ "body")) F.nonEmpty
