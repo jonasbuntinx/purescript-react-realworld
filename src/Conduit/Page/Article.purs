@@ -54,9 +54,9 @@ data Action
 
 makeArticlePage :: Page.Component Props
 makeArticlePage =
-  Page.component' "ArticlePage" { initialState, eval } \store -> React.do
-    auth <- useAuth store.env
-    pure $ render auth store
+  Page.component' "ArticlePage" { initialState, eval } \self -> React.do
+    auth <- useAuth self.env
+    pure $ render auth self
   where
   initialState =
     { article: RemoteData.NotAsked

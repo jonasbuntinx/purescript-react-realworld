@@ -13,11 +13,12 @@ import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Control.Comonad (extract)
 import Control.Monad.State (modify_)
+import Control.Parallel (parTraverse_)
 import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
 import Data.Lens.Record as LR
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe(..))
 import Data.Monoid (guard)
 import Data.Set (Set)
 import Data.Set as Set
@@ -27,14 +28,15 @@ import Network.RemoteData as RemoteData
 import React.Basic.DOM as R
 import React.Basic.DOM.Events (targetValue)
 import React.Basic.Events (handler, handler_)
-import React.Basic.Hooks as React
+import React.Halo as Halo
 
 type Props
   = { slug :: Maybe Slug
     }
 
 data Action
-  = Initialize
+  = Initialize (Array Action)
+  | LoadArticle
   | UpdateTitle String
   | UpdateDescription String
   | UpdateBody String
@@ -43,11 +45,8 @@ data Action
 
 makeEditorPage :: Page.Component Props
 makeEditorPage =
-  Page.component "SettingsPage" { initialState, update } \store -> React.do
-    React.useEffect store.props.slug do
-      store.send Initialize
-      mempty
-    pure $ render store
+  Page.component' "SettingsPage" { initialState, eval } \self -> React.do
+    pure $ render self
   where
   initialState =
     { article: RemoteData.NotAsked
@@ -58,9 +57,19 @@ makeEditorPage =
     , submitResponse: RemoteData.NotAsked
     }
 
-  update self = case _ of
-    Initialize ->
-      for_ self.props.slug \slug -> do
+  eval =
+    Halo.makeEval
+      _
+        { onInitialize = \_ -> Just $ Initialize [ LoadArticle ]
+        , onUpdate = \prev next -> Just $ Initialize $ guard (prev.slug /= next.slug) [ LoadArticle ]
+        , onAction = handleAction
+        }
+
+  handleAction = case _ of
+    Initialize actions -> parTraverse_ handleAction actions
+    LoadArticle -> do
+      props <- Halo.props
+      for_ props.slug \slug -> do
         modify_ _ { article = RemoteData.Loading }
         bind (getArticle slug) case _ of
           Left (NotFound _) -> redirect Home
@@ -79,13 +88,13 @@ makeEditorPage =
     UpdateBody body -> modify_ _ { body = V.Modified body }
     UpdateTagList tagList -> modify_ _ { tagList = tagList }
     Submit -> do
-      let
-        state = V.setModified self.state
+      props <- Halo.props
+      state <- V.setModified <$> Halo.get
       case toEither (validate state) of
         Left _ -> modify_ (const state)
         Right validated -> do
           modify_ _ { submitResponse = RemoteData.Loading }
-          bind (submitArticle self.props.slug validated) case _ of
+          bind (submitArticle props.slug validated) case _ of
             Right article -> do
               modify_ _ { submitResponse = RemoteData.Success unit }
               navigate $ ViewArticle article.slug
