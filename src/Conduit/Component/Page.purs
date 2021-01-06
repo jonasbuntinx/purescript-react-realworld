@@ -42,3 +42,23 @@ component name { initialState, update } renderFn = do
                         }
             }
         renderFn { env, props, state, send }
+
+component' ::
+  forall props state action hooks.
+  String ->
+  { initialState :: state
+  , eval :: Halo.Lifecycle props action -> Halo.HaloM props state action AppM Unit
+  } ->
+  ({ env :: Env, props :: props, state :: state, send :: action -> Effect Unit } -> React.Render (Halo.UseHalo props state action Unit) hooks React.JSX) ->
+  Env.Component props
+component' name { initialState, eval } render = do
+  env <- ask
+  liftEffect
+    $ React.component name \props -> React.do
+        state /\ send <-
+          Halo.useHalo
+            { initialState
+            , props
+            , eval: Halo.hoist (runAppM env) <<< eval
+            }
+        render { env, props, state, send }
