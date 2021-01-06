@@ -7,7 +7,6 @@ import Conduit.Data.Env (Env)
 import Control.Monad.Reader (ask)
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
-import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import React.Basic.Hooks as React
 import React.Halo as Halo
@@ -19,7 +18,7 @@ component ::
   forall props state action hooks.
   String ->
   { initialState :: state
-  , update :: { props :: props, state :: state } -> action -> Halo.HaloM props state action (AppM Aff) Unit
+  , update :: { props :: props, state :: state } -> action -> Halo.HaloM props state action AppM Unit
   } ->
   ({ env :: Env, props :: props, state :: state, send :: action -> Effect Unit } -> React.Render (Halo.UseHalo props state action Unit) hooks React.JSX) ->
   Env.Component props
