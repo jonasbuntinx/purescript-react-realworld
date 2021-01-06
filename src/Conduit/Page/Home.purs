@@ -3,8 +3,8 @@ module Conduit.Page.Home (makeHomePage) where
 import Prelude
 import Conduit.Capability.Api (listArticles, listFeed, listTags, toggleFavorite)
 import Conduit.Component.ArticleList (articleList)
+import Conduit.Component.Page as Page
 import Conduit.Component.Pagination (pagination)
-import Conduit.Component.Store as Store
 import Conduit.Component.Tabs as Tabs
 import Conduit.Data.Article (defaultArticlesQuery)
 import Conduit.Hook.Auth (useAuth)
@@ -33,9 +33,9 @@ data Action
   | LoadArticles Tab { offset :: Int, limit :: Int }
   | ToggleFavorite Int
 
-makeHomePage :: Store.Component Unit
+makeHomePage :: Page.Component Unit
 makeHomePage =
-  Store.component "HomePage" { initialState, update } \store -> React.do
+  Page.component "HomePage" { initialState, update } \store -> React.do
     auth <- useAuth store.env
     React.useEffect (isJust auth) do
       case auth of

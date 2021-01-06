@@ -5,8 +5,8 @@ import Conduit.Capability.Api (getProfile, listArticles, toggleFavorite, toggleF
 import Conduit.Capability.Routing (redirect)
 import Conduit.Component.ArticleList (articleList)
 import Conduit.Component.Buttons (followButton)
+import Conduit.Component.Page as Page
 import Conduit.Component.Pagination (pagination)
-import Conduit.Component.Store as Store
 import Conduit.Component.Tabs as Tabs
 import Conduit.Data.Article (defaultArticlesQuery)
 import Conduit.Data.Avatar as Avatar
@@ -45,9 +45,9 @@ data Action
   | ToggleFavorite Int
   | ToggleFollow
 
-makeProfilePage :: Store.Component Props
+makeProfilePage :: Page.Component Props
 makeProfilePage =
-  Store.component "ProfilePage" { initialState, update } \store -> React.do
+  Page.component "ProfilePage" { initialState, update } \store -> React.do
     auth <- useAuth store.env
     React.useEffect store.props.username do
       store.send Initialize

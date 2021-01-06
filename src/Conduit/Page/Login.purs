@@ -5,8 +5,8 @@ import Conduit.Capability.Api (loginUser)
 import Conduit.Capability.Auth (login)
 import Conduit.Capability.Routing (redirect)
 import Conduit.Component.Link as Link
+import Conduit.Component.Page as Page
 import Conduit.Component.ResponseErrors (responseErrors)
-import Conduit.Component.Store as Store
 import Conduit.Data.Route (Route(..))
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
@@ -30,9 +30,9 @@ data Action
   | UpdatePassword String
   | Submit
 
-makeLoginPage :: Store.Component Unit
+makeLoginPage :: Page.Component Unit
 makeLoginPage =
-  Store.component "LoginPage" { initialState, update } \store -> React.do
+  Page.component "LoginPage" { initialState, update } \store -> React.do
     pure $ render store
   where
   initialState =

@@ -5,7 +5,7 @@ import Conduit.Capability.Api (createComment, deleteArticle, deleteComment, getA
 import Conduit.Capability.Routing (navigate, redirect)
 import Conduit.Component.Buttons (ButtonSize(..), favoriteButton, followButton)
 import Conduit.Component.Link as Link
-import Conduit.Component.Store as Store
+import Conduit.Component.Page as Page
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Comment (CommentId)
 import Conduit.Data.Error (Error(..))
@@ -49,9 +49,9 @@ data Action
   | DeleteComment CommentId
   | SubmitComment
 
-makeArticlePage :: Store.Component Props
+makeArticlePage :: Page.Component Props
 makeArticlePage =
-  Store.component "ArticlePage" { initialState, update } \store -> React.do
+  Page.component "ArticlePage" { initialState, update } \store -> React.do
     auth <- useAuth store.env
     React.useEffect store.props.slug do
       store.send Initialize
