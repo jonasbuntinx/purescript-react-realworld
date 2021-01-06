@@ -5,12 +5,13 @@ import Conduit.Capability.Api (registerUser)
 import Conduit.Capability.Auth (login)
 import Conduit.Capability.Routing (redirect)
 import Conduit.Component.Link as Link
+import Conduit.Component.Page as Page
 import Conduit.Component.ResponseErrors (responseErrors)
-import Conduit.Component.Store as Store
 import Conduit.Data.Route (Route(..))
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Control.Comonad (extract)
+import Control.Monad.State (modify_)
 import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Foldable (traverse_)
@@ -30,12 +31,12 @@ data Action
   | UpdatePassword String
   | Submit
 
-makeRegisterPage :: Store.Component Unit
+makeRegisterPage :: Page.Component Unit
 makeRegisterPage =
-  Store.component "RegisterPage" { init, update } \env store props -> React.do
-    pure $ render env store props
+  Page.component "RegisterPage" { initialState, update } \store -> React.do
+    pure $ render store
   where
-  init =
+  initialState =
     { username: pure ""
     , email: pure ""
     , password: pure ""
@@ -43,22 +44,22 @@ makeRegisterPage =
     }
 
   update self = case _ of
-    UpdateUsername username -> self.setState _ { username = V.Modified username }
-    UpdateEmail email -> self.setState _ { email = V.Modified email }
-    UpdatePassword password -> self.setState _ { password = V.Modified password }
+    UpdateUsername username -> modify_ _ { username = V.Modified username }
+    UpdateEmail email -> modify_ _ { email = V.Modified email }
+    UpdatePassword password -> modify_ _ { password = V.Modified password }
     Submit -> do
       let
         state = V.setModified self.state
       case toEither (validate state) of
-        Left _ -> self.setState (const state)
+        Left _ -> modify_ (const state)
         Right validated -> do
-          self.setState _ { submitResponse = RemoteData.Loading }
+          modify_ _ { submitResponse = RemoteData.Loading }
           bind (registerUser validated) case _ of
             Right user -> do
-              self.setState _ { submitResponse = RemoteData.Success unit }
+              modify_ _ { submitResponse = RemoteData.Success unit }
               login user.token $ Record.delete (SProxy :: _ "token") user
               redirect Home
-            Left err -> self.setState _ { submitResponse = RemoteData.Failure err }
+            Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
 
   validate values = ado
     username <- values.username # V.validated (LR.prop (SProxy :: _ "username")) \username -> F.nonEmpty username `andThen` F.validUsername
@@ -66,9 +67,9 @@ makeRegisterPage =
     password <- values.password # V.validated (LR.prop (SProxy :: _ "password")) \password -> F.nonEmpty password `andThen` (F.minimumLength 3 *> F.maximunLength 20)
     in { username, email, password }
 
-  render env store props =
+  render { env, props, state, send } =
     let
-      errors = validate store.state # unV identity (const mempty) :: { username :: _, email :: _, password :: _ }
+      errors = validate state # unV identity (const mempty) :: { username :: _, email :: _, password :: _ }
     in
       container
         [ R.h1
@@ -86,7 +87,7 @@ makeRegisterPage =
                     }
                 ]
             }
-        , responseErrors store.state.submitResponse
+        , responseErrors state.submitResponse
         , R.form
             { children:
                 [ R.fieldset_
@@ -96,9 +97,9 @@ makeRegisterPage =
                             [ R.input
                                 { className: "form-control form-control-lg"
                                 , type: "text"
-                                , value: extract store.state.username
+                                , value: extract state.username
                                 , placeholder: "Your name"
-                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateUsername
+                                , onChange: handler targetValue $ traverse_ $ send <<< UpdateUsername
                                 }
                             , guard (not $ Array.null errors.username) R.div
                                 { className: "error-messages"
@@ -113,9 +114,9 @@ makeRegisterPage =
                                 { className: "form-control form-control-lg"
                                 , autoComplete: "UserName"
                                 , type: "email"
-                                , value: extract store.state.email
+                                , value: extract state.email
                                 , placeholder: "Email"
-                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateEmail
+                                , onChange: handler targetValue $ traverse_ $ send <<< UpdateEmail
                                 }
                             , guard (not $ Array.null errors.email) R.div
                                 { className: "error-messages"
@@ -130,9 +131,9 @@ makeRegisterPage =
                                 { className: "form-control form-control-lg"
                                 , autoComplete: "Password"
                                 , type: "password"
-                                , value: extract store.state.password
+                                , value: extract state.password
                                 , placeholder: "Password"
-                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdatePassword
+                                , onChange: handler targetValue $ traverse_ $ send <<< UpdatePassword
                                 }
                             , guard (not $ Array.null errors.password) R.div
                                 { className: "error-messages"
@@ -143,7 +144,7 @@ makeRegisterPage =
                     , R.button
                         { className: "btn btn-lg btn-primary pull-xs-right"
                         , type: "button"
-                        , onClick: handler_ $ store.dispatch Submit
+                        , onClick: handler_ $ send Submit
                         , children: [ R.text "Sign up" ]
                         }
                     ]

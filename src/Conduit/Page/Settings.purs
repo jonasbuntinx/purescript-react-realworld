@@ -4,8 +4,8 @@ import Prelude
 import Conduit.Capability.Api (updateUser)
 import Conduit.Capability.Auth (logout, updateProfile)
 import Conduit.Capability.Routing (navigate, redirect)
+import Conduit.Component.Page as Page
 import Conduit.Component.ResponseErrors (responseErrors)
-import Conduit.Component.Store as Store
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Profile (UserProfile)
 import Conduit.Data.Route (Route(..))
@@ -14,6 +14,7 @@ import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Conduit.Hook.Auth (useProfile)
 import Control.Comonad (extract)
+import Control.Monad.State (modify_)
 import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
@@ -39,16 +40,16 @@ data Action
   | Submit
   | Logout
 
-makeSettingsPage :: Store.Component Unit
+makeSettingsPage :: Page.Component Unit
 makeSettingsPage =
-  Store.component "SettingsPage" { init, update } \env store props -> React.do
-    profile <- useProfile env
+  Page.component "SettingsPage" { initialState, update } \store -> React.do
+    profile <- useProfile store.env
     React.useEffect profile do
-      for_ profile $ store.dispatch <<< Initialize
+      for_ profile $ store.send <<< Initialize
       mempty
-    pure $ render store props
+    pure $ render store
   where
-  init =
+  initialState =
     { profile: Nothing
     , image: Nothing
     , username: pure ""
@@ -60,7 +61,7 @@ makeSettingsPage =
 
   update self = case _ of
     Initialize profile ->
-      self.setState
+      modify_
         _
           { profile = Just profile
           , image = Avatar.toString <$> profile.image
@@ -68,24 +69,24 @@ makeSettingsPage =
           , bio = profile.bio
           , email = pure profile.email
           }
-    UpdateImage image -> self.setState _ { image = Just image }
-    UpdateUsername username -> self.setState _ { username = V.Modified username }
-    UpdateBio bio -> self.setState _ { bio = Just bio }
-    UpdateEmail email -> self.setState _ { email = V.Modified email }
-    UpdatePassword password -> self.setState _ { password = V.Modified password }
+    UpdateImage image -> modify_ _ { image = Just image }
+    UpdateUsername username -> modify_ _ { username = V.Modified username }
+    UpdateBio bio -> modify_ _ { bio = Just bio }
+    UpdateEmail email -> modify_ _ { email = V.Modified email }
+    UpdatePassword password -> modify_ _ { password = V.Modified password }
     Submit -> do
       let
         state = V.setModified self.state
       case toEither (validate state) of
-        Left _ -> self.setState (const state)
+        Left _ -> modify_ (const state)
         Right validated -> do
-          self.setState _ { submitResponse = RemoteData.Loading }
+          modify_ _ { submitResponse = RemoteData.Loading }
           bind (updateUser validated) case _ of
             Right user -> do
-              self.setState _ { submitResponse = RemoteData.Success unit }
+              modify_ _ { submitResponse = RemoteData.Success unit }
               updateProfile $ Record.delete (SProxy :: _ "token") user
               navigate Home
-            Left err -> self.setState _ { submitResponse = RemoteData.Failure err }
+            Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
     Logout -> logout *> redirect Home
 
   validate values = ado
@@ -94,16 +95,16 @@ makeSettingsPage =
     password <- values.password # V.validated (LR.prop (SProxy :: _ "password")) \password -> F.nonEmpty password `andThen` (F.minimumLength 3 *> F.maximunLength 20)
     in { image: Avatar.fromString <$> values.image, username, bio: values.bio, email, password }
 
-  render store props =
+  render { props, state, send } =
     let
-      errors = validate store.state # unV identity (const mempty) :: { username :: _, email :: _, password :: _ }
+      errors = validate state # unV identity (const mempty) :: { username :: _, email :: _, password :: _ }
     in
-      guard (isJust store.state.profile) container
+      guard (isJust state.profile) container
         [ R.h1
             { className: "text-xs-center"
             , children: [ R.text "Your Settings" ]
             }
-        , responseErrors store.state.submitResponse
+        , responseErrors state.submitResponse
         , R.form
             { children:
                 [ R.fieldset_
@@ -113,9 +114,9 @@ makeSettingsPage =
                             [ R.input
                                 { className: "form-control"
                                 , type: "text"
-                                , value: fromMaybe "" store.state.image
+                                , value: fromMaybe "" state.image
                                 , placeholder: "URL of profile picture"
-                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateImage
+                                , onChange: handler targetValue $ traverse_ $ send <<< UpdateImage
                                 }
                             ]
                         }
@@ -125,9 +126,9 @@ makeSettingsPage =
                             [ R.input
                                 { className: "form-control"
                                 , type: "text"
-                                , value: extract store.state.username
+                                , value: extract state.username
                                 , placeholder: "Your name"
-                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateUsername
+                                , onChange: handler targetValue $ traverse_ $ send <<< UpdateUsername
                                 }
                             , guard (not $ Array.null errors.username) R.div
                                 { className: "error-messages"
@@ -141,9 +142,9 @@ makeSettingsPage =
                             [ R.textarea
                                 { className: "form-control"
                                 , rows: 8
-                                , value: fromMaybe "" store.state.bio
+                                , value: fromMaybe "" state.bio
                                 , placeholder: "Short bio about you"
-                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateBio
+                                , onChange: handler targetValue $ traverse_ $ send <<< UpdateBio
                                 }
                             ]
                         }
@@ -154,9 +155,9 @@ makeSettingsPage =
                                 { className: "form-control"
                                 , autoComplete: "UserName"
                                 , type: "email"
-                                , value: extract store.state.email
+                                , value: extract state.email
                                 , placeholder: "Email"
-                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateEmail
+                                , onChange: handler targetValue $ traverse_ $ send <<< UpdateEmail
                                 }
                             , guard (not $ Array.null errors.email) R.div
                                 { className: "error-messages"
@@ -171,9 +172,9 @@ makeSettingsPage =
                                 { className: "form-control"
                                 , autoComplete: "Password"
                                 , type: "password"
-                                , value: extract store.state.password
+                                , value: extract state.password
                                 , placeholder: "Password"
-                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdatePassword
+                                , onChange: handler targetValue $ traverse_ $ send <<< UpdatePassword
                                 }
                             , guard (not $ Array.null errors.password) R.div
                                 { className: "error-messages"
@@ -184,7 +185,7 @@ makeSettingsPage =
                     , R.button
                         { className: "btn btn-primary pull-xs-right"
                         , type: "button"
-                        , onClick: handler_ $ store.dispatch Submit
+                        , onClick: handler_ $ send Submit
                         , children: [ R.text "Update settings" ]
                         }
                     ]
@@ -194,7 +195,7 @@ makeSettingsPage =
         , R.button
             { className: "btn btn-outline-danger"
             , type: "button"
-            , onClick: handler_ $ store.dispatch Logout
+            , onClick: handler_ $ send Logout
             , children: [ R.text "Log out" ]
             }
         ]

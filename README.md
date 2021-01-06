@@ -52,9 +52,9 @@ An opinionated set of bindings to the React library, optimizing for the most bas
 
 An implementation of React hooks on top of purescript-react-basic
 
-#### [React Store](https://github.com/robertdp/purescript-react-store)
+#### [React Halo](https://github.com/robertdp/purescript-react-halo)
 
-Provides useStore, an asynchronous, scheduled reducer.
+A Halogen-inspired interface for React.
 
 #### [Wire React](https://github.com/robertdp/purescript-wire-react)
 

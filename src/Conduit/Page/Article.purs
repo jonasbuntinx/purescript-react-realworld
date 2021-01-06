@@ -5,7 +5,7 @@ import Conduit.Capability.Api (createComment, deleteArticle, deleteComment, getA
 import Conduit.Capability.Routing (navigate, redirect)
 import Conduit.Component.Buttons (ButtonSize(..), favoriteButton, followButton)
 import Conduit.Component.Link as Link
-import Conduit.Component.Store as Store
+import Conduit.Component.Page as Page
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Comment (CommentId)
 import Conduit.Data.Error (Error(..))
@@ -17,6 +17,7 @@ import Conduit.Form.Validator as F
 import Conduit.Hook.Auth (useAuth)
 import Conduit.Page.Utils (_article, _author)
 import Control.Comonad (extract)
+import Control.Monad.State (modify_)
 import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
@@ -48,17 +49,17 @@ data Action
   | DeleteComment CommentId
   | SubmitComment
 
-makeArticlePage :: Store.Component Props
+makeArticlePage :: Page.Component Props
 makeArticlePage =
-  Store.component "ArticlePage" { init, update } \env store props -> React.do
-    auth <- useAuth env
-    React.useEffect props.slug do
-      store.dispatch Initialize
-      store.dispatch LoadComments
+  Page.component "ArticlePage" { initialState, update } \store -> React.do
+    auth <- useAuth store.env
+    React.useEffect store.props.slug do
+      store.send Initialize
+      store.send LoadComments
       mempty
-    pure $ render env auth store props
+    pure $ render auth store
   where
-  init =
+  initialState =
     { article: RemoteData.NotAsked
     , comments: RemoteData.NotAsked
     , body: pure ""
@@ -67,54 +68,54 @@ makeArticlePage =
 
   update self = case _ of
     Initialize -> do
-      self.setState _ { article = RemoteData.Loading }
+      modify_ _ { article = RemoteData.Loading }
       bind (getArticle self.props.slug) case _ of
         Left (NotFound _) -> redirect Home
-        Left error -> self.setState _ { article = RemoteData.Failure error }
-        Right article -> self.setState _ { article = RemoteData.Success article }
+        Left error -> modify_ _ { article = RemoteData.Failure error }
+        Right article -> modify_ _ { article = RemoteData.Success article }
     LoadComments -> do
-      self.setState _ { comments = RemoteData.Loading }
-      listComments self.props.slug >>= \res -> self.setState _ { comments = RemoteData.fromEither res }
+      modify_ _ { comments = RemoteData.Loading }
+      listComments self.props.slug >>= \res -> modify_ _ { comments = RemoteData.fromEither res }
     DeleteArticle -> do
-      self.setState _ { submitResponse = RemoteData.Loading }
+      modify_ _ { submitResponse = RemoteData.Loading }
       bind (deleteArticle self.props.slug) case _ of
         Right res -> do
-          self.setState _ { submitResponse = RemoteData.Success res }
+          modify_ _ { submitResponse = RemoteData.Success res }
           navigate Home
-        Left err -> self.setState _ { submitResponse = RemoteData.Failure err }
-    ToggleFollow -> for_ (preview _author self.state) (toggleFollow >=> traverse_ (self.setState <<< set _author))
-    ToggleFavorite -> for_ (preview _article self.state) (toggleFavorite >=> traverse_ (self.setState <<< set _article))
-    UpdateBody body -> self.setState _ { body = V.Modified body }
+        Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
+    ToggleFollow -> for_ (preview _author self.state) (toggleFollow >=> traverse_ (modify_ <<< set _author))
+    ToggleFavorite -> for_ (preview _article self.state) (toggleFavorite >=> traverse_ (modify_ <<< set _article))
+    UpdateBody body -> modify_ _ { body = V.Modified body }
     DeleteComment id -> do
-      self.setState _ { submitResponse = RemoteData.Loading }
+      modify_ _ { submitResponse = RemoteData.Loading }
       bind (deleteComment self.props.slug id) case _ of
         Right _ -> do
-          self.setState _ { submitResponse = RemoteData.Success unit }
-          listComments self.props.slug >>= \res -> self.setState _ { comments = RemoteData.fromEither res }
-        Left err -> self.setState _ { submitResponse = RemoteData.Failure err }
+          modify_ _ { submitResponse = RemoteData.Success unit }
+          listComments self.props.slug >>= \res -> modify_ _ { comments = RemoteData.fromEither res }
+        Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
     SubmitComment ->
       let
         state = V.setModified self.state
       in
         case toEither (validate state) of
-          Left _ -> self.setState (const state)
+          Left _ -> modify_ (const state)
           Right validated -> do
-            self.setState _ { submitResponse = RemoteData.Loading }
+            modify_ _ { submitResponse = RemoteData.Loading }
             bind (createComment self.props.slug validated) case _ of
               Right _ -> do
-                self.setState _ { submitResponse = RemoteData.Success unit, body = pure "" }
-                listComments self.props.slug >>= \res -> self.setState _ { comments = RemoteData.fromEither res }
-              Left err -> self.setState _ { submitResponse = RemoteData.Failure err }
+                modify_ _ { submitResponse = RemoteData.Success unit, body = pure "" }
+                listComments self.props.slug >>= \res -> modify_ _ { comments = RemoteData.fromEither res }
+              Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
 
   validate values = ado
     body <- values.body # V.validated (LR.prop (SProxy :: _ "body")) F.nonEmpty
     in { body }
 
-  render env auth store props =
+  render auth { env, props, state, send } =
     let
-      errors = validate store.state # unV identity (const mempty) :: { body :: _ }
+      errors = validate state # unV identity (const mempty) :: { body :: _ }
     in
-      store.state.article
+      state.article
         # RemoteData.maybe React.empty \article ->
             React.fragment
               [ container (banner article)
@@ -154,7 +155,7 @@ makeArticlePage =
                                       Just _ ->
                                         R.form
                                           { className: "card comment-form"
-                                          , onSubmit: handler preventDefault $ const $ store.dispatch SubmitComment
+                                          , onSubmit: handler preventDefault $ const $ send SubmitComment
                                           , children:
                                               [ R.div
                                                   { className: "card-block"
@@ -162,9 +163,9 @@ makeArticlePage =
                                                       [ R.textarea
                                                           { className: "form-control"
                                                           , rows: 3
-                                                          , value: extract store.state.body
+                                                          , value: extract state.body
                                                           , placeholder: "Write a comment..."
-                                                          , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateBody
+                                                          , onChange: handler targetValue $ traverse_ $ send <<< UpdateBody
                                                           }
                                                       ]
                                                   }
@@ -201,7 +202,7 @@ makeArticlePage =
                                               }
                                           , R.text " to add comments on this article."
                                           ]
-                                  , (preview _Success store.state.comments)
+                                  , (preview _Success state.comments)
                                       # maybe React.empty (React.fragment <<< commentList)
                                   ]
                               }
@@ -261,7 +262,7 @@ makeArticlePage =
                       , R.text " "
                       , R.button
                           { className: "btn btn-outline-danger btn-sm"
-                          , onClick: handler_ $ store.dispatch DeleteArticle
+                          , onClick: handler_ $ send DeleteArticle
                           , children:
                               [ R.i
                                   { className: "ion-trash-a"
@@ -276,14 +277,14 @@ makeArticlePage =
                     [ followButton
                         { following: article.author.following
                         , username: article.author.username
-                        , onClick: handler_ $ store.dispatch ToggleFollow
+                        , onClick: handler_ $ send ToggleFollow
                         }
                     , R.text " "
                     , favoriteButton
                         { size: Medium
                         , favorited: article.favorited
                         , count: article.favoritesCount
-                        , onClick: handler_ $ store.dispatch ToggleFavorite
+                        , onClick: handler_ $ send ToggleFavorite
                         }
                     ]
             ]
@@ -336,7 +337,7 @@ makeArticlePage =
                           , children:
                               [ R.i
                                   { className: "ion-trash-a"
-                                  , onClick: handler_ $ store.dispatch $ DeleteComment comment.id
+                                  , onClick: handler_ $ send $ DeleteComment comment.id
                                   , children: []
                                   }
                               ]

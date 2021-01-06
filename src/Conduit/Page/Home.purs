@@ -3,12 +3,13 @@ module Conduit.Page.Home (makeHomePage) where
 import Prelude
 import Conduit.Capability.Api (listArticles, listFeed, listTags, toggleFavorite)
 import Conduit.Component.ArticleList (articleList)
+import Conduit.Component.Page as Page
 import Conduit.Component.Pagination (pagination)
-import Conduit.Component.Store as Store
 import Conduit.Component.Tabs as Tabs
 import Conduit.Data.Article (defaultArticlesQuery)
 import Conduit.Hook.Auth (useAuth)
 import Conduit.Page.Utils (_articles)
+import Control.Monad.State (modify_)
 import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
 import Data.Maybe (Maybe(..), isJust, isNothing)
@@ -32,21 +33,21 @@ data Action
   | LoadArticles Tab { offset :: Int, limit :: Int }
   | ToggleFavorite Int
 
-makeHomePage :: Store.Component Unit
+makeHomePage :: Page.Component Unit
 makeHomePage =
-  Store.component "HomePage" { init, update } \env store props -> React.do
-    auth <- useAuth env
+  Page.component "HomePage" { initialState, update } \store -> React.do
+    auth <- useAuth store.env
     React.useEffect (isJust auth) do
       case auth of
-        Nothing -> store.dispatch $ LoadArticles store.state.tab store.state.pagination
-        Just _ -> store.dispatch $ LoadArticles Feed store.state.pagination
+        Nothing -> store.send $ LoadArticles store.state.tab store.state.pagination
+        Just _ -> store.send $ LoadArticles Feed store.state.pagination
       mempty
     React.useEffectOnce do
-      store.dispatch LoadTags
+      store.send LoadTags
       mempty
-    pure $ render env auth store props
+    pure $ render auth store
   where
-  init =
+  initialState =
     { tags: NotAsked
     , articles: NotAsked
     , pagination: { offset: 0, limit: 10 }
@@ -55,8 +56,8 @@ makeHomePage =
 
   update self = case _ of
     LoadTags -> do
-      self.setState _ { tags = RemoteData.Loading }
-      listTags >>= \res -> self.setState _ { tags = RemoteData.fromEither res }
+      modify_ _ { tags = RemoteData.Loading }
+      listTags >>= \res -> modify_ _ { tags = RemoteData.fromEither res }
     LoadArticles tab pagination -> do
       let
         query = defaultArticlesQuery { offset = Just pagination.offset, limit = Just pagination.limit }
@@ -65,11 +66,11 @@ makeHomePage =
           Feed -> listFeed query
           Global -> listArticles query
           Tag tag -> listArticles (query { tag = Just tag })
-      self.setState _ { articles = RemoteData.Loading, tab = tab, pagination = pagination }
-      request >>= \res -> self.setState _ { articles = RemoteData.fromEither res }
-    ToggleFavorite ix -> for_ (preview (_articles ix) self.state) (toggleFavorite >=> traverse_ (self.setState <<< set (_articles ix)))
+      modify_ _ { articles = RemoteData.Loading, tab = tab, pagination = pagination }
+      request >>= \res -> modify_ _ { articles = RemoteData.fromEither res }
+    ToggleFavorite ix -> for_ (preview (_articles ix) self.state) (toggleFavorite >=> traverse_ (modify_ <<< set (_articles ix)))
 
-  render env auth store props =
+  render auth { env, props, state, send } =
     container (guard (isNothing auth) banner)
       [ mainView
       , R.div
@@ -92,7 +93,7 @@ makeHomePage =
         , children:
             [ Tabs.tabs
                 { className: "feed-toggle"
-                , selectedTab: Just store.state.tab
+                , selectedTab: Just state.tab
                 , tabs:
                     [ { id: Feed
                       , label: R.text "Your Feed"
@@ -105,7 +106,7 @@ makeHomePage =
                       , content: tabContent
                       }
                     ]
-                      <> case store.state.tab of
+                      <> case state.tab of
                           Tag tag ->
                             [ { id: Tag tag
                               , label:
@@ -121,7 +122,7 @@ makeHomePage =
                               }
                             ]
                           _ -> []
-                , onChange: \tab -> store.dispatch $ LoadArticles tab init.pagination
+                , onChange: \tab -> send $ LoadArticles tab initialState.pagination
                 }
             ]
         }
@@ -129,23 +130,23 @@ makeHomePage =
     tabContent =
       R.div_
         [ articleList
-            { articles: store.state.articles <#> _.articles
+            { articles: state.articles <#> _.articles
             , onNavigate: env.router.navigate
-            , onFavoriteToggle: store.dispatch <<< ToggleFavorite
+            , onFavoriteToggle: send <<< ToggleFavorite
             }
-        , store.state.articles
+        , state.articles
             # RemoteData.maybe React.empty \{ articlesCount } ->
                 pagination
-                  { offset: store.state.pagination.offset
-                  , limit: store.state.pagination.limit
+                  { offset: state.pagination.offset
+                  , limit: state.pagination.limit
                   , totalCount: articlesCount
-                  , onChange: store.dispatch <<< (LoadArticles store.state.tab)
+                  , onChange: send <<< (LoadArticles state.tab)
                   , focusWindow: 3
                   , marginPages: 1
                   }
         ]
 
-    renderTags = case store.state.tags of
+    renderTags = case state.tags of
       NotAsked -> R.div_ [ R.text "Tags not loaded" ]
       Loading -> R.div_ [ R.text "Loading Tags" ]
       Failure err -> R.div_ [ R.text $ "Failed loading tags" ]
@@ -155,7 +156,7 @@ makeHomePage =
       R.a
         { className: "tag-default tag-pill"
         , href: "#"
-        , onClick: handler preventDefault $ const $ store.dispatch $ LoadArticles (Tag tag) store.state.pagination
+        , onClick: handler preventDefault $ const $ send $ LoadArticles (Tag tag) state.pagination
         , children: [ R.text tag ]
         }
 

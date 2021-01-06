@@ -3,8 +3,8 @@ module Conduit.Page.Editor (Props, makeEditorPage) where
 import Prelude
 import Conduit.Capability.Api (getArticle, submitArticle)
 import Conduit.Capability.Routing (navigate, redirect)
+import Conduit.Component.Page as Page
 import Conduit.Component.ResponseErrors (responseErrors)
-import Conduit.Component.Store as Store
 import Conduit.Component.TagInput (tagInput)
 import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..))
@@ -12,6 +12,7 @@ import Conduit.Data.Slug (Slug)
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Control.Comonad (extract)
+import Control.Monad.State (modify_)
 import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
@@ -40,15 +41,15 @@ data Action
   | UpdateTagList (Set String)
   | Submit
 
-makeEditorPage :: Store.Component Props
+makeEditorPage :: Page.Component Props
 makeEditorPage =
-  Store.component "SettingsPage" { init, update } \env store props -> React.do
-    React.useEffect props.slug do
-      store.dispatch Initialize
+  Page.component "SettingsPage" { initialState, update } \store -> React.do
+    React.useEffect store.props.slug do
+      store.send Initialize
       mempty
-    pure $ render store props
+    pure $ render store
   where
-  init =
+  initialState =
     { article: RemoteData.NotAsked
     , title: pure ""
     , description: pure ""
@@ -60,12 +61,12 @@ makeEditorPage =
   update self = case _ of
     Initialize ->
       for_ self.props.slug \slug -> do
-        self.setState _ { article = RemoteData.Loading }
+        modify_ _ { article = RemoteData.Loading }
         bind (getArticle slug) case _ of
           Left (NotFound _) -> redirect Home
-          Left error -> self.setState _ { article = RemoteData.Failure error }
+          Left error -> modify_ _ { article = RemoteData.Failure error }
           Right article ->
-            self.setState
+            modify_
               _
                 { article = RemoteData.Success article
                 , title = pure article.title
@@ -73,22 +74,22 @@ makeEditorPage =
                 , body = pure article.body
                 , tagList = Set.fromFoldable article.tagList
                 }
-    UpdateTitle title -> self.setState _ { title = V.Modified title }
-    UpdateDescription description -> self.setState _ { description = V.Modified description }
-    UpdateBody body -> self.setState _ { body = V.Modified body }
-    UpdateTagList tagList -> self.setState _ { tagList = tagList }
+    UpdateTitle title -> modify_ _ { title = V.Modified title }
+    UpdateDescription description -> modify_ _ { description = V.Modified description }
+    UpdateBody body -> modify_ _ { body = V.Modified body }
+    UpdateTagList tagList -> modify_ _ { tagList = tagList }
     Submit -> do
       let
         state = V.setModified self.state
       case toEither (validate state) of
-        Left _ -> self.setState (const state)
+        Left _ -> modify_ (const state)
         Right validated -> do
-          self.setState _ { submitResponse = RemoteData.Loading }
+          modify_ _ { submitResponse = RemoteData.Loading }
           bind (submitArticle self.props.slug validated) case _ of
             Right article -> do
-              self.setState _ { submitResponse = RemoteData.Success unit }
+              modify_ _ { submitResponse = RemoteData.Success unit }
               navigate $ ViewArticle article.slug
-            Left err -> self.setState _ { submitResponse = RemoteData.Failure err }
+            Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
 
   validate values = ado
     title <- values.title # V.validated (LR.prop (SProxy :: _ "title")) F.nonEmpty
@@ -96,12 +97,12 @@ makeEditorPage =
     body <- values.body # V.validated (LR.prop (SProxy :: _ "body")) \body -> F.nonEmpty body `andThen` F.minimumLength 3
     in { title, description, body, tagList: Set.toUnfoldable values.tagList }
 
-  render store props =
+  render { props, state, send } =
     let
-      errors = validate store.state # unV identity (const mempty) :: { title :: _, description :: _, body :: _ }
+      errors = validate state # unV identity (const mempty) :: { title :: _, description :: _, body :: _ }
     in
-      guard (not $ RemoteData.isLoading store.state.article) container
-        [ responseErrors store.state.submitResponse
+      guard (not $ RemoteData.isLoading state.article) container
+        [ responseErrors state.submitResponse
         , R.form
             { children:
                 [ R.fieldset_
@@ -111,9 +112,9 @@ makeEditorPage =
                             [ R.input
                                 { className: "form-control"
                                 , type: "text"
-                                , value: extract store.state.title
+                                , value: extract state.title
                                 , placeholder: "Article title"
-                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateTitle
+                                , onChange: handler targetValue $ traverse_ $ send <<< UpdateTitle
                                 }
                             , guard (not $ Array.null errors.title) R.div
                                 { className: "error-messages"
@@ -127,9 +128,9 @@ makeEditorPage =
                             [ R.input
                                 { className: "form-control"
                                 , type: "text"
-                                , value: extract store.state.description
+                                , value: extract state.description
                                 , placeholder: "What is this article about?"
-                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateDescription
+                                , onChange: handler targetValue $ traverse_ $ send <<< UpdateDescription
                                 }
                             , guard (not $ Array.null errors.description) R.div
                                 { className: "error-messages"
@@ -143,9 +144,9 @@ makeEditorPage =
                             [ R.textarea
                                 { className: "form-control"
                                 , rows: 8
-                                , value: extract store.state.body
+                                , value: extract state.body
                                 , placeholder: "Write your article (in markdown)"
-                                , onChange: handler targetValue $ traverse_ $ store.dispatch <<< UpdateBody
+                                , onChange: handler targetValue $ traverse_ $ send <<< UpdateBody
                                 }
                             , guard (not $ Array.null errors.body) R.div
                                 { className: "error-messages"
@@ -154,13 +155,13 @@ makeEditorPage =
                             ]
                         }
                     , tagInput
-                        { tags: store.state.tagList
-                        , onChange: store.dispatch <<< UpdateTagList
+                        { tags: state.tagList
+                        , onChange: send <<< UpdateTagList
                         }
                     , R.button
                         { className: "btn btn-primary pull-xs-right"
                         , type: "button"
-                        , onClick: handler_ $ store.dispatch Submit
+                        , onClick: handler_ $ send Submit
                         , children: [ R.text "Publish article" ]
                         }
                     ]

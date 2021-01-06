@@ -9,7 +9,7 @@
     , "profunctor-lenses"
     , "react-basic-dom"
     , "react-basic-hooks"
-    , "react-store"
+    , "react-halo"
     , "remotedata"
     , "routing"
     , "routing-duplex"

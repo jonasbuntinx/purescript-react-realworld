@@ -5,8 +5,8 @@ import Conduit.Capability.Api (getProfile, listArticles, toggleFavorite, toggleF
 import Conduit.Capability.Routing (redirect)
 import Conduit.Component.ArticleList (articleList)
 import Conduit.Component.Buttons (followButton)
+import Conduit.Component.Page as Page
 import Conduit.Component.Pagination (pagination)
-import Conduit.Component.Store as Store
 import Conduit.Component.Tabs as Tabs
 import Conduit.Data.Article (defaultArticlesQuery)
 import Conduit.Data.Avatar as Avatar
@@ -16,6 +16,7 @@ import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
 import Conduit.Hook.Auth (useAuth)
 import Conduit.Page.Utils (_articles, _profile)
+import Control.Monad.State (modify_)
 import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
@@ -44,19 +45,19 @@ data Action
   | ToggleFavorite Int
   | ToggleFollow
 
-makeProfilePage :: Store.Component Props
+makeProfilePage :: Page.Component Props
 makeProfilePage =
-  Store.component "ProfilePage" { init, update } \env store props -> React.do
-    auth <- useAuth env
-    React.useEffect props.username do
-      store.dispatch Initialize
+  Page.component "ProfilePage" { initialState, update } \store -> React.do
+    auth <- useAuth store.env
+    React.useEffect store.props.username do
+      store.send Initialize
       mempty
-    React.useEffect (props.username /\ props.tab) do
-      store.dispatch $ LoadArticles init.pagination
+    React.useEffect (store.props.username /\ store.props.tab) do
+      store.send $ LoadArticles initialState.pagination
       mempty
-    pure $ render env auth store props
+    pure $ render auth store
   where
-  init =
+  initialState =
     { selectedTab: Nothing
     , profile: RemoteData.NotAsked
     , articles: RemoteData.NotAsked
@@ -65,11 +66,11 @@ makeProfilePage =
 
   update self = case _ of
     Initialize -> do
-      self.setState _ { profile = RemoteData.Loading }
+      modify_ _ { profile = RemoteData.Loading }
       bind (getProfile self.props.username) case _ of
         Left (NotFound _) -> redirect Home
-        Left error -> self.setState _ { profile = RemoteData.Failure error }
-        Right profile -> self.setState _ { profile = RemoteData.Success profile }
+        Left error -> modify_ _ { profile = RemoteData.Failure error }
+        Right profile -> modify_ _ { profile = RemoteData.Success profile }
     LoadArticles pagination -> do
       let
         query = defaultArticlesQuery { offset = Just pagination.offset, limit = Just pagination.limit }
@@ -78,13 +79,13 @@ makeProfilePage =
           listArticles case self.props.tab of
             Published -> query { author = Just self.props.username }
             Favorited -> query { favorited = Just self.props.username }
-      self.setState _ { articles = RemoteData.Loading, pagination = pagination }
-      request >>= \res -> self.setState _ { articles = RemoteData.fromEither res }
-    ToggleFavorite ix -> for_ (preview (_articles ix) self.state) (toggleFavorite >=> traverse_ (self.setState <<< set (_articles ix)))
-    ToggleFollow -> for_ (preview _profile self.state) (toggleFollow >=> traverse_ (self.setState <<< set _profile))
+      modify_ _ { articles = RemoteData.Loading, pagination = pagination }
+      request >>= \res -> modify_ _ { articles = RemoteData.fromEither res }
+    ToggleFavorite ix -> for_ (preview (_articles ix) self.state) (toggleFavorite >=> traverse_ (modify_ <<< set (_articles ix)))
+    ToggleFollow -> for_ (preview _profile self.state) (toggleFollow >=> traverse_ (modify_ <<< set _profile))
 
-  render env auth store props =
-    guard (RemoteData.isSuccess store.state.profile) container userInfo
+  render auth { env, props, state, send } =
+    guard (RemoteData.isSuccess state.profile) container userInfo
       [ Tabs.tabs
           { className: "articles-toggle"
           , selectedTab: Just props.tab
@@ -110,17 +111,17 @@ makeProfilePage =
     tabContent =
       R.div_
         [ articleList
-            { articles: store.state.articles <#> _.articles
+            { articles: state.articles <#> _.articles
             , onNavigate: env.router.navigate
-            , onFavoriteToggle: store.dispatch <<< ToggleFavorite
+            , onFavoriteToggle: send <<< ToggleFavorite
             }
-        , store.state.articles
+        , state.articles
             # RemoteData.maybe React.empty \{ articlesCount } ->
                 pagination
-                  { offset: store.state.pagination.offset
-                  , limit: store.state.pagination.limit
+                  { offset: state.pagination.offset
+                  , limit: state.pagination.limit
                   , totalCount: articlesCount
-                  , onChange: store.dispatch <<< LoadArticles
+                  , onChange: send <<< LoadArticles
                   , focusWindow: 3
                   , marginPages: 1
                   }
@@ -141,10 +142,10 @@ makeProfilePage =
                                 , children:
                                     [ R.img
                                         { className: "user-img"
-                                        , src: Avatar.toString $ RemoteData.maybe Avatar.blank (Avatar.withDefault <<< _.image) store.state.profile
+                                        , src: Avatar.toString $ RemoteData.maybe Avatar.blank (Avatar.withDefault <<< _.image) state.profile
                                         }
                                     , R.h4_ [ R.text $ Username.toString props.username ]
-                                    , maybe React.empty (\bio -> R.p_ [ R.text bio ]) (RemoteData.toMaybe store.state.profile >>= _.bio)
+                                    , maybe React.empty (\bio -> R.p_ [ R.text bio ]) (RemoteData.toMaybe state.profile >>= _.bio)
                                     , if (Just props.username == map _.username auth) then
                                         R.button
                                           { className: "btn btn-sm action-btn btn-outline-secondary"
@@ -159,9 +160,9 @@ makeProfilePage =
                                           }
                                       else
                                         followButton
-                                          { following: RemoteData.maybe false _.following store.state.profile
+                                          { following: RemoteData.maybe false _.following state.profile
                                           , username: props.username
-                                          , onClick: handler_ $ store.dispatch ToggleFollow
+                                          , onClick: handler_ $ send ToggleFollow
                                           }
                                     ]
                                 }

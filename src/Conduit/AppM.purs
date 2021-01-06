@@ -1,4 +1,4 @@
-module Conduit.StoreM where
+module Conduit.AppM where
 
 import Prelude
 import Apiary as Apiary
@@ -20,41 +20,41 @@ import Effect.Class (class MonadEffect, liftEffect)
 import Type.Equality (class TypeEquals, from)
 import Wire.React.Atom.Class (modify, read)
 
-newtype StoreM m a
-  = StoreM (ReaderT Env m a)
+newtype AppM m a
+  = AppM (ReaderT Env m a)
 
-runStoreM :: forall m. Env -> StoreM m ~> m
-runStoreM env (StoreM m) = runReaderT m env
+runAppM :: forall m. Env -> AppM m ~> m
+runAppM env (AppM m) = runReaderT m env
 
-derive newtype instance functorStoreM :: Functor m => Functor (StoreM m)
+derive newtype instance functorAppM :: Functor m => Functor (AppM m)
 
-derive newtype instance applyStoreM :: Apply m => Apply (StoreM m)
+derive newtype instance applyAppM :: Apply m => Apply (AppM m)
 
-derive newtype instance applicativeStoreM :: Applicative m => Applicative (StoreM m)
+derive newtype instance applicativeAppM :: Applicative m => Applicative (AppM m)
 
-derive newtype instance bindStoreM :: Bind m => Bind (StoreM m)
+derive newtype instance bindAppM :: Bind m => Bind (AppM m)
 
-derive newtype instance monadStoreM :: Monad m => Monad (StoreM m)
+derive newtype instance monadAppM :: Monad m => Monad (AppM m)
 
-derive newtype instance monadEffectStoreM :: MonadEffect m => MonadEffect (StoreM m)
+derive newtype instance monadEffectAppM :: MonadEffect m => MonadEffect (AppM m)
 
-derive newtype instance monadAffStoreM :: MonadAff m => MonadAff (StoreM m)
+derive newtype instance monadAffAppM :: MonadAff m => MonadAff (AppM m)
 
-instance monadAskStoreM :: (TypeEquals e Env, Monad m) => MonadAsk e (StoreM m) where
-  ask = StoreM $ asks from
+instance monadAskAppM :: (TypeEquals e Env, Monad m) => MonadAsk e (AppM m) where
+  ask = AppM $ asks from
 
 -- | Capabilities
-instance authStoreM :: MonadEffect m => Auth (StoreM m) where
+instance authAppM :: MonadEffect m => Auth (AppM m) where
   read = ask >>= \{ auth } -> liftEffect $ read auth.signal
   login token profile = ask >>= \{ auth } -> liftEffect $ modify auth.signal $ const $ toAuth token (Just profile)
   logout = ask >>= \{ auth } -> liftEffect $ modify auth.signal $ const Nothing
   updateProfile profile = ask >>= \{ auth } -> liftEffect $ modify auth.signal $ map $ _ { profile = Just profile }
 
-instance routingStoreM :: MonadEffect m => Routing Route (StoreM m) where
+instance routingAppM :: MonadEffect m => Routing Route (AppM m) where
   navigate route = ask >>= \{ router } -> liftEffect $ router.navigate route
   redirect route = ask >>= \{ router } -> liftEffect $ router.redirect route
 
-instance userApiStoreM :: MonadAff m => UserApi (StoreM m) where
+instance userApiAppM :: MonadAff m => UserApi (AppM m) where
   loginUser user = do
     res <- makeRequest (Apiary.Route :: Endpoints.LoginUser) Apiary.none Apiary.none { user }
     pure $ res >>= match { ok: Right <<< _.user, unprocessableEntity: Left <<< UnprocessableEntity <<< _.errors }
@@ -65,7 +65,7 @@ instance userApiStoreM :: MonadAff m => UserApi (StoreM m) where
     res <- makeSecureRequest (Apiary.Route :: Endpoints.UpdateUser) Apiary.none Apiary.none { user }
     pure $ res >>= (match { ok: Right <<< _.user, unprocessableEntity: Left <<< UnprocessableEntity <<< _.errors })
 
-instance articleApiStoreM :: MonadAff m => ArticleApi (StoreM m) where
+instance articleApiAppM :: MonadAff m => ArticleApi (AppM m) where
   listArticles query = do
     res <- makeRequest (Apiary.Route :: Endpoints.ListArticles) Apiary.none query Apiary.none
     pure $ res >>= match { ok: Right }
@@ -84,7 +84,7 @@ instance articleApiStoreM :: MonadAff m => ArticleApi (StoreM m) where
     res <- makeSecureRequest (Apiary.Route :: Endpoints.DeleteArticle) { slug } Apiary.none Apiary.none
     pure $ res >>= (match { ok: const $ Right unit })
 
-instance favoriteApiStoreM :: MonadAff m => FavoriteApi (StoreM m) where
+instance favoriteApiAppM :: MonadAff m => FavoriteApi (AppM m) where
   toggleFavorite { slug, favorited } = do
     res <-
       if favorited then
@@ -93,7 +93,7 @@ instance favoriteApiStoreM :: MonadAff m => FavoriteApi (StoreM m) where
         makeSecureRequest (Apiary.Route :: Endpoints.FavoriteArticle) { slug } Apiary.none Apiary.none
     pure $ res >>= match { ok: Right <<< _.article }
 
-instance commentApiStoreM :: MonadAff m => CommentApi (StoreM m) where
+instance commentApiAppM :: MonadAff m => CommentApi (AppM m) where
   listComments slug = do
     res <- makeRequest (Apiary.Route :: Endpoints.ListComments) { slug } Apiary.none Apiary.none
     pure $ res >>= match { ok: Right <<< _.comments }
@@ -104,12 +104,12 @@ instance commentApiStoreM :: MonadAff m => CommentApi (StoreM m) where
     res <- makeSecureRequest (Apiary.Route :: Endpoints.DeleteComment) { slug, id } Apiary.none Apiary.none
     pure $ res >>= (match { ok: const $ Right unit })
 
-instance profileApiStoreM :: MonadAff m => ProfileApi (StoreM m) where
+instance profileApiAppM :: MonadAff m => ProfileApi (AppM m) where
   getProfile username = do
     res <- makeRequest (Apiary.Route :: Endpoints.GetProfile) { username } Apiary.none Apiary.none
     pure $ res >>= (match { ok: Right <<< _.profile, notFound: Left <<< NotFound })
 
-instance followApiStoreM :: MonadAff m => FollowApi (StoreM m) where
+instance followApiAppM :: MonadAff m => FollowApi (AppM m) where
   toggleFollow { username, following } = do
     res <-
       if following then
@@ -118,7 +118,7 @@ instance followApiStoreM :: MonadAff m => FollowApi (StoreM m) where
         makeSecureRequest (Apiary.Route :: Endpoints.FollowProfile) { username } Apiary.none Apiary.none
     pure $ res >>= match { ok: Right <<< _.profile }
 
-instance tagApiStoreM :: MonadAff m => TagApi (StoreM m) where
+instance tagApiAppM :: MonadAff m => TagApi (AppM m) where
   listTags = do
     res <- makeRequest (Apiary.Route :: Endpoints.ListTags) Apiary.none Apiary.none Apiary.none
     pure $ res >>= match { ok: Right <<< _.tags }
