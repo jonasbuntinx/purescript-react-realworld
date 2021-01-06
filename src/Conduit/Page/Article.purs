@@ -12,12 +12,14 @@ import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Slug (Slug)
 import Conduit.Data.Username as Username
+import Conduit.Form.Validated (Validated)
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Conduit.Hook.Auth (useAuth)
 import Conduit.Page.Utils (_article, _author)
 import Control.Comonad (extract)
 import Control.Monad.State (modify_)
+import Control.Parallel (parTraverse_)
 import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
@@ -25,7 +27,7 @@ import Data.Lens.Record as LR
 import Data.Maybe (Maybe(..), maybe)
 import Data.Monoid (guard)
 import Data.Symbol (SProxy(..))
-import Data.Validation.Semigroup (toEither, unV)
+import Data.Validation.Semigroup (V, toEither)
 import Foreign.Day (toDisplay)
 import Foreign.NanoMarkdown (nmd)
 import Network.RemoteData (_Success)
@@ -34,13 +36,15 @@ import React.Basic.DOM as R
 import React.Basic.DOM.Events (preventDefault, targetValue)
 import React.Basic.Events (handler, handler_)
 import React.Basic.Hooks as React
+import React.Halo as Halo
 
 type Props
   = { slug :: Slug
     }
 
 data Action
-  = Initialize
+  = Initialize (Array Action)
+  | LoadArticle
   | LoadComments
   | DeleteArticle
   | ToggleFollow
@@ -51,13 +55,9 @@ data Action
 
 makeArticlePage :: Page.Component Props
 makeArticlePage =
-  Page.component "ArticlePage" { initialState, update } \store -> React.do
-    auth <- useAuth store.env
-    React.useEffect store.props.slug do
-      store.send Initialize
-      store.send LoadComments
-      mempty
-    pure $ render auth store
+  Page.component "ArticlePage" { initialState, eval } \self@{ env } -> React.do
+    auth <- useAuth env
+    pure $ render auth self
   where
   initialState =
     { article: RemoteData.NotAsked
@@ -66,150 +66,171 @@ makeArticlePage =
     , submitResponse: RemoteData.NotAsked
     }
 
-  update self = case _ of
-    Initialize -> do
+  eval =
+    Halo.makeEval
+      _
+        { onInitialize = \_ -> Just $ Initialize [ LoadArticle, LoadComments ]
+        , onUpdate = \prev next -> Just $ Initialize $ guard (prev.slug /= next.slug) [ LoadArticle, LoadComments ]
+        , onAction = handleAction
+        }
+
+  handleAction = case _ of
+    Initialize actions -> parTraverse_ handleAction actions
+    LoadArticle -> do
+      props <- Halo.props
       modify_ _ { article = RemoteData.Loading }
-      bind (getArticle self.props.slug) case _ of
+      response <- getArticle props.slug
+      case response of
         Left (NotFound _) -> redirect Home
         Left error -> modify_ _ { article = RemoteData.Failure error }
         Right article -> modify_ _ { article = RemoteData.Success article }
     LoadComments -> do
+      props <- Halo.props
       modify_ _ { comments = RemoteData.Loading }
-      listComments self.props.slug >>= \res -> modify_ _ { comments = RemoteData.fromEither res }
+      response <- listComments props.slug
+      modify_ _ { comments = RemoteData.fromEither response }
     DeleteArticle -> do
+      props <- Halo.props
       modify_ _ { submitResponse = RemoteData.Loading }
-      bind (deleteArticle self.props.slug) case _ of
+      response <- deleteArticle props.slug
+      case response of
         Right res -> do
           modify_ _ { submitResponse = RemoteData.Success res }
           navigate Home
         Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
-    ToggleFollow -> for_ (preview _author self.state) (toggleFollow >=> traverse_ (modify_ <<< set _author))
-    ToggleFavorite -> for_ (preview _article self.state) (toggleFavorite >=> traverse_ (modify_ <<< set _article))
+    ToggleFollow -> do
+      state <- Halo.get
+      for_ (preview _author state) (toggleFollow >=> traverse_ (modify_ <<< set _author))
+    ToggleFavorite -> do
+      state <- Halo.get
+      for_ (preview _article state) (toggleFavorite >=> traverse_ (modify_ <<< set _article))
     UpdateBody body -> modify_ _ { body = V.Modified body }
     DeleteComment id -> do
+      props <- Halo.props
       modify_ _ { submitResponse = RemoteData.Loading }
-      bind (deleteComment self.props.slug id) case _ of
+      response <- deleteComment props.slug id
+      case response of
         Right _ -> do
           modify_ _ { submitResponse = RemoteData.Success unit }
-          listComments self.props.slug >>= \res -> modify_ _ { comments = RemoteData.fromEither res }
+          response' <- listComments props.slug
+          modify_ _ { comments = RemoteData.fromEither response' }
         Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
-    SubmitComment ->
-      let
-        state = V.setModified self.state
-      in
-        case toEither (validate state) of
-          Left _ -> modify_ (const state)
-          Right validated -> do
-            modify_ _ { submitResponse = RemoteData.Loading }
-            bind (createComment self.props.slug validated) case _ of
-              Right _ -> do
-                modify_ _ { submitResponse = RemoteData.Success unit, body = pure "" }
-                listComments self.props.slug >>= \res -> modify_ _ { comments = RemoteData.fromEither res }
-              Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
+    SubmitComment -> do
+      props <- Halo.props
+      state <- V.setModified <$> Halo.get
+      case toEither (validate state) of
+        Left _ -> modify_ (const state)
+        Right validated -> do
+          modify_ _ { submitResponse = RemoteData.Loading }
+          response <- createComment props.slug validated
+          case response of
+            Right _ -> do
+              modify_ _ { submitResponse = RemoteData.Success unit, body = pure "" }
+              response' <- listComments props.slug
+              modify_ _ { comments = RemoteData.fromEither response' }
+            Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
 
+  validate :: forall r. { body :: Validated String | r } -> V { body :: Array String } { body :: String }
   validate values = ado
     body <- values.body # V.validated (LR.prop (SProxy :: _ "body")) F.nonEmpty
     in { body }
 
-  render auth { env, props, state, send } =
-    let
-      errors = validate state # unV identity (const mempty) :: { body :: _ }
-    in
-      state.article
-        # RemoteData.maybe React.empty \article ->
-            React.fragment
-              [ container (banner article)
-                  [ R.div
-                      { className: "row article-content"
-                      , children:
-                          [ R.div
-                              { className: "col-xs-12"
-                              , children:
-                                  [ R.div { dangerouslySetInnerHTML: { __html: nmd article.body } }
-                                  , R.ul
-                                      { className: "tag-list"
-                                      , children:
-                                          article.tagList
-                                            <#> \tag ->
-                                                R.li
-                                                  { className: "tag-default tag-pill tag-outline"
-                                                  , children: [ R.text tag ]
-                                                  }
-                                      }
-                                  ]
-                              }
-                          ]
-                      }
-                  , R.hr {}
-                  , R.div
-                      { className: "article-actions"
-                      , children: [ articleMeta article ]
-                      }
-                  , R.div
-                      { className: "row"
-                      , children:
-                          [ R.div
-                              { className: "col-xs-12 col-md-8 offset-md-2"
-                              , children:
-                                  [ case auth of
-                                      Just _ ->
-                                        R.form
-                                          { className: "card comment-form"
-                                          , onSubmit: handler preventDefault $ const $ send SubmitComment
-                                          , children:
-                                              [ R.div
-                                                  { className: "card-block"
-                                                  , children:
-                                                      [ R.textarea
-                                                          { className: "form-control"
-                                                          , rows: 3
-                                                          , value: extract state.body
-                                                          , placeholder: "Write a comment..."
-                                                          , onChange: handler targetValue $ traverse_ $ send <<< UpdateBody
-                                                          }
-                                                      ]
-                                                  }
-                                              , R.div
-                                                  { className: "card-footer"
-                                                  , children:
-                                                      [ R.img
-                                                          { className: "comment-author-img"
-                                                          , src: Avatar.toString $ maybe Avatar.blank (Avatar.withDefault <<< _.image) (_.profile =<< auth)
-                                                          }
-                                                      , R.button
-                                                          { className: "btn btn-sm btn-primary"
-                                                          , type: "submit"
-                                                          , children: [ R.text "Post Comment" ]
-                                                          }
-                                                      ]
-                                                  }
-                                              ]
-                                          }
-                                      Nothing ->
-                                        R.p_
-                                          [ Link.link
-                                              { className: ""
-                                              , route: Login
-                                              , onClick: env.router.navigate
-                                              , children: [ R.text "Sign in" ]
-                                              }
-                                          , R.text " or "
-                                          , Link.link
-                                              { className: ""
-                                              , route: Register
-                                              , onClick: env.router.navigate
-                                              , children: [ R.text "sign up" ]
-                                              }
-                                          , R.text " to add comments on this article."
-                                          ]
-                                  , (preview _Success state.comments)
-                                      # maybe React.empty (React.fragment <<< commentList)
-                                  ]
-                              }
-                          ]
-                      }
-                  ]
-              ]
+  render auth { env, state, send } =
+    state.article
+      # RemoteData.maybe React.empty \article ->
+          React.fragment
+            [ container (banner article)
+                [ R.div
+                    { className: "row article-content"
+                    , children:
+                        [ R.div
+                            { className: "col-xs-12"
+                            , children:
+                                [ R.div { dangerouslySetInnerHTML: { __html: nmd article.body } }
+                                , R.ul
+                                    { className: "tag-list"
+                                    , children:
+                                        article.tagList
+                                          <#> \tag ->
+                                              R.li
+                                                { className: "tag-default tag-pill tag-outline"
+                                                , children: [ R.text tag ]
+                                                }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                , R.hr {}
+                , R.div
+                    { className: "article-actions"
+                    , children: [ articleMeta article ]
+                    }
+                , R.div
+                    { className: "row"
+                    , children:
+                        [ R.div
+                            { className: "col-xs-12 col-md-8 offset-md-2"
+                            , children:
+                                [ case auth of
+                                    Just _ ->
+                                      R.form
+                                        { className: "card comment-form"
+                                        , onSubmit: handler preventDefault $ const $ send SubmitComment
+                                        , children:
+                                            [ R.div
+                                                { className: "card-block"
+                                                , children:
+                                                    [ R.textarea
+                                                        { className: "form-control"
+                                                        , rows: 3
+                                                        , value: extract state.body
+                                                        , placeholder: "Write a comment..."
+                                                        , onChange: handler targetValue $ traverse_ $ send <<< UpdateBody
+                                                        }
+                                                    ]
+                                                }
+                                            , R.div
+                                                { className: "card-footer"
+                                                , children:
+                                                    [ R.img
+                                                        { className: "comment-author-img"
+                                                        , src: Avatar.toString $ maybe Avatar.blank (Avatar.withDefault <<< _.image) (_.profile =<< auth)
+                                                        }
+                                                    , R.button
+                                                        { className: "btn btn-sm btn-primary"
+                                                        , type: "submit"
+                                                        , children: [ R.text "Post Comment" ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    Nothing ->
+                                      R.p_
+                                        [ Link.link
+                                            { className: ""
+                                            , route: Login
+                                            , onClick: env.router.navigate
+                                            , children: [ R.text "Sign in" ]
+                                            }
+                                        , R.text " or "
+                                        , Link.link
+                                            { className: ""
+                                            , route: Register
+                                            , onClick: env.router.navigate
+                                            , children: [ R.text "sign up" ]
+                                            }
+                                        , R.text " to add comments on this article."
+                                        ]
+                                , (preview _Success state.comments)
+                                    # maybe React.empty (React.fragment <<< commentList)
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            ]
     where
     articleMeta article =
       R.div

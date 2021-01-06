@@ -17,7 +17,7 @@ import Control.Comonad (extract)
 import Control.Monad.State (modify_)
 import Data.Array as Array
 import Data.Either (Either(..))
-import Data.Foldable (for_, traverse_)
+import Data.Foldable (traverse_)
 import Data.Lens.Record as LR
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Monoid (guard)
@@ -28,6 +28,7 @@ import React.Basic.DOM as R
 import React.Basic.DOM.Events (targetValue)
 import React.Basic.Events (handler, handler_)
 import React.Basic.Hooks as React
+import React.Halo as Halo
 import Record as Record
 
 data Action
@@ -42,12 +43,14 @@ data Action
 
 makeSettingsPage :: Page.Component Unit
 makeSettingsPage =
-  Page.component "SettingsPage" { initialState, update } \store -> React.do
-    profile <- useProfile store.env
+  Page.component "SettingsPage" { initialState, eval } \self@{ env } -> React.do
+    profile <- useProfile env
     React.useEffect profile do
-      for_ profile $ store.send <<< Initialize
+      case profile of
+        Just profile' -> self.send $ Initialize profile'
+        Nothing -> self.send Logout
       mempty
-    pure $ render store
+    pure $ render self
   where
   initialState =
     { profile: Nothing
@@ -59,7 +62,13 @@ makeSettingsPage =
     , submitResponse: RemoteData.NotAsked
     }
 
-  update self = case _ of
+  eval =
+    Halo.makeEval
+      _
+        { onAction = handleAction
+        }
+
+  handleAction = case _ of
     Initialize profile ->
       modify_
         _
@@ -75,13 +84,13 @@ makeSettingsPage =
     UpdateEmail email -> modify_ _ { email = V.Modified email }
     UpdatePassword password -> modify_ _ { password = V.Modified password }
     Submit -> do
-      let
-        state = V.setModified self.state
+      state <- V.setModified <$> Halo.get
       case toEither (validate state) of
         Left _ -> modify_ (const state)
         Right validated -> do
           modify_ _ { submitResponse = RemoteData.Loading }
-          bind (updateUser validated) case _ of
+          response <- updateUser validated
+          case response of
             Right user -> do
               modify_ _ { submitResponse = RemoteData.Success unit }
               updateProfile $ Record.delete (SProxy :: _ "token") user
@@ -95,7 +104,7 @@ makeSettingsPage =
     password <- values.password # V.validated (LR.prop (SProxy :: _ "password")) \password -> F.nonEmpty password `andThen` (F.minimumLength 3 *> F.maximunLength 20)
     in { image: Avatar.fromString <$> values.image, username, bio: values.bio, email, password }
 
-  render { props, state, send } =
+  render { state, send } =
     let
       errors = validate state # unV identity (const mempty) :: { username :: _, email :: _, password :: _ }
     in

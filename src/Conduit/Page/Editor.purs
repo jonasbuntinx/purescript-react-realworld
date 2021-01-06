@@ -12,12 +12,12 @@ import Conduit.Data.Slug (Slug)
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Control.Comonad (extract)
-import Control.Monad.State (modify_)
+import Control.Monad.State (modify_, put)
 import Data.Array as Array
 import Data.Either (Either(..))
-import Data.Foldable (for_, traverse_)
+import Data.Foldable (traverse_)
 import Data.Lens.Record as LR
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe(..))
 import Data.Monoid (guard)
 import Data.Set (Set)
 import Data.Set as Set
@@ -27,7 +27,7 @@ import Network.RemoteData as RemoteData
 import React.Basic.DOM as R
 import React.Basic.DOM.Events (targetValue)
 import React.Basic.Events (handler, handler_)
-import React.Basic.Hooks as React
+import React.Halo as Halo
 
 type Props
   = { slug :: Maybe Slug
@@ -43,11 +43,8 @@ data Action
 
 makeEditorPage :: Page.Component Props
 makeEditorPage =
-  Page.component "SettingsPage" { initialState, update } \store -> React.do
-    React.useEffect store.props.slug do
-      store.send Initialize
-      mempty
-    pure $ render store
+  Page.component "SettingsPage" { initialState, eval } \self -> React.do
+    pure $ render self
   where
   initialState =
     { article: RemoteData.NotAsked
@@ -58,34 +55,47 @@ makeEditorPage =
     , submitResponse: RemoteData.NotAsked
     }
 
-  update self = case _ of
-    Initialize ->
-      for_ self.props.slug \slug -> do
-        modify_ _ { article = RemoteData.Loading }
-        bind (getArticle slug) case _ of
-          Left (NotFound _) -> redirect Home
-          Left error -> modify_ _ { article = RemoteData.Failure error }
-          Right article ->
-            modify_
-              _
-                { article = RemoteData.Success article
-                , title = pure article.title
-                , description = pure article.description
-                , body = pure article.body
-                , tagList = Set.fromFoldable article.tagList
-                }
+  eval =
+    Halo.makeEval
+      _
+        { onInitialize = \_ -> Just Initialize
+        , onUpdate = \prev next -> if (prev.slug /= next.slug) then Just Initialize else Nothing
+        , onAction = handleAction
+        }
+
+  handleAction = case _ of
+    Initialize -> do
+      props <- Halo.props
+      case props.slug of
+        Nothing -> put initialState
+        Just slug -> do
+          modify_ _ { article = RemoteData.Loading }
+          response <- getArticle slug
+          case response of
+            Left (NotFound _) -> redirect Home
+            Left error -> modify_ _ { article = RemoteData.Failure error }
+            Right article ->
+              modify_
+                _
+                  { article = RemoteData.Success article
+                  , title = pure article.title
+                  , description = pure article.description
+                  , body = pure article.body
+                  , tagList = Set.fromFoldable article.tagList
+                  }
     UpdateTitle title -> modify_ _ { title = V.Modified title }
     UpdateDescription description -> modify_ _ { description = V.Modified description }
     UpdateBody body -> modify_ _ { body = V.Modified body }
     UpdateTagList tagList -> modify_ _ { tagList = tagList }
     Submit -> do
-      let
-        state = V.setModified self.state
+      props <- Halo.props
+      state <- V.setModified <$> Halo.get
       case toEither (validate state) of
         Left _ -> modify_ (const state)
         Right validated -> do
           modify_ _ { submitResponse = RemoteData.Loading }
-          bind (submitArticle self.props.slug validated) case _ of
+          response <- submitArticle props.slug validated
+          case response of
             Right article -> do
               modify_ _ { submitResponse = RemoteData.Success unit }
               navigate $ ViewArticle article.slug
@@ -97,7 +107,7 @@ makeEditorPage =
     body <- values.body # V.validated (LR.prop (SProxy :: _ "body")) \body -> F.nonEmpty body `andThen` F.minimumLength 3
     in { title, description, body, tagList: Set.toUnfoldable values.tagList }
 
-  render { props, state, send } =
+  render { state, send } =
     let
       errors = validate state # unV identity (const mempty) :: { title :: _, description :: _, body :: _ }
     in

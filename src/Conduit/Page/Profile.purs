@@ -17,16 +17,17 @@ import Conduit.Data.Username as Username
 import Conduit.Hook.Auth (useAuth)
 import Conduit.Page.Utils (_articles, _profile)
 import Control.Monad.State (modify_)
+import Control.Parallel (parTraverse_)
 import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Monoid (guard)
-import Data.Tuple.Nested ((/\))
 import Network.RemoteData as RemoteData
 import React.Basic.DOM as R
 import React.Basic.Events (handler_)
 import React.Basic.Hooks as React
+import React.Halo as Halo
 
 type Props
   = { username :: Username
@@ -40,22 +41,17 @@ data Tab
 derive instance eqTab :: Eq Tab
 
 data Action
-  = Initialize
+  = Initialize (Array Action)
+  | LoadProfile
   | LoadArticles { offset :: Int, limit :: Int }
   | ToggleFavorite Int
   | ToggleFollow
 
 makeProfilePage :: Page.Component Props
 makeProfilePage =
-  Page.component "ProfilePage" { initialState, update } \store -> React.do
-    auth <- useAuth store.env
-    React.useEffect store.props.username do
-      store.send Initialize
-      mempty
-    React.useEffect (store.props.username /\ store.props.tab) do
-      store.send $ LoadArticles initialState.pagination
-      mempty
-    pure $ render auth store
+  Page.component "ProfilePage" { initialState, eval } \self@{ env } -> React.do
+    auth <- useAuth env
+    pure $ render auth self
   where
   initialState =
     { selectedTab: Nothing
@@ -64,25 +60,48 @@ makeProfilePage =
     , pagination: { offset: 0, limit: 5 }
     }
 
-  update self = case _ of
-    Initialize -> do
+  eval =
+    Halo.makeEval
+      _
+        { onInitialize = \_ -> Just $ Initialize [ LoadProfile, LoadArticles initialState.pagination ]
+        , onUpdate =
+          \prev next ->
+            Just $ Initialize
+              $ join
+                  [ guard (prev.username /= next.username)
+                      [ LoadProfile ]
+                  , guard (prev.username /= next.username || prev.tab /= next.tab)
+                      [ LoadArticles initialState.pagination ]
+                  ]
+        , onAction = handleAction
+        }
+
+  handleAction = case _ of
+    Initialize actions -> parTraverse_ handleAction actions
+    LoadProfile -> do
+      props <- Halo.props
       modify_ _ { profile = RemoteData.Loading }
-      bind (getProfile self.props.username) case _ of
+      response <- getProfile props.username
+      case response of
         Left (NotFound _) -> redirect Home
         Left error -> modify_ _ { profile = RemoteData.Failure error }
         Right profile -> modify_ _ { profile = RemoteData.Success profile }
     LoadArticles pagination -> do
+      props <- Halo.props
       let
         query = defaultArticlesQuery { offset = Just pagination.offset, limit = Just pagination.limit }
-
-        request =
-          listArticles case self.props.tab of
-            Published -> query { author = Just self.props.username }
-            Favorited -> query { favorited = Just self.props.username }
       modify_ _ { articles = RemoteData.Loading, pagination = pagination }
-      request >>= \res -> modify_ _ { articles = RemoteData.fromEither res }
-    ToggleFavorite ix -> for_ (preview (_articles ix) self.state) (toggleFavorite >=> traverse_ (modify_ <<< set (_articles ix)))
-    ToggleFollow -> for_ (preview _profile self.state) (toggleFollow >=> traverse_ (modify_ <<< set _profile))
+      response <-
+        listArticles case props.tab of
+          Published -> query { author = Just props.username }
+          Favorited -> query { favorited = Just props.username }
+      modify_ _ { articles = RemoteData.fromEither response }
+    ToggleFavorite ix -> do
+      state <- Halo.get
+      for_ (preview (_articles ix) state) (toggleFavorite >=> traverse_ (modify_ <<< set (_articles ix)))
+    ToggleFollow -> do
+      state <- Halo.get
+      for_ (preview _profile state) (toggleFollow >=> traverse_ (modify_ <<< set _profile))
 
   render auth { env, props, state, send } =
     guard (RemoteData.isSuccess state.profile) container userInfo

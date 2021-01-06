@@ -20,6 +20,7 @@ import React.Basic.DOM as R
 import React.Basic.DOM.Events (preventDefault)
 import React.Basic.Events (handler)
 import React.Basic.Hooks as React
+import React.Halo as Halo
 
 data Tab
   = Feed
@@ -29,23 +30,20 @@ data Tab
 derive instance eqTab :: Eq Tab
 
 data Action
-  = LoadTags
+  = Initialize
   | LoadArticles Tab { offset :: Int, limit :: Int }
   | ToggleFavorite Int
 
 makeHomePage :: Page.Component Unit
 makeHomePage =
-  Page.component "HomePage" { initialState, update } \store -> React.do
-    auth <- useAuth store.env
+  Page.component "HomePage" { initialState, eval } \self@{ env } -> React.do
+    auth <- useAuth env
     React.useEffect (isJust auth) do
       case auth of
-        Nothing -> store.send $ LoadArticles store.state.tab store.state.pagination
-        Just _ -> store.send $ LoadArticles Feed store.state.pagination
+        Nothing -> self.send $ LoadArticles self.state.tab self.state.pagination
+        Just _ -> self.send $ LoadArticles Feed self.state.pagination
       mempty
-    React.useEffectOnce do
-      store.send LoadTags
-      mempty
-    pure $ render auth store
+    pure $ render auth self
   where
   initialState =
     { tags: NotAsked
@@ -54,23 +52,32 @@ makeHomePage =
     , tab: Global
     }
 
-  update self = case _ of
-    LoadTags -> do
+  eval =
+    Halo.makeEval
+      _
+        { onInitialize = \_ -> Just Initialize
+        , onAction = handleAction
+        }
+
+  handleAction = case _ of
+    Initialize -> do
       modify_ _ { tags = RemoteData.Loading }
-      listTags >>= \res -> modify_ _ { tags = RemoteData.fromEither res }
+      response <- listTags
+      modify_ _ { tags = RemoteData.fromEither response }
     LoadArticles tab pagination -> do
+      modify_ _ { articles = RemoteData.Loading, tab = tab, pagination = pagination }
       let
         query = defaultArticlesQuery { offset = Just pagination.offset, limit = Just pagination.limit }
+      response <- case tab of
+        Feed -> listFeed query
+        Global -> listArticles query
+        Tag tag -> listArticles (query { tag = Just tag })
+      modify_ _ { articles = RemoteData.fromEither response }
+    ToggleFavorite ix -> do
+      state <- Halo.get
+      for_ (preview (_articles ix) state) (toggleFavorite >=> traverse_ (modify_ <<< set (_articles ix)))
 
-        request = case tab of
-          Feed -> listFeed query
-          Global -> listArticles query
-          Tag tag -> listArticles (query { tag = Just tag })
-      modify_ _ { articles = RemoteData.Loading, tab = tab, pagination = pagination }
-      request >>= \res -> modify_ _ { articles = RemoteData.fromEither res }
-    ToggleFavorite ix -> for_ (preview (_articles ix) self.state) (toggleFavorite >=> traverse_ (modify_ <<< set (_articles ix)))
-
-  render auth { env, props, state, send } =
+  render auth { env, state, send } =
     container (guard (isNothing auth) banner)
       [ mainView
       , R.div

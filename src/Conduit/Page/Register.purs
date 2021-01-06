@@ -23,6 +23,7 @@ import Network.RemoteData as RemoteData
 import React.Basic.DOM as R
 import React.Basic.DOM.Events (targetValue)
 import React.Basic.Events (handler, handler_)
+import React.Halo as Halo
 import Record as Record
 
 data Action
@@ -33,8 +34,8 @@ data Action
 
 makeRegisterPage :: Page.Component Unit
 makeRegisterPage =
-  Page.component "RegisterPage" { initialState, update } \store -> React.do
-    pure $ render store
+  Page.component "RegisterPage" { initialState, eval } \self -> React.do
+    pure $ render self
   where
   initialState =
     { username: pure ""
@@ -43,18 +44,24 @@ makeRegisterPage =
     , submitResponse: RemoteData.NotAsked
     }
 
-  update self = case _ of
+  eval =
+    Halo.makeEval
+      _
+        { onAction = handleAction
+        }
+
+  handleAction = case _ of
     UpdateUsername username -> modify_ _ { username = V.Modified username }
     UpdateEmail email -> modify_ _ { email = V.Modified email }
     UpdatePassword password -> modify_ _ { password = V.Modified password }
     Submit -> do
-      let
-        state = V.setModified self.state
+      state <- V.setModified <$> Halo.get
       case toEither (validate state) of
         Left _ -> modify_ (const state)
         Right validated -> do
           modify_ _ { submitResponse = RemoteData.Loading }
-          bind (registerUser validated) case _ of
+          response <- registerUser validated
+          case response of
             Right user -> do
               modify_ _ { submitResponse = RemoteData.Success unit }
               login user.token $ Record.delete (SProxy :: _ "token") user
@@ -67,7 +74,7 @@ makeRegisterPage =
     password <- values.password # V.validated (LR.prop (SProxy :: _ "password")) \password -> F.nonEmpty password `andThen` (F.minimumLength 3 *> F.maximunLength 20)
     in { username, email, password }
 
-  render { env, props, state, send } =
+  render { env, state, send } =
     let
       errors = validate state # unV identity (const mempty) :: { username :: _, email :: _, password :: _ }
     in

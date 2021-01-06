@@ -23,6 +23,7 @@ import Network.RemoteData as RemoteData
 import React.Basic.DOM as R
 import React.Basic.DOM.Events (targetValue)
 import React.Basic.Events (handler, handler_)
+import React.Halo as Halo
 import Record as Record
 
 data Action
@@ -32,8 +33,8 @@ data Action
 
 makeLoginPage :: Page.Component Unit
 makeLoginPage =
-  Page.component "LoginPage" { initialState, update } \store -> React.do
-    pure $ render store
+  Page.component "LoginPage" { initialState, eval } \self -> React.do
+    pure $ render self
   where
   initialState =
     { email: pure ""
@@ -41,17 +42,23 @@ makeLoginPage =
     , submitResponse: RemoteData.NotAsked
     }
 
-  update self = case _ of
+  eval =
+    Halo.makeEval
+      _
+        { onAction = handleAction
+        }
+
+  handleAction = case _ of
     UpdateEmail email -> modify_ _ { email = V.Modified email }
     UpdatePassword password -> modify_ _ { password = V.Modified password }
     Submit -> do
-      let
-        state = V.setModified self.state
+      state <- V.setModified <$> Halo.get
       case toEither (validate state) of
         Left _ -> modify_ (const state)
         Right validated -> do
           modify_ _ { submitResponse = RemoteData.Loading }
-          bind (loginUser validated) case _ of
+          response <- loginUser validated
+          case response of
             Right user -> do
               modify_ _ { submitResponse = RemoteData.Success unit }
               login user.token $ Record.delete (SProxy :: _ "token") user
@@ -63,7 +70,7 @@ makeLoginPage =
     password <- values.password # V.validated (LR.prop (SProxy :: _ "password")) \password -> F.nonEmpty password `andThen` (F.minimumLength 3 *> F.maximunLength 20)
     in { email, password }
 
-  render { env, props, state, send } =
+  render { env, state, send } =
     let
       errors = validate state # unV identity (const mempty) :: { email :: _, password :: _ }
     in
