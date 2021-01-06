@@ -20,6 +20,7 @@ import React.Basic.DOM as R
 import React.Basic.DOM.Events (preventDefault)
 import React.Basic.Events (handler)
 import React.Basic.Hooks as React
+import React.Halo as Halo
 
 data Tab
   = Feed
@@ -35,17 +36,14 @@ data Action
 
 makeHomePage :: Page.Component Unit
 makeHomePage =
-  Page.component "HomePage" { initialState, update } \store -> React.do
-    auth <- useAuth store.env
+  Page.component' "HomePage" { initialState, eval } \self -> React.do
+    auth <- useAuth self.env
     React.useEffect (isJust auth) do
       case auth of
-        Nothing -> store.send $ LoadArticles store.state.tab store.state.pagination
-        Just _ -> store.send $ LoadArticles Feed store.state.pagination
+        Nothing -> self.send $ LoadArticles self.state.tab self.state.pagination
+        Just _ -> self.send $ LoadArticles Feed self.state.pagination
       mempty
-    React.useEffectOnce do
-      store.send LoadTags
-      mempty
-    pure $ render auth store
+    pure $ render auth self
   where
   initialState =
     { tags: NotAsked
@@ -54,7 +52,14 @@ makeHomePage =
     , tab: Global
     }
 
-  update self = case _ of
+  eval =
+    Halo.makeEval
+      _
+        { onInitialize = \_ -> Just $ LoadTags
+        , onAction = handleAction
+        }
+
+  handleAction = case _ of
     LoadTags -> do
       modify_ _ { tags = RemoteData.Loading }
       response <- listTags
@@ -68,7 +73,9 @@ makeHomePage =
         Global -> listArticles query
         Tag tag -> listArticles (query { tag = Just tag })
       modify_ _ { articles = RemoteData.fromEither response }
-    ToggleFavorite ix -> for_ (preview (_articles ix) self.state) (toggleFavorite >=> traverse_ (modify_ <<< set (_articles ix)))
+    ToggleFavorite ix -> do
+      state <- Halo.get
+      for_ (preview (_articles ix) state) (toggleFavorite >=> traverse_ (modify_ <<< set (_articles ix)))
 
   render auth { env, props, state, send } =
     container (guard (isNothing auth) banner)

@@ -13,7 +13,6 @@ import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Control.Comonad (extract)
 import Control.Monad.State (modify_)
-import Control.Parallel (parTraverse_)
 import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
@@ -35,8 +34,7 @@ type Props
     }
 
 data Action
-  = Initialize (Array Action)
-  | LoadArticle
+  = LoadArticle
   | UpdateTitle String
   | UpdateDescription String
   | UpdateBody String
@@ -60,13 +58,12 @@ makeEditorPage =
   eval =
     Halo.makeEval
       _
-        { onInitialize = \_ -> Just $ Initialize [ LoadArticle ]
-        , onUpdate = \prev next -> Just $ Initialize $ guard (prev.slug /= next.slug) [ LoadArticle ]
+        { onInitialize = \_ -> Just LoadArticle
+        , onUpdate = \prev next -> if (prev.slug /= next.slug) then Just LoadArticle else Nothing
         , onAction = handleAction
         }
 
   handleAction = case _ of
-    Initialize actions -> parTraverse_ handleAction actions
     LoadArticle -> do
       props <- Halo.props
       for_ props.slug \slug -> do
