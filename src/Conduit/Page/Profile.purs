@@ -17,6 +17,7 @@ import Conduit.Data.Username as Username
 import Conduit.Hook.Auth (useAuth)
 import Conduit.Page.Utils (_articles, _profile)
 import Control.Monad.State (modify_)
+import Control.Parallel (parTraverse_)
 import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
@@ -40,7 +41,8 @@ data Tab
 derive instance eqTab :: Eq Tab
 
 data Action
-  = LoadProfile
+  = Initialize (Array Action)
+  | LoadProfile
   | LoadArticles { offset :: Int, limit :: Int }
   | ToggleFavorite Int
   | ToggleFollow
@@ -58,20 +60,24 @@ makeProfilePage =
     , pagination: { offset: 0, limit: 5 }
     }
 
-  eval = case _ of
-    Halo.Initialize _ -> do
-      handleAction LoadProfile
-      handleAction $ LoadArticles initialState.pagination
-    Halo.Update prev next -> do
-      guard (prev.username /= next.username) do
-        void $ Halo.fork $ handleAction LoadProfile
-      guard (prev.username /= next.username || prev.tab /= next.tab) do
-        void $ Halo.fork $ handleAction $ LoadArticles initialState.pagination
-    Halo.Action action -> do
-      handleAction action
-    Halo.Finalize -> pure unit
+  eval =
+    Halo.makeEval
+      _
+        { onInitialize = \_ -> Just $ Initialize [ LoadProfile, LoadArticles initialState.pagination ]
+        , onUpdate =
+          \prev next ->
+            Just $ Initialize
+              $ join
+                  [ guard (prev.username /= next.username)
+                      [ LoadProfile ]
+                  , guard (prev.username /= next.username || prev.tab /= next.tab)
+                      [ LoadArticles initialState.pagination ]
+                  ]
+        , onAction = handleAction
+        }
 
   handleAction = case _ of
+    Initialize actions -> parTraverse_ handleAction actions
     LoadProfile -> do
       props <- Halo.props
       modify_ _ { profile = RemoteData.Loading }

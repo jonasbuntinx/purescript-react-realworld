@@ -55,10 +55,5 @@ component' name { initialState, eval } render = do
   env <- ask
   liftEffect
     $ React.component name \props -> React.do
-        state /\ send <-
-          Halo.useHalo
-            { initialState
-            , props
-            , eval: Halo.hoist (runAppM env) <<< eval
-            }
+        state /\ send <- Halo.useHalo { initialState, props, eval: Halo.hoist (runAppM env) <<< eval }
         render { env, props, state, send }
