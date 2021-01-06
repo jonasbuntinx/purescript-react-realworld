@@ -33,8 +33,8 @@ data Action
 
 makeLoginPage :: Page.Component Unit
 makeLoginPage =
-  Page.component' "LoginPage" { initialState, eval } \store -> React.do
-    pure $ render store
+  Page.component' "LoginPage" { initialState, eval } \self -> React.do
+    pure $ render self
   where
   initialState =
     { email: pure ""
