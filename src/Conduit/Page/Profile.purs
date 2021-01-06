@@ -22,11 +22,11 @@ import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Monoid (guard)
-import Data.Tuple.Nested ((/\))
 import Network.RemoteData as RemoteData
 import React.Basic.DOM as R
 import React.Basic.Events (handler_)
 import React.Basic.Hooks as React
+import React.Halo as Halo
 
 type Props
   = { username :: Username
@@ -40,22 +40,16 @@ data Tab
 derive instance eqTab :: Eq Tab
 
 data Action
-  = Initialize
+  = LoadProfile
   | LoadArticles { offset :: Int, limit :: Int }
   | ToggleFavorite Int
   | ToggleFollow
 
 makeProfilePage :: Page.Component Props
 makeProfilePage =
-  Page.component "ProfilePage" { initialState, update } \store -> React.do
-    auth <- useAuth store.env
-    React.useEffect store.props.username do
-      store.send Initialize
-      mempty
-    React.useEffect (store.props.username /\ store.props.tab) do
-      store.send $ LoadArticles initialState.pagination
-      mempty
-    pure $ render auth store
+  Page.component' "ProfilePage" { initialState, eval } \self -> React.do
+    auth <- useAuth self.env
+    pure $ render auth self
   where
   initialState =
     { selectedTab: Nothing
@@ -64,25 +58,40 @@ makeProfilePage =
     , pagination: { offset: 0, limit: 5 }
     }
 
-  update self = case _ of
-    Initialize -> do
+  eval = case _ of
+    Halo.Initialize _ -> do
+      eval $ Halo.Action LoadProfile
+      eval $ Halo.Action $ LoadArticles initialState.pagination
+    Halo.Update prev next -> do
+      guard (prev.username /= next.username) do
+        void $ Halo.fork $ eval $ Halo.Action LoadProfile
+      guard (prev.username /= next.username || prev.tab /= next.tab) do
+        void $ Halo.fork $ eval $ Halo.Action $ LoadArticles initialState.pagination
+    Halo.Action LoadProfile -> do
+      props <- Halo.props
       modify_ _ { profile = RemoteData.Loading }
-      bind (getProfile self.props.username) case _ of
+      bind (getProfile props.username) case _ of
         Left (NotFound _) -> redirect Home
         Left error -> modify_ _ { profile = RemoteData.Failure error }
         Right profile -> modify_ _ { profile = RemoteData.Success profile }
-    LoadArticles pagination -> do
+    Halo.Action (LoadArticles pagination) -> do
+      props <- Halo.props
       let
         query = defaultArticlesQuery { offset = Just pagination.offset, limit = Just pagination.limit }
 
         request =
-          listArticles case self.props.tab of
-            Published -> query { author = Just self.props.username }
-            Favorited -> query { favorited = Just self.props.username }
+          listArticles case props.tab of
+            Published -> query { author = Just props.username }
+            Favorited -> query { favorited = Just props.username }
       modify_ _ { articles = RemoteData.Loading, pagination = pagination }
       request >>= \res -> modify_ _ { articles = RemoteData.fromEither res }
-    ToggleFavorite ix -> for_ (preview (_articles ix) self.state) (toggleFavorite >=> traverse_ (modify_ <<< set (_articles ix)))
-    ToggleFollow -> for_ (preview _profile self.state) (toggleFollow >=> traverse_ (modify_ <<< set _profile))
+    Halo.Action (ToggleFavorite ix) -> do
+      state <- Halo.get
+      for_ (preview (_articles ix) state) (toggleFavorite >=> traverse_ (modify_ <<< set (_articles ix)))
+    Halo.Action ToggleFollow -> do
+      state <- Halo.get
+      for_ (preview _profile state) (toggleFollow >=> traverse_ (modify_ <<< set _profile))
+    Halo.Finalize -> pure unit
 
   render auth { env, props, state, send } =
     guard (RemoteData.isSuccess state.profile) container userInfo
