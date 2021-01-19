@@ -1934,10 +1934,10 @@ data-urls@^1.1.0:
     whatwg-mimetype "^2.2.0"
     whatwg-url "^7.0.0"
 
-dayjs@^1.9.3:
-  version "1.10.2"
-  resolved "https://registry.yarnpkg.com/dayjs/-/dayjs-1.10.2.tgz#8f3a424ceb944a8193506804b0045a773d2d0672"
-  integrity sha512-h/YtykNNTR8Qgtd1Fxl5J1/SFP1b7SOk/M1P+Re+bCdFMV0IMkuKNgHPN7rlvvuhfw24w0LX78iYKt4YmePJNQ==
+dayjs@^1.10.3:
+  version "1.10.3"
+  resolved "https://registry.yarnpkg.com/dayjs/-/dayjs-1.10.3.tgz#cf3357c8e7f508432826371672ebf376cb7d619b"
+  integrity sha512-/2fdLN987N8Ki7Id8BUN2nhuiRyxTLumQnSQf9CNncFCyqFsSKb9TNhzRYcC8K8eJSJOKvbvkImo/MKKhNi4iw==
 
 deasync@^0.1.14:
   version "0.1.21"
@@ -4385,10 +4385,10 @@ posthtml@^0.13.4:
     posthtml-parser "^0.5.0"
     posthtml-render "^1.2.3"
 
-preact@^10.5.5:
-  version "10.5.9"
-  resolved "https://registry.yarnpkg.com/preact/-/preact-10.5.9.tgz#8caba9288b4db1d593be2317467f8735e43cda0b"
-  integrity sha512-X4m+4VMVINl/JFQKALOCwa3p8vhMAhBvle0hJ/W44w/WWfNb2TA7RNicDV3K2dNVs57f61GviEnVLiwN+fxiIg==
+preact@^10.5.10:
+  version "10.5.10"
+  resolved "https://registry.yarnpkg.com/preact/-/preact-10.5.10.tgz#8de7bf669e965a51fc9e45a6fd1e97a47af383e6"
+  integrity sha512-A6SITnHaj5CS4JPLVroQDNOEozq4Y0B4yQSGHLznxHe66Jb2DvoeTEibLjXmfeofgQE3BZ2zurltBIapzCMlwg==
 
 prelude-ls@~1.1.2:
   version "1.1.2"
@@ -4525,7 +4525,7 @@ purgecss@^2.3.0:
     postcss "7.0.32"
     postcss-selector-parser "^6.0.2"
 
-purty@^6.2.0:
+purty@^6.3.0:
   version "6.3.0"
   resolved "https://registry.yarnpkg.com/purty/-/purty-6.3.0.tgz#2d4d949b5d23fe3fd761411cabd23537b65d098d"
   integrity sha512-l70uQyz+t5GvCPzOorUbIhRX3oQW9i8Kgwr0LvS6nUq+UM4rMJdYcHazuupcLVInvNsbd290EnpjaRgAITt0dw==
@@ -5007,10 +5007,10 @@ source-map@^0.5.0, source-map@^0.5.6:
   resolved "https://registry.yarnpkg.com/source-map/-/source-map-0.5.7.tgz#8a039d2d1021d22d1ea14c80d8ea468ba2ef3fcc"
   integrity sha1-igOdLRAh0i0eoUyA2OpGi6LvP8w=
 
-spago@^0.16.0:
-  version "0.16.0"
-  resolved "https://registry.yarnpkg.com/spago/-/spago-0.16.0.tgz#25e04574d9b34251a9f653c2c01d2dce3103ed27"
-  integrity sha512-I7CpLNM+3EPqLeqrhQHPa8U7J1C90XzMIzrzDtlZQ0TeloseulopTd5l2hzhjaj5DrcVtYhYkh3DVY1QDh8+ZA==
+spago@^0.19.0:
+  version "0.19.0"
+  resolved "https://registry.yarnpkg.com/spago/-/spago-0.19.0.tgz#a3897cd86989df91d775b67f8ca350df825d5267"
+  integrity sha512-Nya6XumeRerMjkSXrexqlQJFoObYK8ybj7EtoB9WOHQfC4meySkrbfiD5bJhhn+WVhiGzHIqi4dllnrlTrH1wA==
   dependencies:
     request "^2.88.0"
     tar "^4.4.8"
