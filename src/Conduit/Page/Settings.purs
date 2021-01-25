@@ -2,17 +2,16 @@ module Conduit.Page.Settings (makeSettingsPage) where
 
 import Prelude
 import Conduit.Capability.Api (updateUser)
-import Conduit.Capability.Auth (logout, updateProfile)
-import Conduit.Capability.Routing (navigate, redirect)
+import Conduit.Capability.Routing (logout, navigate)
 import Conduit.Component.Page as Page
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Data.Avatar as Avatar
-import Conduit.Data.Profile (UserProfile)
 import Conduit.Data.Route (Route(..))
+import Conduit.Data.User (User)
 import Conduit.Data.Username as Username
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
-import Conduit.Hook.Auth (useProfile)
+import Conduit.Hook.Auth (useUser)
 import Control.Comonad (extract)
 import Control.Monad.State (modify_)
 import Data.Array as Array
@@ -29,10 +28,9 @@ import React.Basic.DOM.Events (targetValue)
 import React.Basic.Events (handler, handler_)
 import React.Basic.Hooks as React
 import React.Halo as Halo
-import Record as Record
 
 data Action
-  = Initialize UserProfile
+  = Initialize { | User () }
   | UpdateImage String
   | UpdateUsername String
   | UpdateBio String
@@ -44,16 +42,16 @@ data Action
 makeSettingsPage :: Page.Component Unit
 makeSettingsPage =
   Page.component "SettingsPage" { initialState, eval } \self@{ env } -> React.do
-    profile <- useProfile env
-    React.useEffect profile do
-      case profile of
-        Just profile' -> self.send $ Initialize profile'
+    user <- useUser env
+    React.useEffect user do
+      case user of
+        Just user' -> self.send $ Initialize user'
         Nothing -> self.send Logout
       mempty
     pure $ render self
   where
   initialState =
-    { profile: Nothing
+    { user: Nothing
     , image: Nothing
     , username: pure ""
     , bio: Nothing
@@ -69,14 +67,14 @@ makeSettingsPage =
         }
 
   handleAction = case _ of
-    Initialize profile ->
+    Initialize user ->
       modify_
         _
-          { profile = Just profile
-          , image = Avatar.toString <$> profile.image
-          , username = pure $ Username.toString profile.username
-          , bio = profile.bio
-          , email = pure profile.email
+          { user = Just user
+          , image = Avatar.toString <$> user.image
+          , username = pure $ Username.toString user.username
+          , bio = user.bio
+          , email = pure user.email
           }
     UpdateImage image -> modify_ _ { image = Just image }
     UpdateUsername username -> modify_ _ { username = V.Modified username }
@@ -93,10 +91,9 @@ makeSettingsPage =
           case response of
             Right user -> do
               modify_ _ { submitResponse = RemoteData.Success unit }
-              updateProfile $ Record.delete (SProxy :: _ "token") user
               navigate Home
             Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
-    Logout -> logout *> redirect Home
+    Logout -> logout
 
   validate values = ado
     username <- values.username # V.validated (LR.prop (SProxy :: _ "username")) \username -> F.nonEmpty username `andThen` F.validUsername
@@ -108,7 +105,7 @@ makeSettingsPage =
     let
       errors = validate state # unV identity (const mempty) :: { username :: _, email :: _, password :: _ }
     in
-      guard (isJust state.profile) container
+      guard (isJust state.user) container
         [ R.h1
             { className: "text-xs-center"
             , children: [ R.text "Your Settings" ]

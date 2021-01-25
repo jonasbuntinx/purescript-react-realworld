@@ -47,13 +47,13 @@ header { auth, currentRoute, onNavigate } =
                             , R.text " Settings"
                             ]
                         , auth
-                            # maybe React.empty \{ username, profile } ->
-                                navItem (Profile $ maybe username _.username profile)
+                            # maybe React.empty \{ username, user } ->
+                                navItem (Profile $ maybe username _.username user)
                                   [ R.img
                                       { className: "user-pic"
-                                      , src: Avatar.toString $ maybe Avatar.blank (Avatar.withDefault <<< _.image) profile
+                                      , src: Avatar.toString $ maybe Avatar.blank (Avatar.withDefault <<< _.image) user
                                       }
-                                  , R.text $ " " <> Username.toString (maybe username _.username profile)
+                                  , R.text $ " " <> Username.toString (maybe username _.username user)
                                   ]
                         ]
                     }

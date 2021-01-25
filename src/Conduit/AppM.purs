@@ -3,23 +3,23 @@ module Conduit.AppM where
 import Prelude
 import Apiary as Apiary
 import Conduit.Api.Endpoints as Endpoints
-import Conduit.Api.Utils (makeRequest, makeSecureRequest)
-import Conduit.Capability.Api (class ArticleApi, class CommentApi, class FavoriteApi, class FollowApi, class ProfileApi, class TagApi, class UserApi)
-import Conduit.Capability.Auth (class Auth)
+import Conduit.Api.Utils (authenticate, makeRequest, makeSecureRequest)
+import Conduit.Capability.Api (class ArticleApi, class CommentApi, class ProfileApi, class TagApi, class UserApi)
 import Conduit.Capability.Routing (class Routing)
-import Conduit.Data.Auth (toAuth)
 import Conduit.Data.Env (Env)
 import Conduit.Data.Error (Error(..))
-import Conduit.Data.Route (Route)
+import Conduit.Data.Route (Route(..))
 import Control.Monad.Reader (class MonadAsk, ReaderT, ask, asks, runReaderT)
-import Data.Either (Either(..))
+import Data.Either (Either(..), either)
 import Data.Maybe (Maybe(..))
+import Data.Symbol (SProxy(..))
 import Data.Variant (expand, match)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect, liftEffect)
+import Record as Record
 import Type.Equality (class TypeEquals, from)
-import Wire.React.Atom.Class (modify, read)
+import Wire.React.Atom.Class (modify)
 
 newtype AppM a
   = AppM (ReaderT Env Aff a)
@@ -44,28 +44,38 @@ derive newtype instance monadAffAppM :: MonadAff AppM
 instance monadAskAppM :: TypeEquals e Env => MonadAsk e AppM where
   ask = AppM $ asks from
 
--- | Capabilities
-instance authAppM :: Auth AppM where
-  read = ask >>= \{ auth } -> liftEffect $ read auth.signal
-  login token profile = ask >>= \{ auth } -> liftEffect $ modify auth.signal $ const $ toAuth token (Just profile)
-  logout = ask >>= \{ auth } -> liftEffect $ modify auth.signal $ const Nothing
-  updateProfile profile = ask >>= \{ auth } -> liftEffect $ modify auth.signal $ map $ _ { profile = Just profile }
-
-instance routingAppM :: Routing Route AppM where
+-- | Routing
+instance routingAppM :: Routing AppM where
   navigate route = ask >>= \{ router } -> liftEffect $ router.navigate route
   redirect route = ask >>= \{ router } -> liftEffect $ router.redirect route
+  logout =
+    ask
+      >>= \{ auth, router } ->
+          liftEffect do
+            modify auth.signal $ const Nothing
+            router.redirect Home
 
+-- | User
 instance userApiAppM :: UserApi AppM where
-  loginUser user = do
-    res <- makeRequest (Apiary.Route :: Endpoints.LoginUser) Apiary.none Apiary.none { user }
-    pure $ res >>= match { ok: Right <<< _.user, unprocessableEntity: Left <<< UnprocessableEntity <<< _.errors }
+  loginUser credentials = do
+    authenticate (Apiary.Route :: Endpoints.LoginUser) Apiary.none Apiary.none { user: credentials }
   registerUser user = do
-    res <- makeRequest (Apiary.Route :: Endpoints.RegisterUser) Apiary.none Apiary.none { user }
-    pure $ res >>= (match { ok: Right <<< _.user, unprocessableEntity: Left <<< UnprocessableEntity <<< _.errors })
+    authenticate (Apiary.Route :: Endpoints.RegisterUser) Apiary.none Apiary.none { user }
   updateUser user = do
     res <- makeSecureRequest (Apiary.Route :: Endpoints.UpdateUser) Apiary.none Apiary.none { user }
-    pure $ res >>= (match { ok: Right <<< _.user, unprocessableEntity: Left <<< UnprocessableEntity <<< _.errors })
+    res
+      # either
+          (pure <<< Left)
+          ( match
+              { ok:
+                  \{ user: currentUser } -> do
+                    ask >>= \{ auth } -> liftEffect $ modify auth.signal $ map $ _ { user = Just $ Record.delete (SProxy :: _ "token") currentUser }
+                    pure $ Right currentUser
+              , unprocessableEntity: pure <<< Left <<< UnprocessableEntity <<< _.errors
+              }
+          )
 
+-- | Article
 instance articleApiAppM :: ArticleApi AppM where
   listArticles query = do
     res <- makeRequest (Apiary.Route :: Endpoints.ListArticles) Apiary.none query Apiary.none
@@ -84,8 +94,6 @@ instance articleApiAppM :: ArticleApi AppM where
   deleteArticle slug = do
     res <- makeSecureRequest (Apiary.Route :: Endpoints.DeleteArticle) { slug } Apiary.none Apiary.none
     pure $ res >>= (match { ok: const $ Right unit })
-
-instance favoriteApiAppM :: FavoriteApi AppM where
   toggleFavorite { slug, favorited } = do
     res <-
       if favorited then
@@ -94,6 +102,7 @@ instance favoriteApiAppM :: FavoriteApi AppM where
         makeSecureRequest (Apiary.Route :: Endpoints.FavoriteArticle) { slug } Apiary.none Apiary.none
     pure $ res >>= match { ok: Right <<< _.article }
 
+-- | Comment
 instance commentApiAppM :: CommentApi AppM where
   listComments slug = do
     res <- makeRequest (Apiary.Route :: Endpoints.ListComments) { slug } Apiary.none Apiary.none
@@ -105,12 +114,11 @@ instance commentApiAppM :: CommentApi AppM where
     res <- makeSecureRequest (Apiary.Route :: Endpoints.DeleteComment) { slug, id } Apiary.none Apiary.none
     pure $ res >>= (match { ok: const $ Right unit })
 
+-- | Profile
 instance profileApiAppM :: ProfileApi AppM where
   getProfile username = do
     res <- makeRequest (Apiary.Route :: Endpoints.GetProfile) { username } Apiary.none Apiary.none
     pure $ res >>= (match { ok: Right <<< _.profile, notFound: Left <<< NotFound })
-
-instance followApiAppM :: FollowApi AppM where
   toggleFollow { username, following } = do
     res <-
       if following then
@@ -119,6 +127,7 @@ instance followApiAppM :: FollowApi AppM where
         makeSecureRequest (Apiary.Route :: Endpoints.FollowProfile) { username } Apiary.none Apiary.none
     pure $ res >>= match { ok: Right <<< _.profile }
 
+-- | Tag
 instance tagApiAppM :: TagApi AppM where
   listTags = do
     res <- makeRequest (Apiary.Route :: Endpoints.ListTags) Apiary.none Apiary.none Apiary.none

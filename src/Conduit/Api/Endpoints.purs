@@ -3,17 +3,18 @@ module Conduit.Api.Endpoints where
 import Apiary (DELETE, GET, JSON, None, POST, PUT)
 import Conduit.Data.Article (Article, ArticleRep, ArticlesQuery)
 import Conduit.Data.Comment (Comment, CommentId)
-import Conduit.Data.Profile (ProfileRep, User, Profile)
+import Conduit.Data.Profile (Profile)
 import Conduit.Data.Slug (Slug)
+import Conduit.Data.User (CurrentUser, User)
 import Conduit.Data.Username (Username)
 import Foreign.Object (Object)
 
--- | User
+-- | CurrentUser
 type LoginUser
   = POST "/api/users/login"
       { body :: JSON { user :: { email :: String, password :: String } }
       , response ::
-          { ok :: JSON { user :: User }
+          { ok :: JSON { user :: CurrentUser }
           , unprocessableEntity :: JSON { errors :: Object (Array String) }
           }
       }
@@ -22,7 +23,7 @@ type RegisterUser
   = POST "/api/users"
       { body :: JSON { user :: { username :: Username, email :: String, password :: String } }
       , response ::
-          { ok :: JSON { user :: User }
+          { ok :: JSON { user :: CurrentUser }
           , unprocessableEntity :: JSON { errors :: Object (Array String) }
           }
       }
@@ -30,15 +31,15 @@ type RegisterUser
 type GetUser
   = GET "/api/user"
       { response ::
-          { ok :: JSON { user :: User }
+          { ok :: JSON { user :: CurrentUser }
           }
       }
 
 type UpdateUser
   = PUT "/api/user"
-      { body :: JSON { user :: { | ProfileRep ( email :: String, password :: String ) } }
+      { body :: JSON { user :: { | User ( password :: String ) } }
       , response ::
-          { ok :: JSON { user :: User }
+          { ok :: JSON { user :: CurrentUser }
           , unprocessableEntity :: JSON { errors :: Object (Array String) }
           }
       }
@@ -96,7 +97,6 @@ type DeleteArticle
           }
       }
 
--- | Favorite
 type FavoriteArticle
   = POST "/api/articles/:slug/favorite"
       { path :: { slug :: Slug }
@@ -149,7 +149,6 @@ type GetProfile
           }
       }
 
--- | Follow
 type FollowProfile
   = POST "/api/profiles/:username/follow"
       { path :: { username :: Username }

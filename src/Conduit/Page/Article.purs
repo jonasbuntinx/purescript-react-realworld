@@ -195,7 +195,7 @@ makeArticlePage =
                                                 , children:
                                                     [ R.img
                                                         { className: "comment-author-img"
-                                                        , src: Avatar.toString $ maybe Avatar.blank (Avatar.withDefault <<< _.image) (_.profile =<< auth)
+                                                        , src: Avatar.toString $ maybe Avatar.blank (Avatar.withDefault <<< _.image) (_.user =<< auth)
                                                         }
                                                     , R.button
                                                         { className: "btn btn-sm btn-primary"

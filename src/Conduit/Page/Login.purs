@@ -2,7 +2,6 @@ module Conduit.Page.Login (makeLoginPage) where
 
 import Prelude
 import Conduit.Capability.Api (loginUser)
-import Conduit.Capability.Auth (login)
 import Conduit.Capability.Routing (redirect)
 import Conduit.Component.Link as Link
 import Conduit.Component.Page as Page
@@ -24,7 +23,6 @@ import React.Basic.DOM as R
 import React.Basic.DOM.Events (targetValue)
 import React.Basic.Events (handler, handler_)
 import React.Halo as Halo
-import Record as Record
 
 data Action
   = UpdateEmail String
@@ -61,7 +59,6 @@ makeLoginPage =
           case response of
             Right user -> do
               modify_ _ { submitResponse = RemoteData.Success unit }
-              login user.token $ Record.delete (SProxy :: _ "token") user
               redirect Home
             Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
 

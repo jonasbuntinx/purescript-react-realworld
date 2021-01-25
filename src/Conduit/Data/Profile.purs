@@ -11,11 +11,5 @@ type ProfileRep r
     | r
     )
 
-type User
-  = { | ProfileRep ( email :: String, token :: String ) }
-
-type UserProfile
-  = { | ProfileRep ( email :: String ) }
-
 type Profile
   = { | ProfileRep ( following :: Boolean ) }

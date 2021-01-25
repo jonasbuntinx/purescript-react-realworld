@@ -1,20 +1,28 @@
-module Conduit.Api.Utils (makeRequest, makeSecureRequest, makeSecureRequest') where
+module Conduit.Api.Utils (authenticate, makeRequest, makeSecureRequest, makeSecureRequest') where
 
 import Prelude
 import Apiary as Apiary
-import Conduit.Capability.Auth (class Auth, read)
 import Conduit.Capability.Routing (class Routing, redirect)
 import Conduit.Config as Config
+import Conduit.Data.Auth (toAuth)
+import Conduit.Data.Env (Env)
 import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..))
+import Conduit.Data.User (CurrentUser)
+import Control.Monad.Reader (class MonadAsk, ask)
 import Data.Array as Array
 import Data.Bifunctor (lmap)
 import Data.Bitraversable (lfor)
-import Data.Either (Either(..))
+import Data.Either (Either(..), either)
 import Data.Maybe (Maybe(..))
+import Data.Symbol (SProxy(..))
+import Data.Variant (Variant, match)
 import Effect.Aff.Class (class MonadAff, liftAff)
-import Effect.Class (class MonadEffect)
+import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Class.Console as Console
+import Foreign.Object (Object)
+import Record as Record
+import Wire.React.Atom.Class (modify, read)
 
 makeRequest ::
   forall m rep body query path route response.
@@ -33,8 +41,8 @@ makeRequest route path query body = do
 
 makeSecureRequest ::
   forall m rep body query path route response.
-  Auth m =>
-  Routing Route m =>
+  MonadAsk Env m =>
+  Routing m =>
   MonadAff m =>
   Apiary.BuildRequest route path query body rep =>
   Apiary.DecodeResponse rep response =>
@@ -44,7 +52,8 @@ makeSecureRequest ::
   body ->
   m (Either Error response)
 makeSecureRequest route path query body = do
-  auth <- read
+  env <- ask
+  auth <- liftEffect $ read env.auth.signal
   case auth of
     Nothing -> do
       redirect Register
@@ -82,3 +91,34 @@ onError error = do
   toLogMessage (Apiary.UnexpectedResponse req { status, body }) = ("Unexpected API response (" <> show status <> "): ") <> body
 
   toLogMessage err = show err
+
+authenticate ::
+  forall m rep body query path route.
+  MonadAsk Env m =>
+  MonadAff m =>
+  Apiary.BuildRequest route path query body rep =>
+  Apiary.DecodeResponse
+    rep
+    ( Variant
+        ( ok :: { user :: CurrentUser }
+        , unprocessableEntity :: { errors :: Object (Array String) }
+        )
+    ) =>
+  route ->
+  path ->
+  query ->
+  body ->
+  m (Either Error CurrentUser)
+authenticate route path query body = do
+  res <- makeRequest route path query body
+  res
+    # either
+        (pure <<< Left)
+        ( match
+            { ok:
+                \{ user: currentUser } -> do
+                  ask >>= \{ auth } -> liftEffect $ modify auth.signal $ const $ toAuth currentUser.token (Just $ Record.delete (SProxy :: _ "token") currentUser)
+                  pure $ Right currentUser
+            , unprocessableEntity: pure <<< Left <<< UnprocessableEntity <<< _.errors
+            }
+        )
