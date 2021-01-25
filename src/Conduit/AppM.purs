@@ -3,9 +3,10 @@ module Conduit.AppM where
 import Prelude
 import Apiary as Apiary
 import Conduit.Api.Endpoints as Endpoints
-import Conduit.Api.Utils (authenticate, makeRequest, makeSecureRequest)
+import Conduit.Api.Utils (makeRequest, makeSecureRequest)
 import Conduit.Capability.Api (class ArticleApi, class CommentApi, class ProfileApi, class TagApi, class UserApi)
 import Conduit.Capability.Routing (class Routing)
+import Conduit.Data.Auth (toAuth)
 import Conduit.Data.Env (Env)
 import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..))
@@ -58,9 +59,31 @@ instance routingAppM :: Routing AppM where
 -- | User
 instance userApiAppM :: UserApi AppM where
   loginUser credentials = do
-    authenticate (Apiary.Route :: Endpoints.LoginUser) Apiary.none Apiary.none { user: credentials }
+    res <- makeRequest (Apiary.Route :: Endpoints.LoginUser) Apiary.none Apiary.none { user: credentials }
+    res
+      # either
+          (pure <<< Left)
+          ( match
+              { ok:
+                  \{ user: currentUser } -> do
+                    ask >>= \{ auth } -> liftEffect $ modify auth.signal $ const $ toAuth currentUser.token (Just $ Record.delete (SProxy :: _ "token") currentUser)
+                    pure $ Right currentUser
+              , unprocessableEntity: pure <<< Left <<< UnprocessableEntity <<< _.errors
+              }
+          )
   registerUser user = do
-    authenticate (Apiary.Route :: Endpoints.RegisterUser) Apiary.none Apiary.none { user }
+    res <- makeRequest (Apiary.Route :: Endpoints.RegisterUser) Apiary.none Apiary.none { user }
+    res
+      # either
+          (pure <<< Left)
+          ( match
+              { ok:
+                  \{ user: currentUser } -> do
+                    ask >>= \{ auth } -> liftEffect $ modify auth.signal $ const $ toAuth currentUser.token (Just $ Record.delete (SProxy :: _ "token") currentUser)
+                    pure $ Right currentUser
+              , unprocessableEntity: pure <<< Left <<< UnprocessableEntity <<< _.errors
+              }
+          )
   updateUser user = do
     res <- makeSecureRequest (Apiary.Route :: Endpoints.UpdateUser) Apiary.none Apiary.none { user }
     res
