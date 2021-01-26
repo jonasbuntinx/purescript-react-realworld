@@ -1,8 +1,7 @@
 module Conduit.Page.Settings (makeSettingsPage) where
 
 import Prelude
-import Conduit.Capability.Api (updateUser)
-import Conduit.Capability.Routing (logout, navigate)
+import Conduit.AppM (logout, navigate, updateUser)
 import Conduit.Component.Page as Page
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Data.Avatar as Avatar
@@ -11,7 +10,6 @@ import Conduit.Data.User (User)
 import Conduit.Data.Username as Username
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
-import Conduit.Hook.Auth (useUser)
 import Control.Comonad (extract)
 import Control.Monad.State (modify_)
 import Data.Array as Array
@@ -41,8 +39,10 @@ data Action
 
 makeSettingsPage :: Page.Component Unit
 makeSettingsPage =
-  Page.component "SettingsPage" { initialState, eval } \self@{ env } -> React.do
-    user <- useUser env
+  Page.component "SettingsPage" { initialState, eval } \self -> React.do
+    -- user <- useUser env
+    let
+      user = Nothing
     React.useEffect user do
       case user of
         Just user' -> self.send $ Initialize user'
@@ -61,7 +61,7 @@ makeSettingsPage =
     }
 
   eval =
-    Halo.makeEval
+    Halo.mkEval
       _
         { onAction = handleAction
         }

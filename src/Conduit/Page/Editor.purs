@@ -1,8 +1,7 @@
 module Conduit.Page.Editor (Props, makeEditorPage) where
 
 import Prelude
-import Conduit.Capability.Api (getArticle, submitArticle)
-import Conduit.Capability.Routing (navigate, redirect)
+import Conduit.AppM (getArticle, navigate, redirect, submitArticle)
 import Conduit.Component.Page as Page
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Component.TagInput (tagInput)
@@ -56,7 +55,7 @@ makeEditorPage =
     }
 
   eval =
-    Halo.makeEval
+    Halo.mkEval
       _
         { onInitialize = \_ -> Just Initialize
         , onUpdate = \prev next -> if (prev.slug /= next.slug) then Just Initialize else Nothing

@@ -1,8 +1,7 @@
 module Conduit.Page.Login (makeLoginPage) where
 
 import Prelude
-import Conduit.Capability.Api (loginUser)
-import Conduit.Capability.Routing (redirect)
+import Conduit.AppM (loginUser, navigate, redirect)
 import Conduit.Component.Link as Link
 import Conduit.Component.Page as Page
 import Conduit.Component.ResponseErrors (responseErrors)
@@ -25,7 +24,8 @@ import React.Basic.Events (handler, handler_)
 import React.Halo as Halo
 
 data Action
-  = UpdateEmail String
+  = Navigate Route
+  | UpdateEmail String
   | UpdatePassword String
   | Submit
 
@@ -41,12 +41,13 @@ makeLoginPage =
     }
 
   eval =
-    Halo.makeEval
+    Halo.mkEval
       _
         { onAction = handleAction
         }
 
   handleAction = case _ of
+    Navigate route -> navigate route
     UpdateEmail email -> modify_ _ { email = V.Modified email }
     UpdatePassword password -> modify_ _ { password = V.Modified password }
     Submit -> do
@@ -67,7 +68,7 @@ makeLoginPage =
     password <- values.password # V.validated (LR.prop (SProxy :: _ "password")) \password -> F.nonEmpty password `andThen` (F.minimumLength 3 *> F.maximunLength 20)
     in { email, password }
 
-  render { env, state, send } =
+  render { state, send } =
     let
       errors = validate state # unV identity (const mempty) :: { email :: _, password :: _ }
     in
@@ -82,7 +83,7 @@ makeLoginPage =
                 [ Link.link
                     { className: ""
                     , route: Register
-                    , onClick: env.router.navigate
+                    , onClick: send <<< Navigate
                     , children: [ R.text "Need an account?" ]
                     }
                 ]

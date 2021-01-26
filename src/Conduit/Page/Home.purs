@@ -1,13 +1,13 @@
 module Conduit.Page.Home (makeHomePage) where
 
 import Prelude
-import Conduit.Capability.Api (listArticles, listFeed, listTags, toggleFavorite)
+import Conduit.AppM (listArticles, listFeed, listTags, navigate, toggleFavorite)
 import Conduit.Component.ArticleList (articleList)
 import Conduit.Component.Page as Page
 import Conduit.Component.Pagination (pagination)
 import Conduit.Component.Tabs as Tabs
 import Conduit.Data.Article (defaultArticlesQuery)
-import Conduit.Hook.Auth (useAuth)
+import Conduit.Data.Route (Route)
 import Conduit.Page.Utils (_articles)
 import Control.Monad.State (modify_)
 import Data.Foldable (for_, traverse_)
@@ -31,13 +31,16 @@ derive instance eqTab :: Eq Tab
 
 data Action
   = Initialize
+  | Navigate Route
   | LoadArticles Tab { offset :: Int, limit :: Int }
   | ToggleFavorite Int
 
 makeHomePage :: Page.Component Unit
 makeHomePage =
-  Page.component "HomePage" { initialState, eval } \self@{ env } -> React.do
-    auth <- useAuth env
+  Page.component "HomePage" { initialState, eval } \self -> React.do
+    -- auth <- useAuth env
+    let
+      auth = Nothing
     React.useEffect (isJust auth) do
       case auth of
         Nothing -> self.send $ LoadArticles self.state.tab self.state.pagination
@@ -53,7 +56,7 @@ makeHomePage =
     }
 
   eval =
-    Halo.makeEval
+    Halo.mkEval
       _
         { onInitialize = \_ -> Just Initialize
         , onAction = handleAction
@@ -64,6 +67,7 @@ makeHomePage =
       modify_ _ { tags = RemoteData.Loading }
       response <- listTags
       modify_ _ { tags = RemoteData.fromEither response }
+    Navigate route -> navigate route
     LoadArticles tab pagination -> do
       modify_ _ { articles = RemoteData.Loading, tab = tab, pagination = pagination }
       let
@@ -77,7 +81,7 @@ makeHomePage =
       state <- Halo.get
       for_ (preview (_articles ix) state) (toggleFavorite >=> traverse_ (modify_ <<< set (_articles ix)))
 
-  render auth { env, state, send } =
+  render auth { state, send } =
     container (guard (isNothing auth) banner)
       [ mainView
       , R.div
@@ -138,7 +142,7 @@ makeHomePage =
       R.div_
         [ articleList
             { articles: state.articles <#> _.articles
-            , onNavigate: env.router.navigate
+            , onNavigate: send <<< Navigate
             , onFavoriteToggle: send <<< ToggleFavorite
             }
         , state.articles

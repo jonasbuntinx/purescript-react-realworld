@@ -3,6 +3,7 @@
     [ "apiary"
     , "console"
     , "effect"
+    , "event"
     , "foreign-generic"
     , "heterogeneous"
     , "js-timers"

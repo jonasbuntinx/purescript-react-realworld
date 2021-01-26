@@ -10,13 +10,15 @@ import Conduit.Data.Route (Route)
 import Conduit.Data.Slug (Slug)
 import Conduit.Data.User (CurrentUser, User)
 import Conduit.Data.Username (Username)
+import Control.Monad.Error.Class (class MonadError, class MonadThrow)
 import Control.Monad.Reader (ReaderT, asks, runReaderT)
 import Data.Either (Either)
 import Data.Maybe (Maybe)
-import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
+import Effect.Exception as Exception
+import FRP.Event (Event)
 import React.Halo (HaloM, lift)
 
 newtype AppM a
@@ -33,13 +35,13 @@ type AppImpl m
     }
 
 type AuthImpl m
-  = { read :: m (Maybe Auth)
-    , subscribe :: (Maybe Auth -> Effect Unit) -> m (m Unit)
+  = { readAuth :: m (Maybe Auth)
+    , readAuthEvent :: m (Event (Maybe Auth))
+    , modifyAuth :: (Maybe Auth -> Maybe Auth) -> m (Maybe Auth)
     }
 
 type RoutingImpl m
-  = { read :: m Route
-    , navigate :: Route -> m Unit
+  = { navigate :: Route -> m Unit
     , redirect :: Route -> m Unit
     , logout :: m Unit
     }
@@ -91,48 +93,40 @@ derive newtype instance monadEffectAppM :: MonadEffect AppM
 
 derive newtype instance monadAffAppM :: MonadAff AppM
 
+derive newtype instance monadThrowAppM :: MonadThrow Exception.Error AppM
+
+derive newtype instance monadErrorAppM :: MonadError Exception.Error AppM
+
 -- | Auth
 class
   Monad m <= MonadAuth m where
   readAuth :: m (Maybe Auth)
-  subscribeToAuth :: (Maybe Auth -> Effect Unit) -> m (m Unit)
+  readAuthEvent :: m (Event (Maybe Auth))
+  modifyAuth :: (Maybe Auth -> Maybe Auth) -> m (Maybe Auth)
 
 instance monadAuthAppM :: MonadAuth AppM where
-  readAuth = do
-    f <- AppM (asks _.auth.read)
-    f
-  subscribeToAuth k = do
-    f <- AppM (asks _.auth.subscribe)
-    f k
+  readAuth = join $ AppM $ asks _.auth.readAuth
+  readAuthEvent = join $ AppM $ asks _.auth.readAuthEvent
+  modifyAuth f = (AppM $ asks _.auth.modifyAuth) >>= (#) f
 
 instance authHaloM :: MonadAuth m => MonadAuth (HaloM props state action m) where
   readAuth = lift readAuth
-  subscribeToAuth = map lift <<< lift <<< subscribeToAuth
+  readAuthEvent = lift readAuthEvent
+  modifyAuth = lift <<< modifyAuth
 
 -- | Routing
 class
   Monad m <= MonadRouting m where
-  readRoute :: m Route
   navigate :: Route -> m Unit
   redirect :: Route -> m Unit
   logout :: m Unit
 
 instance monadRoutingAppM :: MonadRouting AppM where
-  readRoute = do
-    f <- AppM (asks _.routing.read)
-    f
-  navigate route = do
-    f <- AppM (asks _.routing.navigate)
-    f route
-  redirect route = do
-    f <- AppM (asks _.routing.redirect)
-    f route
-  logout = do
-    f <- AppM (asks _.routing.logout)
-    f
+  navigate route = (AppM $ asks _.routing.navigate) >>= (#) route
+  redirect route = (AppM $ asks _.routing.redirect) >>= (#) route
+  logout = join $ AppM $ asks _.routing.logout
 
 instance routingHaloM :: MonadRouting m => MonadRouting (HaloM props state action m) where
-  readRoute = lift readRoute
   navigate = lift <<< navigate
   redirect = lift <<< redirect
   logout = lift logout
@@ -145,15 +139,9 @@ class
   updateUser :: { | User ( password :: String ) } -> m (Either Error CurrentUser)
 
 instance monadUserApiM :: MonadUserApi AppM where
-  loginUser creds = do
-    f <- AppM (asks _.userApi.loginUser)
-    f creds
-  registerUser user = do
-    f <- AppM (asks _.userApi.registerUser)
-    f user
-  updateUser user = do
-    f <- AppM (asks _.userApi.updateUser)
-    f user
+  loginUser creds = (AppM $ asks _.userApi.loginUser) >>= (#) creds
+  registerUser user = (AppM $ asks _.userApi.registerUser) >>= (#) user
+  updateUser user = (AppM $ asks _.userApi.updateUser) >>= (#) user
 
 instance userApiHaloM :: MonadUserApi m => MonadUserApi (HaloM props state action m) where
   loginUser = lift <<< loginUser
@@ -171,24 +159,12 @@ class
   toggleFavorite :: Article -> m (Either Error Article)
 
 instance monadArticleApiM :: MonadArticleApi AppM where
-  listArticles query = do
-    f <- AppM (asks _.articleApi.listArticles)
-    f query
-  listFeed query = do
-    f <- AppM (asks _.articleApi.listFeed)
-    f query
-  getArticle slug = do
-    f <- AppM (asks _.articleApi.getArticle)
-    f slug
-  submitArticle slug article = do
-    f <- AppM (asks _.articleApi.submitArticle)
-    f slug article
-  deleteArticle slug = do
-    f <- AppM (asks _.articleApi.deleteArticle)
-    f slug
-  toggleFavorite article = do
-    f <- AppM (asks _.articleApi.toggleFavorite)
-    f article
+  listArticles query = (AppM $ asks _.articleApi.listArticles) >>= (#) query
+  listFeed query = (AppM $ asks _.articleApi.listFeed) >>= (#) query
+  getArticle slug = (AppM $ asks _.articleApi.getArticle) >>= (#) slug
+  submitArticle slug article = (AppM $ asks _.articleApi.submitArticle) >>= \f -> f slug article
+  deleteArticle slug = (AppM $ asks _.articleApi.deleteArticle) >>= (#) slug
+  toggleFavorite article = (AppM $ asks _.articleApi.toggleFavorite) >>= (#) article
 
 instance articleApiHaloM :: MonadArticleApi m => MonadArticleApi (HaloM props state action m) where
   listArticles = lift <<< listArticles
@@ -206,15 +182,9 @@ class
   deleteComment :: Slug -> CommentId -> m (Either Error Unit)
 
 instance monadCommentApiM :: MonadCommentApi AppM where
-  listComments slug = do
-    f <- AppM (asks _.commentApi.listComments)
-    f slug
-  createComment slug comment = do
-    f <- AppM (asks _.commentApi.createComment)
-    f slug comment
-  deleteComment slug id = do
-    f <- AppM (asks _.commentApi.deleteComment)
-    f slug id
+  listComments slug = (AppM $ asks _.commentApi.listComments) >>= (#) slug
+  createComment slug comment = (AppM $ asks _.commentApi.createComment) >>= \f -> f slug comment
+  deleteComment slug id = (AppM $ asks _.commentApi.deleteComment) >>= \f -> f slug id
 
 instance commentApiHaloM :: MonadCommentApi m => MonadCommentApi (HaloM props state action m) where
   listComments = lift <<< listComments
@@ -228,12 +198,8 @@ class
   toggleFollow :: Profile -> m (Either Error Profile)
 
 instance monadProfileApiM :: MonadProfileApi AppM where
-  getProfile username = do
-    f <- AppM (asks _.profileApi.getProfile)
-    f username
-  toggleFollow profile = do
-    f <- AppM (asks _.profileApi.toggleFollow)
-    f profile
+  getProfile username = (AppM $ asks _.profileApi.getProfile) >>= (#) username
+  toggleFollow profile = (AppM $ asks _.profileApi.toggleFollow) >>= (#) profile
 
 instance profileApiHaloM :: MonadProfileApi m => MonadProfileApi (HaloM props state action m) where
   getProfile = lift <<< getProfile
@@ -245,9 +211,7 @@ class
   listTags :: m (Either Error (Array String))
 
 instance monadTagApiM :: MonadTagApi AppM where
-  listTags = do
-    f <- AppM (asks _.tagApi.listTags)
-    f
+  listTags = join $ AppM $ asks _.tagApi.listTags
 
 instance tagApiHaloM :: MonadTagApi m => MonadTagApi (HaloM props state action m) where
   listTags = lift listTags

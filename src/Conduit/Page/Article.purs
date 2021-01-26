@@ -1,8 +1,7 @@
 module Conduit.Page.Article (Props, makeArticlePage) where
 
 import Prelude
-import Conduit.Capability.Api (createComment, deleteArticle, deleteComment, getArticle, listComments, toggleFavorite, toggleFollow)
-import Conduit.Capability.Routing (navigate, redirect)
+import Conduit.AppM (createComment, deleteArticle, deleteComment, getArticle, listComments, navigate, redirect, toggleFavorite, toggleFollow)
 import Conduit.Component.Buttons (ButtonSize(..), favoriteButton, followButton)
 import Conduit.Component.Link as Link
 import Conduit.Component.Page as Page
@@ -15,7 +14,6 @@ import Conduit.Data.Username as Username
 import Conduit.Form.Validated (Validated)
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
-import Conduit.Hook.Auth (useAuth)
 import Conduit.Page.Utils (_article, _author)
 import Control.Comonad (extract)
 import Control.Monad.State (modify_)
@@ -44,6 +42,7 @@ type Props
 
 data Action
   = Initialize (Array Action)
+  | Navigate Route
   | LoadArticle
   | LoadComments
   | DeleteArticle
@@ -55,8 +54,10 @@ data Action
 
 makeArticlePage :: Page.Component Props
 makeArticlePage =
-  Page.component "ArticlePage" { initialState, eval } \self@{ env } -> React.do
-    auth <- useAuth env
+  Page.component "ArticlePage" { initialState, eval } \self -> React.do
+    -- auth <- useAuth env
+    let
+      auth = Nothing
     pure $ render auth self
   where
   initialState =
@@ -67,7 +68,7 @@ makeArticlePage =
     }
 
   eval =
-    Halo.makeEval
+    Halo.mkEval
       _
         { onInitialize = \_ -> Just $ Initialize [ LoadArticle, LoadComments ]
         , onUpdate = \prev next -> Just $ Initialize $ guard (prev.slug /= next.slug) [ LoadArticle, LoadComments ]
@@ -76,6 +77,7 @@ makeArticlePage =
 
   handleAction = case _ of
     Initialize actions -> parTraverse_ handleAction actions
+    Navigate route -> navigate route
     LoadArticle -> do
       props <- Halo.props
       modify_ _ { article = RemoteData.Loading }
@@ -135,7 +137,7 @@ makeArticlePage =
     body <- values.body # V.validated (LR.prop (SProxy :: _ "body")) F.nonEmpty
     in { body }
 
-  render auth { env, state, send } =
+  render auth { state, send } =
     state.article
       # RemoteData.maybe React.empty \article ->
           React.fragment
@@ -211,14 +213,14 @@ makeArticlePage =
                                         [ Link.link
                                             { className: ""
                                             , route: Login
-                                            , onClick: env.router.navigate
+                                            , onClick: send <<< Navigate
                                             , children: [ R.text "Sign in" ]
                                             }
                                         , R.text " or "
                                         , Link.link
                                             { className: ""
                                             , route: Register
-                                            , onClick: env.router.navigate
+                                            , onClick: send <<< Navigate
                                             , children: [ R.text "sign up" ]
                                             }
                                         , R.text " to add comments on this article."
@@ -239,7 +241,7 @@ makeArticlePage =
             [ Link.link
                 { className: ""
                 , route: Profile article.author.username
-                , onClick: env.router.navigate
+                , onClick: send <<< Navigate
                 , children:
                     [ R.img
                         { src: Avatar.toString $ Avatar.withDefault article.author.image
@@ -253,7 +255,7 @@ makeArticlePage =
                     [ Link.link
                         { className: "author"
                         , route: Profile article.author.username
-                        , onClick: env.router.navigate
+                        , onClick: send <<< Navigate
                         , children: [ R.text $ Username.toString article.author.username ]
                         }
                     , R.span
@@ -271,7 +273,7 @@ makeArticlePage =
                       [ Link.link
                           { className: "btn btn-outline-secondary btn-sm"
                           , route: UpdateArticle article.slug
-                          , onClick: env.router.navigate
+                          , onClick: send <<< Navigate
                           , children:
                               [ R.i
                                   { className: "ion-edit"
@@ -331,7 +333,7 @@ makeArticlePage =
                       [ Link.link
                           { className: "comment-author"
                           , route: Profile comment.author.username
-                          , onClick: env.router.navigate
+                          , onClick: send <<< Navigate
                           , children:
                               [ R.img
                                   { className: "comment-author-img"
@@ -343,7 +345,7 @@ makeArticlePage =
                       , Link.link
                           { className: "comment-author"
                           , route: Profile comment.author.username
-                          , onClick: env.router.navigate
+                          , onClick: send <<< Navigate
                           , children:
                               [ R.text $ Username.toString comment.author.username ]
                           }
