@@ -22,12 +22,12 @@ appImpl =
   , routing:
       { navigate: \_ -> liftEffect $ Exception.throw "navigate not implemented"
       , redirect: \_ -> liftEffect $ Exception.throw "redirect not implemented"
-      , logout: liftEffect $ Exception.throw " logout not implemented"
       }
   , userApi:
       { loginUser: \_ -> liftEffect $ Exception.throw "loginUser not implemented"
       , registerUser: \_ -> liftEffect $ Exception.throw "registerUser not implemented"
       , updateUser: \_ -> liftEffect $ Exception.throw "updateUser not implemented"
+      , logoutUser: liftEffect $ Exception.throw " logout not implemented"
       }
   , articleApi:
       { listArticles: \_ -> liftEffect $ Exception.throw "listArticles not implemented"

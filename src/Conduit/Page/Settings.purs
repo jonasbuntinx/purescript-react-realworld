@@ -1,7 +1,7 @@
 module Conduit.Page.Settings (makeSettingsPage) where
 
 import Prelude
-import Conduit.AppM (logout, navigate, updateUser)
+import Conduit.AppM (logoutUser, navigate, updateUser)
 import Conduit.Component.Page as Page
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Data.Avatar as Avatar
@@ -93,7 +93,7 @@ makeSettingsPage =
               modify_ _ { submitResponse = RemoteData.Success unit }
               navigate Home
             Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
-    Logout -> logout
+    Logout -> logoutUser
 
   validate values = ado
     username <- values.username # V.validated (LR.prop (SProxy :: _ "username")) \username -> F.nonEmpty username `andThen` F.validUsername

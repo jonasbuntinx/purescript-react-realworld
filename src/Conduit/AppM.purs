@@ -43,13 +43,13 @@ type AuthImpl m
 type RoutingImpl m
   = { navigate :: Route -> m Unit
     , redirect :: Route -> m Unit
-    , logout :: m Unit
     }
 
 type UserApiImpl m
   = { loginUser :: { email :: String, password :: String } -> m (Either Error CurrentUser)
     , registerUser :: { username :: Username, email :: String, password :: String } -> m (Either Error CurrentUser)
     , updateUser :: { | User ( password :: String ) } -> m (Either Error CurrentUser)
+    , logoutUser :: m Unit
     }
 
 type ArticleApiImpl m
@@ -119,17 +119,14 @@ class
   Monad m <= MonadRouting m where
   navigate :: Route -> m Unit
   redirect :: Route -> m Unit
-  logout :: m Unit
 
 instance monadRoutingAppM :: MonadRouting AppM where
   navigate route = (AppM $ asks _.routing.navigate) >>= (#) route
   redirect route = (AppM $ asks _.routing.redirect) >>= (#) route
-  logout = join $ AppM $ asks _.routing.logout
 
 instance routingHaloM :: MonadRouting m => MonadRouting (HaloM props state action m) where
   navigate = lift <<< navigate
   redirect = lift <<< redirect
-  logout = lift logout
 
 -- | User
 class
@@ -137,16 +134,19 @@ class
   loginUser :: { email :: String, password :: String } -> m (Either Error CurrentUser)
   registerUser :: { username :: Username, email :: String, password :: String } -> m (Either Error CurrentUser)
   updateUser :: { | User ( password :: String ) } -> m (Either Error CurrentUser)
+  logoutUser :: m Unit
 
 instance monadUserApiM :: MonadUserApi AppM where
   loginUser creds = (AppM $ asks _.userApi.loginUser) >>= (#) creds
   registerUser user = (AppM $ asks _.userApi.registerUser) >>= (#) user
   updateUser user = (AppM $ asks _.userApi.updateUser) >>= (#) user
+  logoutUser = join $ AppM $ asks _.userApi.logoutUser
 
 instance userApiHaloM :: MonadUserApi m => MonadUserApi (HaloM props state action m) where
   loginUser = lift <<< loginUser
   registerUser = lift <<< registerUser
   updateUser = lift <<< updateUser
+  logoutUser = lift logoutUser
 
 -- | Article
 class

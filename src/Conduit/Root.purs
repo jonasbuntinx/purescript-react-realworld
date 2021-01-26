@@ -17,7 +17,9 @@ import Conduit.Page.Settings (makeSettingsPage)
 import Control.Parallel (parTraverse_)
 import Data.Maybe (Maybe(..), isJust)
 import Data.Tuple.Nested ((/\))
+import Effect.Console (log)
 import React.Basic.Hooks as React
+import React.Halo (liftEffect)
 import React.Halo as Halo
 
 data Action
@@ -65,7 +67,7 @@ makeRoot = do
       authEvent <- readAuthEvent
       void $ Halo.subscribe $ map UpdateAuth authEvent
     SubscribeToRouting -> do
-      pure unit
+      liftEffect $ log "FOOBAR"
     UpdateAuth auth -> Halo.modify_ _ { auth = auth }
     UpdateRoute route -> Halo.modify_ _ { route = route }
     Redirect route -> redirect route

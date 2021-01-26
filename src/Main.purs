@@ -63,10 +63,6 @@ appImpl { navigate, redirect } =
   , routing:
       { navigate: liftEffect <<< navigate
       , redirect: liftEffect <<< redirect
-      , logout:
-          do
-            void $ modifyAuth $ const Nothing
-            liftEffect $ redirect Home
       }
   , userApi:
       { loginUser:
@@ -111,6 +107,10 @@ appImpl { navigate, redirect } =
                       , unprocessableEntity: pure <<< Left <<< UnprocessableEntity <<< _.errors
                       }
                   )
+      , logoutUser:
+          do
+            void $ modifyAuth $ const Nothing
+            liftEffect $ redirect Home
       }
   , articleApi:
       { listArticles:
