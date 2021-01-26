@@ -27,7 +27,7 @@ appImpl =
       { loginUser: \_ -> liftEffect $ Exception.throw "loginUser not implemented"
       , registerUser: \_ -> liftEffect $ Exception.throw "registerUser not implemented"
       , updateUser: \_ -> liftEffect $ Exception.throw "updateUser not implemented"
-      , logoutUser: liftEffect $ Exception.throw " logout not implemented"
+      , logoutUser: liftEffect $ Exception.throw " logoutUser not implemented"
       }
   , articleApi:
       { listArticles: \_ -> liftEffect $ Exception.throw "listArticles not implemented"
