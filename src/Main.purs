@@ -71,53 +71,46 @@ appImpl { auth, routing } =
       , redirect: liftEffect <<< routing.redirect
       }
   , userApi:
-      { loginUser:
-          \credentials -> do
-            res <- makeRequest (Apiary.Route :: Endpoints.LoginUser) Apiary.none Apiary.none { user: credentials }
-            res
-              # either
-                  (pure <<< Left)
-                  ( match
-                      { ok:
-                          \{ user: currentUser } -> do
-                            void $ modifyAuth $ const $ toAuth currentUser.token (Just $ Record.delete (SProxy :: _ "token") currentUser)
-                            pure $ Right currentUser
-                      , unprocessableEntity: pure <<< Left <<< UnprocessableEntity <<< _.errors
-                      }
-                  )
-      , registerUser:
-          \user -> do
-            res <- makeRequest (Apiary.Route :: Endpoints.RegisterUser) Apiary.none Apiary.none { user }
-            res
-              # either
-                  (pure <<< Left)
-                  ( match
-                      { ok:
-                          \{ user: currentUser } -> do
-                            void $ modifyAuth $ const $ toAuth currentUser.token (Just $ Record.delete (SProxy :: _ "token") currentUser)
-                            pure $ Right currentUser
-                      , unprocessableEntity: pure <<< Left <<< UnprocessableEntity <<< _.errors
-                      }
-                  )
-      , updateUser:
-          \user -> do
-            res <- makeSecureRequest (Apiary.Route :: Endpoints.UpdateUser) Apiary.none Apiary.none { user }
-            res
-              # either
-                  (pure <<< Left)
-                  ( match
-                      { ok:
-                          \{ user: currentUser } -> do
-                            void $ modifyAuth $ map $ _ { user = Just $ Record.delete (SProxy :: _ "token") currentUser }
-                            pure $ Right currentUser
-                      , unprocessableEntity: pure <<< Left <<< UnprocessableEntity <<< _.errors
-                      }
-                  )
-      , logoutUser:
-          do
-            void $ modifyAuth $ const Nothing
-            liftEffect $ routing.redirect Home
-      }
+      let
+        handleAuthRes =
+          either
+            (pure <<< Left)
+            ( match
+                { ok:
+                    \{ user: currentUser } -> do
+                      void $ modifyAuth $ const $ toAuth currentUser.token (Just $ Record.delete (SProxy :: _ "token") currentUser)
+                      pure $ Right currentUser
+                , unprocessableEntity: pure <<< Left <<< UnprocessableEntity <<< _.errors
+                }
+            )
+      in
+        { loginUser:
+            \credentials -> do
+              res <- makeRequest (Apiary.Route :: Endpoints.LoginUser) Apiary.none Apiary.none { user: credentials }
+              res # handleAuthRes
+        , registerUser:
+            \user -> do
+              res <- makeRequest (Apiary.Route :: Endpoints.RegisterUser) Apiary.none Apiary.none { user }
+              res # handleAuthRes
+        , updateUser:
+            \user -> do
+              res <- makeSecureRequest (Apiary.Route :: Endpoints.UpdateUser) Apiary.none Apiary.none { user }
+              res
+                # either
+                    (pure <<< Left)
+                    ( match
+                        { ok:
+                            \{ user: currentUser } -> do
+                              void $ modifyAuth $ map $ _ { user = Just $ Record.delete (SProxy :: _ "token") currentUser }
+                              pure $ Right currentUser
+                        , unprocessableEntity: pure <<< Left <<< UnprocessableEntity <<< _.errors
+                        }
+                    )
+        , logoutUser:
+            do
+              void $ modifyAuth $ const Nothing
+              liftEffect $ routing.redirect Home
+        }
   , articleApi:
       { listArticles:
           \query -> do
