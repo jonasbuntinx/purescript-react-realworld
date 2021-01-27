@@ -1,4 +1,4 @@
-module Conduit.Page.Article (Props, makeArticlePage) where
+module Conduit.Page.Article (Props, mkArticlePage) where
 
 import Prelude
 import Conduit.Capability.Auth (readAuth, readAuthEvent)
@@ -58,8 +58,8 @@ data Action
   | DeleteComment CommentId
   | SubmitComment
 
-makeArticlePage :: App.Component Props
-makeArticlePage = App.component "ArticlePage" { initialState, eval, render }
+mkArticlePage :: App.Component Props
+mkArticlePage = App.component "ArticlePage" { initialState, eval, render }
   where
   initialState =
     { auth: Nothing

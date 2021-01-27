@@ -1,4 +1,4 @@
-module Conduit.Page.Home (makeHomePage) where
+module Conduit.Page.Home (mkHomePage) where
 
 import Prelude
 import Conduit.Capability.Auth (readAuth, readAuthEvent)
@@ -42,8 +42,8 @@ data Action
   | LoadArticles Tab { offset :: Int, limit :: Int }
   | ToggleFavorite Int
 
-makeHomePage :: App.Component Unit
-makeHomePage = App.component "HomePage" { initialState, eval, render }
+mkHomePage :: App.Component Unit
+mkHomePage = App.component "HomePage" { initialState, eval, render }
   where
   initialState =
     { auth: Nothing

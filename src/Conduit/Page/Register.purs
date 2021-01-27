@@ -1,4 +1,4 @@
-module Conduit.Page.Register (makeRegisterPage) where
+module Conduit.Page.Register (mkRegisterPage) where
 
 import Prelude
 import Conduit.Capability.Resource.User (registerUser)
@@ -30,8 +30,8 @@ data Action
   | UpdatePassword String
   | Submit
 
-makeRegisterPage :: App.Component Unit
-makeRegisterPage = App.component "RegisterPage" { initialState, eval, render }
+mkRegisterPage :: App.Component Unit
+mkRegisterPage = App.component "RegisterPage" { initialState, eval, render }
   where
   initialState =
     { username: pure ""

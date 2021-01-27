@@ -20,10 +20,10 @@ type Props
     }
 
 tagInput :: Props -> React.JSX
-tagInput = unsafePerformEffect makeTagInput
+tagInput = unsafePerformEffect mkTagInput
 
-makeTagInput :: React.Component Props
-makeTagInput = do
+mkTagInput :: React.Component Props
+mkTagInput = do
   React.component "TagInput" \props -> React.do
     state /\ setState <- React.useState { text: "" }
     pure

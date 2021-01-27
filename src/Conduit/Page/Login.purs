@@ -1,4 +1,4 @@
-module Conduit.Page.Login (makeLoginPage) where
+module Conduit.Page.Login (mkLoginPage) where
 
 import Prelude
 import Conduit.Capability.Resource.User (loginUser)
@@ -29,8 +29,8 @@ data Action
   | UpdatePassword String
   | Submit
 
-makeLoginPage :: App.Component Unit
-makeLoginPage = App.component "LoginPage" { initialState, eval, render }
+mkLoginPage :: App.Component Unit
+mkLoginPage = App.component "LoginPage" { initialState, eval, render }
   where
   initialState =
     { email: pure ""

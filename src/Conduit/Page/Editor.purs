@@ -1,4 +1,4 @@
-module Conduit.Page.Editor (Props, makeEditorPage) where
+module Conduit.Page.Editor (Props, mkEditorPage) where
 
 import Prelude
 import Conduit.Capability.Resource.Article (getArticle, submitArticle)
@@ -40,8 +40,8 @@ data Action
   | UpdateTagList (Set String)
   | Submit
 
-makeEditorPage :: App.Component Props
-makeEditorPage = App.component "SettingsPage" { initialState, eval, render }
+mkEditorPage :: App.Component Props
+mkEditorPage = App.component "SettingsPage" { initialState, eval, render }
   where
   initialState =
     { article: RemoteData.NotAsked

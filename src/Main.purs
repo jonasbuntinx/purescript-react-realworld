@@ -34,10 +34,10 @@ main = do
   case container of
     Nothing -> Exception.throw "Conduit container element not found."
     Just c -> do
-      auth <- Auth.makeAuthManager
-      routing <- Routing.makeRoutingManager
+      auth <- Auth.mkAuthManager
+      routing <- Routing.mkRoutingManager
       launchAff_ do
-        root <- runAppM (appImpl { auth, routing }) Root.makeRoot
+        root <- runAppM (appImpl { auth, routing }) Root.mkRoot
         liftEffect $ render (React.fragment [ routing.component, auth.component, root unit ]) c
 
 appImpl ::

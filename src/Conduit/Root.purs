@@ -1,19 +1,20 @@
 module Conduit.Root where
 
 import Prelude
-import Conduit.AppM (navigate, readAuth, readAuthEvent, readRoute, readRoutingEvent, redirect)
+import Conduit.Capability.Auth (readAuth, readAuthEvent)
+import Conduit.Capability.Routing (navigate, readRoute, readRoutingEvent, redirect)
 import Conduit.Component.App as App
 import Conduit.Component.Footer as Footer
 import Conduit.Component.Header as Header
 import Conduit.Data.Auth (Auth)
 import Conduit.Data.Route (Route(..))
-import Conduit.Page.Article (makeArticlePage)
-import Conduit.Page.Editor (makeEditorPage)
-import Conduit.Page.Home (makeHomePage)
-import Conduit.Page.Login (makeLoginPage)
-import Conduit.Page.Profile (Tab(..), makeProfilePage)
-import Conduit.Page.Register (makeRegisterPage)
-import Conduit.Page.Settings (makeSettingsPage)
+import Conduit.Page.Article (mkArticlePage)
+import Conduit.Page.Editor (mkEditorPage)
+import Conduit.Page.Home (mkHomePage)
+import Conduit.Page.Login (mkLoginPage)
+import Conduit.Page.Profile (Tab(..), mkProfilePage)
+import Conduit.Page.Register (mkRegisterPage)
+import Conduit.Page.Settings (mkSettingsPage)
 import Control.Parallel (parTraverse_)
 import Data.Maybe (Maybe(..))
 import React.Basic.Hooks as React
@@ -27,8 +28,8 @@ data Action
   | UpdateRoute Route
   | Navigate Route
 
-makeRoot :: App.Component Unit
-makeRoot = do
+mkRoot :: App.Component Unit
+mkRoot = do
   render <- mkRender
   App.component "Root" { initialState, eval, render }
   where
@@ -71,13 +72,13 @@ makeRoot = do
     Navigate route -> navigate route
 
   mkRender = do
-    homePage <- makeHomePage
-    loginPage <- makeLoginPage
-    registerPage <- makeRegisterPage
-    settingsPage <- makeSettingsPage
-    editorPage <- makeEditorPage
-    articlePage <- makeArticlePage
-    profilePage <- makeProfilePage
+    homePage <- mkHomePage
+    loginPage <- mkLoginPage
+    registerPage <- mkRegisterPage
+    settingsPage <- mkSettingsPage
+    editorPage <- mkEditorPage
+    articlePage <- mkArticlePage
+    profilePage <- mkProfilePage
     pure
       $ \{ state, send } ->
           React.fragment

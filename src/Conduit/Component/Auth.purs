@@ -26,14 +26,14 @@ import Web.HTML (window)
 import Web.HTML.Window as Window
 import Web.Storage.Storage as Storage
 
-makeAuthManager ::
+mkAuthManager ::
   Effect
     { read :: Effect (Maybe Auth)
     , event :: Event.Event (Maybe Auth)
     , modify :: (Maybe Auth -> Maybe Auth) -> Effect (Maybe Auth)
     , component :: React.JSX
     }
-makeAuthManager = do
+mkAuthManager = do
   { event, read, modify } <- create
   component <-
     React.component "AuthManager" \_ -> React.do

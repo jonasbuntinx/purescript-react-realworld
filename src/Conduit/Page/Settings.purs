@@ -1,4 +1,4 @@
-module Conduit.Page.Settings (makeSettingsPage) where
+module Conduit.Page.Settings (mkSettingsPage) where
 
 import Prelude
 import Conduit.Capability.Auth (readAuth, readAuthEvent)
@@ -40,8 +40,8 @@ data Action
   | Submit
   | Logout
 
-makeSettingsPage :: App.Component Unit
-makeSettingsPage = App.component "SettingsPage" { initialState, eval, render }
+mkSettingsPage :: App.Component Unit
+mkSettingsPage = App.component "SettingsPage" { initialState, eval, render }
   where
   initialState =
     { user: Nothing

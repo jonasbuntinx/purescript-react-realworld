@@ -12,7 +12,7 @@ import Routing.Duplex (parse, print)
 import Routing.PushState as PushState
 import Wire.React.Router as Router
 
-makeRoutingManager ::
+mkRoutingManager ::
   Effect
     { read :: Effect Route
     , event :: Event.Event Route
@@ -20,7 +20,7 @@ makeRoutingManager ::
     , redirect :: Route -> Effect Unit
     , component :: React.JSX
     }
-makeRoutingManager = do
+mkRoutingManager = do
   interface <- PushState.makeInterface
   { path } <- interface.locationState
   value <- Ref.new $ fromMaybe Error $ hush $ parse routeCodec path
