@@ -2,11 +2,11 @@ module Conduit.AppM where
 
 import Prelude
 import Conduit.Capability.Auth (class MonadAuth, AuthImpl)
-import Conduit.Capability.Resource.Article (class MonadArticle, ArticleApiImpl)
-import Conduit.Capability.Resource.Comment (class MonadComment, CommentApiImpl)
-import Conduit.Capability.Resource.Profile (class MonadProfile, ProfileApiImpl)
-import Conduit.Capability.Resource.Tag (class MonadTag, TagApiImpl)
-import Conduit.Capability.Resource.User (class MonadUser, UserApiImpl)
+import Conduit.Capability.Resource.Article (class MonadArticle, ArticleImpl)
+import Conduit.Capability.Resource.Comment (class MonadComment, CommentImpl)
+import Conduit.Capability.Resource.Profile (class MonadProfile, ProfileImpl)
+import Conduit.Capability.Resource.Tag (class MonadTag, TagImpl)
+import Conduit.Capability.Resource.User (class MonadUser, UserImpl)
 import Conduit.Capability.Routing (class MonadRouting, RoutingImpl)
 import Control.Monad.Error.Class (class MonadError, class MonadThrow)
 import Control.Monad.Reader (ReaderT, asks, runReaderT)
@@ -18,11 +18,11 @@ import Effect.Exception as Exception
 type AppImpl m
   = { auth :: AuthImpl m
     , routing :: RoutingImpl m
-    , userApi :: UserApiImpl m
-    , articleApi :: ArticleApiImpl m
-    , commentApi :: CommentApiImpl m
-    , profileApi :: ProfileApiImpl m
-    , tagApi :: TagApiImpl m
+    , userApi :: UserImpl m
+    , articleApi :: ArticleImpl m
+    , commentApi :: CommentImpl m
+    , profileApi :: ProfileImpl m
+    , tagApi :: TagImpl m
     }
 
 newtype AppM a

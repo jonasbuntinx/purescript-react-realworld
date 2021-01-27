@@ -7,7 +7,7 @@ import Conduit.Data.Username (Username)
 import Data.Either (Either)
 import React.Halo (HaloM, lift)
 
-type UserApiImpl m
+type UserImpl m
   = { loginUser :: { email :: String, password :: String } -> m (Either Error CurrentUser)
     , registerUser :: { username :: Username, email :: String, password :: String } -> m (Either Error CurrentUser)
     , updateUser :: { | User ( password :: String ) } -> m (Either Error CurrentUser)

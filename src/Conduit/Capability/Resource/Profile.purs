@@ -7,7 +7,7 @@ import Conduit.Data.Username (Username)
 import Data.Either (Either)
 import React.Halo (HaloM, lift)
 
-type ProfileApiImpl m
+type ProfileImpl m
   = { getProfile :: Username -> m (Either Error Profile)
     , toggleFollow :: Profile -> m (Either Error Profile)
     }

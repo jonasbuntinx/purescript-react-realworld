@@ -7,7 +7,7 @@ import Conduit.Data.Slug (Slug)
 import Data.Either (Either)
 import React.Halo (HaloM, lift)
 
-type CommentApiImpl m
+type CommentImpl m
   = { listComments :: Slug -> m (Either Error (Array Comment))
     , createComment :: Slug -> { body :: String } -> m (Either Error Comment)
     , deleteComment :: Slug -> CommentId -> m (Either Error Unit)
