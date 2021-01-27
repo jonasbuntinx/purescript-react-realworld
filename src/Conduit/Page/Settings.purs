@@ -1,7 +1,9 @@
 module Conduit.Page.Settings (makeSettingsPage) where
 
 import Prelude
-import Conduit.AppM (logoutUser, navigate, readAuth, readAuthEvent, updateUser)
+import Conduit.Capability.Auth (readAuth, readAuthEvent)
+import Conduit.Capability.Resource.User (logoutUser, updateUser)
+import Conduit.Capability.Routing (navigate)
 import Conduit.Component.App as App
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Data.Avatar as Avatar

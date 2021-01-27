@@ -1,7 +1,8 @@
 module Conduit.Page.Editor (Props, makeEditorPage) where
 
 import Prelude
-import Conduit.AppM (getArticle, navigate, redirect, submitArticle)
+import Conduit.Capability.Resource.Article (getArticle, submitArticle)
+import Conduit.Capability.Routing (navigate, redirect)
 import Conduit.Component.App as App
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Component.TagInput (tagInput)

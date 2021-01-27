@@ -1,7 +1,10 @@
 module Conduit.Page.Home (makeHomePage) where
 
 import Prelude
-import Conduit.AppM (listArticles, listFeed, listTags, navigate, readAuth, readAuthEvent, toggleFavorite)
+import Conduit.Capability.Auth (readAuth, readAuthEvent)
+import Conduit.Capability.Resource.Article (listArticles, listFeed, toggleFavorite)
+import Conduit.Capability.Resource.Tag (listTags)
+import Conduit.Capability.Routing (navigate)
 import Conduit.Component.App as App
 import Conduit.Component.ArticleList (articleList)
 import Conduit.Component.Pagination (pagination)

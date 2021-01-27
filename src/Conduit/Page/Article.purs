@@ -1,7 +1,11 @@
 module Conduit.Page.Article (Props, makeArticlePage) where
 
 import Prelude
-import Conduit.AppM (createComment, deleteArticle, deleteComment, getArticle, listComments, navigate, readAuth, readAuthEvent, redirect, toggleFavorite, toggleFollow)
+import Conduit.Capability.Auth (readAuth, readAuthEvent)
+import Conduit.Capability.Resource.Article (deleteArticle, getArticle, toggleFavorite)
+import Conduit.Capability.Resource.Comment (createComment, deleteComment, listComments)
+import Conduit.Capability.Resource.Profile (toggleFollow)
+import Conduit.Capability.Routing (navigate, redirect)
 import Conduit.Component.App as App
 import Conduit.Component.Buttons (ButtonSize(..), favoriteButton, followButton)
 import Conduit.Component.Link as Link

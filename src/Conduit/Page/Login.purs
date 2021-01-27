@@ -1,7 +1,8 @@
 module Conduit.Page.Login (makeLoginPage) where
 
 import Prelude
-import Conduit.AppM (loginUser, navigate, redirect)
+import Conduit.Capability.Resource.User (loginUser)
+import Conduit.Capability.Routing (navigate, redirect)
 import Conduit.Component.App as App
 import Conduit.Component.Link as Link
 import Conduit.Component.ResponseErrors (responseErrors)

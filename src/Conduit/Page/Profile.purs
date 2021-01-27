@@ -1,7 +1,10 @@
 module Conduit.Page.Profile (Props, Tab(..), makeProfilePage) where
 
 import Prelude
-import Conduit.AppM (getProfile, listArticles, navigate, readAuth, readAuthEvent, redirect, toggleFavorite, toggleFollow)
+import Conduit.Capability.Auth (readAuth, readAuthEvent)
+import Conduit.Capability.Resource.Article (listArticles, toggleFavorite)
+import Conduit.Capability.Resource.Profile (getProfile, toggleFollow)
+import Conduit.Capability.Routing (navigate, redirect)
 import Conduit.Component.App as App
 import Conduit.Component.ArticleList (articleList)
 import Conduit.Component.Buttons (followButton)

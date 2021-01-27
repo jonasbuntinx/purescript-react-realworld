@@ -1,7 +1,8 @@
 module Conduit.Page.Register (makeRegisterPage) where
 
 import Prelude
-import Conduit.AppM (navigate, redirect, registerUser)
+import Conduit.Capability.Resource.User (registerUser)
+import Conduit.Capability.Routing (navigate, redirect)
 import Conduit.Component.App as App
 import Conduit.Component.Link as Link
 import Conduit.Component.ResponseErrors (responseErrors)

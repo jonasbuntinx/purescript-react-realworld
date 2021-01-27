@@ -2,7 +2,8 @@ module Conduit.Api.Utils (makeRequest, makeSecureRequest, makeSecureRequest') wh
 
 import Prelude
 import Apiary as Apiary
-import Conduit.AppM (class MonadAuth, class MonadRouting, readAuth, redirect)
+import Conduit.Capability.Auth (class MonadAuth, readAuth)
+import Conduit.Capability.Routing (class MonadRouting, redirect)
 import Conduit.Config as Config
 import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..))
