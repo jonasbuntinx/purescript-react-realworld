@@ -4,7 +4,8 @@ import Prelude
 import Apiary as Apiary
 import Conduit.Api.Endpoints as Endpoints
 import Conduit.Api.Utils (makeRequest, makeSecureRequest)
-import Conduit.AppM (AppImpl, AppM, modifyAuth, runAppM)
+import Conduit.AppM (AppImpl, AppM, runAppM)
+import Conduit.Capability.Auth (modifyAuth)
 import Conduit.Component.Auth as Auth
 import Conduit.Component.Routing as Routing
 import Conduit.Data.Auth (Auth, toAuth)
