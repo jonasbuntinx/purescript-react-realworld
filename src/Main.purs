@@ -4,7 +4,7 @@ import Prelude
 import Apiary as Apiary
 import Conduit.Api.Endpoints as Endpoints
 import Conduit.Api.Utils (makeRequest, makeSecureRequest)
-import Conduit.AppM (AppImpl, AppM, runAppM)
+import Conduit.AppM (AppInst, AppM, runAppM)
 import Conduit.Capability.Auth (modifyAuth)
 import Conduit.Component.Auth as Auth
 import Conduit.Component.Routing as Routing
@@ -38,10 +38,10 @@ main = do
       auth <- Auth.mkAuthManager
       routing <- Routing.mkRoutingManager
       launchAff_ do
-        root <- runAppM (appImpl { auth, routing }) Root.mkRoot
+        root <- runAppM (appInst { auth, routing }) Root.mkRoot
         liftEffect $ render (React.fragment [ routing.component, auth.component, root unit ]) c
 
-appImpl ::
+appInst ::
   forall r s.
   { auth ::
       { read :: Effect (Maybe Auth)
@@ -57,8 +57,8 @@ appImpl ::
       | s
       }
   } ->
-  AppImpl AppM
-appImpl { auth, routing } =
+  AppInst AppM
+appInst { auth, routing } =
   { auth:
       { readAuth: liftEffect auth.read
       , readAuthEvent: liftEffect $ pure auth.event

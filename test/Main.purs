@@ -1,7 +1,7 @@
 module Test.Main where
 
 import Prelude
-import Conduit.AppM (AppImpl, AppM)
+import Conduit.AppM (AppInst, AppM)
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
@@ -12,8 +12,8 @@ main = do
   log "🍝"
   log "You should add some tests."
 
-appImpl :: AppImpl AppM
-appImpl =
+appInst :: AppInst AppM
+appInst =
   { auth:
       { readAuth: liftEffect $ Exception.throw "readAuth not implemented"
       , readAuthEvent: liftEffect $ Exception.throw "readAuthEvent not implemented"

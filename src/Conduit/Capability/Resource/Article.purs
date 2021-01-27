@@ -8,7 +8,7 @@ import Data.Either (Either)
 import Data.Maybe (Maybe)
 import React.Halo (HaloM, lift)
 
-type ArticleImpl m
+type ArticleInst m
   = { listArticles :: ArticlesQuery -> m (Either Error { articles :: Array Article, articlesCount :: Int })
     , listFeed :: ArticlesQuery -> m (Either Error { articles :: Array Article, articlesCount :: Int })
     , getArticle :: Slug -> m (Either Error Article)

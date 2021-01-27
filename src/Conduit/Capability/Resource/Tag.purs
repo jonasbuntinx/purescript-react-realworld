@@ -6,7 +6,7 @@ import Data.Either (Either)
 import React.Halo (HaloM, lift)
 
 -- | Tag
-type TagImpl m
+type TagInst m
   = { listTags :: m (Either Error (Array String))
     }
 

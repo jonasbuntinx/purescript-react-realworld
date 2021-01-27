@@ -1,13 +1,13 @@
 module Conduit.AppM where
 
 import Prelude
-import Conduit.Capability.Auth (class MonadAuth, AuthImpl)
-import Conduit.Capability.Resource.Article (class MonadArticle, ArticleImpl)
-import Conduit.Capability.Resource.Comment (class MonadComment, CommentImpl)
-import Conduit.Capability.Resource.Profile (class MonadProfile, ProfileImpl)
-import Conduit.Capability.Resource.Tag (class MonadTag, TagImpl)
-import Conduit.Capability.Resource.User (class MonadUser, UserImpl)
-import Conduit.Capability.Routing (class MonadRouting, RoutingImpl)
+import Conduit.Capability.Auth (class MonadAuth, AuthInst)
+import Conduit.Capability.Resource.Article (class MonadArticle, ArticleInst)
+import Conduit.Capability.Resource.Comment (class MonadComment, CommentInst)
+import Conduit.Capability.Resource.Profile (class MonadProfile, ProfileInst)
+import Conduit.Capability.Resource.Tag (class MonadTag, TagInst)
+import Conduit.Capability.Resource.User (class MonadUser, UserInst)
+import Conduit.Capability.Routing (class MonadRouting, RoutingInst)
 import Control.Monad.Error.Class (class MonadError, class MonadThrow)
 import Control.Monad.Reader (ReaderT, asks, runReaderT)
 import Effect.Aff (Aff)
@@ -15,21 +15,21 @@ import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
 import Effect.Exception as Exception
 
-type AppImpl m
-  = { auth :: AuthImpl m
-    , routing :: RoutingImpl m
-    , userApi :: UserImpl m
-    , articleApi :: ArticleImpl m
-    , commentApi :: CommentImpl m
-    , profileApi :: ProfileImpl m
-    , tagApi :: TagImpl m
+type AppInst m
+  = { auth :: AuthInst m
+    , routing :: RoutingInst m
+    , userApi :: UserInst m
+    , articleApi :: ArticleInst m
+    , commentApi :: CommentInst m
+    , profileApi :: ProfileInst m
+    , tagApi :: TagInst m
     }
 
 newtype AppM a
-  = AppM (ReaderT (AppImpl AppM) Aff a)
+  = AppM (ReaderT (AppInst AppM) Aff a)
 
-runAppM :: AppImpl AppM -> AppM ~> Aff
-runAppM impl (AppM go) = runReaderT go impl
+runAppM :: AppInst AppM -> AppM ~> Aff
+runAppM inst (AppM go) = runReaderT go inst
 
 derive newtype instance functorAppM :: Functor AppM
 
