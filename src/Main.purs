@@ -6,7 +6,7 @@ import Conduit.Api.Endpoints as Endpoints
 import Conduit.Api.Utils (makeRequest, makeSecureRequest)
 import Conduit.AppM (AppImpl, AppM, modifyAuth, runAppM)
 import Conduit.Component.Auth as Auth
-import Conduit.Data.Auth (toAuth)
+import Conduit.Data.Auth (Auth, toAuth)
 import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..), routeCodec)
 import Conduit.Root as Root
@@ -18,6 +18,7 @@ import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Exception as Exception
+import FRP.Event as Event
 import React.Basic as React
 import React.Basic.DOM (render)
 import Record as Record
@@ -50,15 +51,32 @@ main = do
                 _ -> pure unit
           }
       launchAff_ do
-        root <- runAppM (appImpl { navigate: router.navigate, redirect: router.redirect }) Root.makeRoot
+        root <-
+          runAppM
+            ( appImpl
+                { read: auth.read
+                , event: auth.event
+                , modify: auth.modify
+                , navigate: router.navigate
+                , redirect: router.redirect
+                }
+            )
+            Root.makeRoot
         liftEffect $ render (React.fragment [ router.component, auth.component, root unit ]) c
 
-appImpl :: { navigate :: Route -> Effect Unit, redirect :: Route -> Effect Unit } -> AppImpl AppM
-appImpl { navigate, redirect } =
+appImpl ::
+  { read :: Effect (Maybe Auth)
+  , event :: Event.Event (Maybe Auth)
+  , modify :: (Maybe Auth -> Maybe Auth) -> Effect (Maybe Auth)
+  , navigate :: Route -> Effect Unit
+  , redirect :: Route -> Effect Unit
+  } ->
+  AppImpl AppM
+appImpl { read, event, modify, navigate, redirect } =
   { auth:
-      { readAuth: liftEffect $ Exception.throw "readAuth not implemented"
-      , readAuthEvent: liftEffect $ Exception.throw "readAuthEvent not implemented"
-      , modifyAuth: \_ -> liftEffect $ Exception.throw "modifyAuth not implemented"
+      { readAuth: liftEffect read
+      , readAuthEvent: liftEffect $ pure event
+      , modifyAuth: liftEffect <<< modify
       }
   , routing:
       { navigate: liftEffect <<< navigate
