@@ -44,10 +44,6 @@ yarn serve
 
 ## Noteworthy PureScript Libraries
 
-#### [React Basic](https://github.com/lumihq/purescript-react-basic)
-
-An opinionated set of bindings to the React library, optimizing for the most basic use cases.
-
 #### [React Basic Hooks](https://github.com/spicydonuts/purescript-react-basic-hooks)
 
 An implementation of React hooks on top of purescript-react-basic.
