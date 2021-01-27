@@ -53,41 +53,75 @@ derive newtype instance monadErrorAppM :: MonadError Exception.Error AppM
 instance monadAuthAppM :: MonadAuth AppM where
   readAuth = join $ AppM $ asks _.auth.readAuth
   readAuthEvent = join $ AppM $ asks _.auth.readAuthEvent
-  modifyAuth f = (AppM $ asks _.auth.modifyAuth) >>= (#) f
+  modifyAuth k = do
+    f <- AppM $ asks _.auth.modifyAuth
+    f k
 
 -- | Routing
 instance monadRoutingAppM :: MonadRouting AppM where
   readRoute = join $ AppM $ asks _.routing.readRoute
   readRoutingEvent = join $ AppM $ asks _.routing.readRoutingEvent
-  navigate route = (AppM $ asks _.routing.navigate) >>= (#) route
-  redirect route = (AppM $ asks _.routing.redirect) >>= (#) route
+  navigate route = do
+    f <- AppM $ asks _.routing.navigate
+    f route
+  redirect route = do
+    f <- AppM $ asks _.routing.redirect
+    f route
 
 -- | User
 instance monadUserAppM :: MonadUser AppM where
-  loginUser creds = (AppM $ asks _.userApi.loginUser) >>= (#) creds
-  registerUser user = (AppM $ asks _.userApi.registerUser) >>= (#) user
-  updateUser user = (AppM $ asks _.userApi.updateUser) >>= (#) user
+  loginUser creds = do
+    f <- AppM $ asks _.userApi.loginUser
+    f creds
+  registerUser user = do
+    f <- AppM $ asks _.userApi.registerUser
+    f user
+  updateUser user = do
+    f <- AppM $ asks _.userApi.updateUser
+    f user
   logoutUser = join $ AppM $ asks _.userApi.logoutUser
 
 -- | Article
 instance monadArticleAppM :: MonadArticle AppM where
-  listArticles query = (AppM $ asks _.articleApi.listArticles) >>= (#) query
-  listFeed query = (AppM $ asks _.articleApi.listFeed) >>= (#) query
-  getArticle slug = (AppM $ asks _.articleApi.getArticle) >>= (#) slug
-  submitArticle slug article = (AppM $ asks _.articleApi.submitArticle) >>= \f -> f slug article
-  deleteArticle slug = (AppM $ asks _.articleApi.deleteArticle) >>= (#) slug
-  toggleFavorite article = (AppM $ asks _.articleApi.toggleFavorite) >>= (#) article
+  listArticles query = do
+    f <- AppM $ asks _.articleApi.listArticles
+    f query
+  listFeed query = do
+    f <- AppM $ asks _.articleApi.listFeed
+    f query
+  getArticle slug = do
+    f <- AppM $ asks _.articleApi.getArticle
+    f slug
+  submitArticle slug article = do
+    f <- AppM $ asks _.articleApi.submitArticle
+    f slug article
+  deleteArticle slug = do
+    f <- AppM $ asks _.articleApi.deleteArticle
+    f slug
+  toggleFavorite article = do
+    f <- AppM $ asks _.articleApi.toggleFavorite
+    f article
 
 -- | Comment
 instance monadCommentAppM :: MonadComment AppM where
-  listComments slug = (AppM $ asks _.commentApi.listComments) >>= (#) slug
-  createComment slug comment = (AppM $ asks _.commentApi.createComment) >>= \f -> f slug comment
-  deleteComment slug id = (AppM $ asks _.commentApi.deleteComment) >>= \f -> f slug id
+  listComments slug = do
+    f <- AppM $ asks _.commentApi.listComments
+    f slug
+  createComment slug comment = do
+    f <- AppM $ asks _.commentApi.createComment
+    f slug comment
+  deleteComment slug id = do
+    f <- AppM $ asks _.commentApi.deleteComment
+    f slug id
 
 -- | Profile
 instance monadProfileAppM :: MonadProfile AppM where
-  getProfile username = (AppM $ asks _.profileApi.getProfile) >>= (#) username
-  toggleFollow profile = (AppM $ asks _.profileApi.toggleFollow) >>= (#) profile
+  getProfile username = do
+    f <- AppM $ asks _.profileApi.getProfile
+    f username
+  toggleFollow profile = do
+    f <- AppM $ asks _.profileApi.toggleFollow
+    f profile
 
 -- | Tag
 instance monadTagAppM :: MonadTag AppM where

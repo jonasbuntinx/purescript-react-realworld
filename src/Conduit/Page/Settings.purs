@@ -12,6 +12,7 @@ import Conduit.Data.User (User)
 import Conduit.Data.Username as Username
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
+import Control.Bind (bindFlipped)
 import Control.Comonad (extract)
 import Control.Parallel (parTraverse_)
 import Data.Array as Array
@@ -66,7 +67,7 @@ mkSettingsPage = App.component "SettingsPage" { initialState, eval, render }
       auth <- readAuth
       handleAction $ UpdateUser (_.user =<< auth)
       authEvent <- readAuthEvent
-      void $ Halo.subscribe $ map (UpdateUser <<< (=<<) _.user) authEvent
+      void $ Halo.subscribe $ map (UpdateUser <<< bindFlipped _.user) authEvent
     UpdateUser user -> do
       for_ user \{ image, username, bio, email } ->
         Halo.modify_
