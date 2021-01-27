@@ -44,29 +44,21 @@ yarn serve
 
 ## Noteworthy PureScript Libraries
 
-#### [React Basic](https://github.com/lumihq/purescript-react-basic)
-
-An opinionated set of bindings to the React library, optimizing for the most basic use cases
-
 #### [React Basic Hooks](https://github.com/spicydonuts/purescript-react-basic-hooks)
 
-An implementation of React hooks on top of purescript-react-basic
+An implementation of React hooks on top of purescript-react-basic.
 
 #### [React Halo](https://github.com/robertdp/purescript-react-halo)
 
 A Halogen-inspired interface for React.
 
-#### [Wire React](https://github.com/robertdp/purescript-wire-react)
-
-Event/State library for reactive state.
-
 #### [Wire React Router](https://github.com/robertdp/purescript-wire-react-router)
 
-A basic pushstate router for React, with support for asynchronous routing logic. Built using react-basic-hooks and wire.
+A basic pushstate router for React, with support for asynchronous routing logic.
 
 #### [Routing Duplex](https://github.com/natefaubion/purescript-routing-duplex)
 
-Unified parsing and printing for routes in PureScript
+Unified parsing and printing for routes in PureScript.
 
 #### [Apiary](https://github.com/robertdp/purescript-apiary)
 

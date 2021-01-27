@@ -1,9 +1,10 @@
-module Conduit.Page.Settings (makeSettingsPage) where
+module Conduit.Page.Settings (mkSettingsPage) where
 
 import Prelude
-import Conduit.Capability.Api (updateUser)
-import Conduit.Capability.Routing (logout, navigate)
-import Conduit.Component.Page as Page
+import Conduit.Capability.Auth (readAuth, readAuthEvent)
+import Conduit.Capability.Resource.User (logoutUser, updateUser)
+import Conduit.Capability.Routing (navigate)
+import Conduit.Component.App as App
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Route (Route(..))
@@ -11,12 +12,12 @@ import Conduit.Data.User (User)
 import Conduit.Data.Username as Username
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
-import Conduit.Hook.Auth (useUser)
+import Control.Bind (bindFlipped)
 import Control.Comonad (extract)
-import Control.Monad.State (modify_)
+import Control.Parallel (parTraverse_)
 import Data.Array as Array
 import Data.Either (Either(..))
-import Data.Foldable (traverse_)
+import Data.Foldable (for_, traverse_)
 import Data.Lens.Record as LR
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Monoid (guard)
@@ -26,11 +27,12 @@ import Network.RemoteData as RemoteData
 import React.Basic.DOM as R
 import React.Basic.DOM.Events (targetValue)
 import React.Basic.Events (handler, handler_)
-import React.Basic.Hooks as React
 import React.Halo as Halo
 
 data Action
-  = Initialize { | User () }
+  = Initialize (Array Action)
+  | SubscribeToAuth
+  | UpdateUser (Maybe { | User () })
   | UpdateImage String
   | UpdateUsername String
   | UpdateBio String
@@ -39,16 +41,8 @@ data Action
   | Submit
   | Logout
 
-makeSettingsPage :: Page.Component Unit
-makeSettingsPage =
-  Page.component "SettingsPage" { initialState, eval } \self@{ env } -> React.do
-    user <- useUser env
-    React.useEffect user do
-      case user of
-        Just user' -> self.send $ Initialize user'
-        Nothing -> self.send Logout
-      mempty
-    pure $ render self
+mkSettingsPage :: App.Component Unit
+mkSettingsPage = App.component "SettingsPage" { initialState, eval, render }
   where
   initialState =
     { user: Nothing
@@ -61,39 +55,47 @@ makeSettingsPage =
     }
 
   eval =
-    Halo.makeEval
+    Halo.mkEval
       _
-        { onAction = handleAction
+        { onInitialize = \_ -> Just $ Initialize [ SubscribeToAuth ]
+        , onAction = handleAction
         }
 
   handleAction = case _ of
-    Initialize user ->
-      modify_
-        _
-          { user = Just user
-          , image = Avatar.toString <$> user.image
-          , username = pure $ Username.toString user.username
-          , bio = user.bio
-          , email = pure user.email
-          }
-    UpdateImage image -> modify_ _ { image = Just image }
-    UpdateUsername username -> modify_ _ { username = V.Modified username }
-    UpdateBio bio -> modify_ _ { bio = Just bio }
-    UpdateEmail email -> modify_ _ { email = V.Modified email }
-    UpdatePassword password -> modify_ _ { password = V.Modified password }
+    Initialize actions -> parTraverse_ handleAction actions
+    SubscribeToAuth -> do
+      auth <- readAuth
+      handleAction $ UpdateUser (_.user =<< auth)
+      authEvent <- readAuthEvent
+      void $ Halo.subscribe $ map (UpdateUser <<< bindFlipped _.user) authEvent
+    UpdateUser user -> do
+      for_ user \{ image, username, bio, email } ->
+        Halo.modify_
+          _
+            { user = user
+            , image = Avatar.toString <$> image
+            , username = pure $ Username.toString username
+            , bio = bio
+            , email = pure email
+            }
+    UpdateImage image -> Halo.modify_ _ { image = Just image }
+    UpdateUsername username -> Halo.modify_ _ { username = V.Modified username }
+    UpdateBio bio -> Halo.modify_ _ { bio = Just bio }
+    UpdateEmail email -> Halo.modify_ _ { email = V.Modified email }
+    UpdatePassword password -> Halo.modify_ _ { password = V.Modified password }
     Submit -> do
       state <- V.setModified <$> Halo.get
       case toEither (validate state) of
-        Left _ -> modify_ (const state)
+        Left _ -> Halo.modify_ (const state)
         Right validated -> do
-          modify_ _ { submitResponse = RemoteData.Loading }
+          Halo.modify_ _ { submitResponse = RemoteData.Loading }
           response <- updateUser validated
           case response of
             Right user -> do
-              modify_ _ { submitResponse = RemoteData.Success unit }
+              Halo.modify_ _ { submitResponse = RemoteData.Success unit }
               navigate Home
-            Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
-    Logout -> logout
+            Left err -> Halo.modify_ _ { submitResponse = RemoteData.Failure err }
+    Logout -> logoutUser
 
   validate values = ado
     username <- values.username # V.validated (LR.prop (SProxy :: _ "username")) \username -> F.nonEmpty username `andThen` F.validUsername

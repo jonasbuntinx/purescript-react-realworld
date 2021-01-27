@@ -1,32 +1,35 @@
 module Conduit.AppM where
 
 import Prelude
-import Apiary as Apiary
-import Conduit.Api.Endpoints as Endpoints
-import Conduit.Api.Utils (makeRequest, makeSecureRequest)
-import Conduit.Capability.Api (class ArticleApi, class CommentApi, class ProfileApi, class TagApi, class UserApi)
-import Conduit.Capability.Routing (class Routing)
-import Conduit.Data.Auth (toAuth)
-import Conduit.Data.Env (Env)
-import Conduit.Data.Error (Error(..))
-import Conduit.Data.Route (Route(..))
-import Control.Monad.Reader (class MonadAsk, ReaderT, ask, asks, runReaderT)
-import Data.Either (Either(..), either)
-import Data.Maybe (Maybe(..))
-import Data.Symbol (SProxy(..))
-import Data.Variant (expand, match)
+import Conduit.Capability.Auth (class MonadAuth, AuthInst)
+import Conduit.Capability.Resource.Article (class MonadArticle, ArticleInst)
+import Conduit.Capability.Resource.Comment (class MonadComment, CommentInst)
+import Conduit.Capability.Resource.Profile (class MonadProfile, ProfileInst)
+import Conduit.Capability.Resource.Tag (class MonadTag, TagInst)
+import Conduit.Capability.Resource.User (class MonadUser, UserInst)
+import Conduit.Capability.Routing (class MonadRouting, RoutingInst)
+import Control.Monad.Error.Class (class MonadError, class MonadThrow)
+import Control.Monad.Reader (ReaderT, asks, runReaderT)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
-import Effect.Class (class MonadEffect, liftEffect)
-import Record as Record
-import Type.Equality (class TypeEquals, from)
-import Wire.React.Atom.Class (modify)
+import Effect.Class (class MonadEffect)
+import Effect.Exception as Exception
+
+type AppInst m
+  = { auth :: AuthInst m
+    , routing :: RoutingInst m
+    , user :: UserInst m
+    , article :: ArticleInst m
+    , comment :: CommentInst m
+    , profile :: ProfileInst m
+    , tag :: TagInst m
+    }
 
 newtype AppM a
-  = AppM (ReaderT Env Aff a)
+  = AppM (ReaderT (AppInst AppM) Aff a)
 
-runAppM :: Env -> AppM ~> Aff
-runAppM env (AppM m) = runReaderT m env
+runAppM :: AppInst AppM -> AppM ~> Aff
+runAppM inst (AppM go) = runReaderT go inst
 
 derive newtype instance functorAppM :: Functor AppM
 
@@ -42,116 +45,84 @@ derive newtype instance monadEffectAppM :: MonadEffect AppM
 
 derive newtype instance monadAffAppM :: MonadAff AppM
 
-instance monadAskAppM :: TypeEquals e Env => MonadAsk e AppM where
-  ask = AppM $ asks from
+derive newtype instance monadThrowAppM :: MonadThrow Exception.Error AppM
+
+derive newtype instance monadErrorAppM :: MonadError Exception.Error AppM
+
+-- | Auth
+instance monadAuthAppM :: MonadAuth AppM where
+  readAuth = join $ AppM $ asks _.auth.readAuth
+  readAuthEvent = join $ AppM $ asks _.auth.readAuthEvent
+  modifyAuth k = do
+    f <- AppM $ asks _.auth.modifyAuth
+    f k
 
 -- | Routing
-instance routingAppM :: Routing AppM where
-  navigate route = ask >>= \{ router } -> liftEffect $ router.navigate route
-  redirect route = ask >>= \{ router } -> liftEffect $ router.redirect route
-  logout =
-    ask
-      >>= \{ auth, router } ->
-          liftEffect do
-            modify auth.signal $ const Nothing
-            router.redirect Home
+instance monadRoutingAppM :: MonadRouting AppM where
+  readRoute = join $ AppM $ asks _.routing.readRoute
+  readRoutingEvent = join $ AppM $ asks _.routing.readRoutingEvent
+  navigate route = do
+    f <- AppM $ asks _.routing.navigate
+    f route
+  redirect route = do
+    f <- AppM $ asks _.routing.redirect
+    f route
 
 -- | User
-instance userApiAppM :: UserApi AppM where
-  loginUser credentials = do
-    res <- makeRequest (Apiary.Route :: Endpoints.LoginUser) Apiary.none Apiary.none { user: credentials }
-    res
-      # either
-          (pure <<< Left)
-          ( match
-              { ok:
-                  \{ user: currentUser } -> do
-                    ask >>= \{ auth } -> liftEffect $ modify auth.signal $ const $ toAuth currentUser.token (Just $ Record.delete (SProxy :: _ "token") currentUser)
-                    pure $ Right currentUser
-              , unprocessableEntity: pure <<< Left <<< UnprocessableEntity <<< _.errors
-              }
-          )
+instance monadUserAppM :: MonadUser AppM where
+  loginUser creds = do
+    f <- AppM $ asks _.user.loginUser
+    f creds
   registerUser user = do
-    res <- makeRequest (Apiary.Route :: Endpoints.RegisterUser) Apiary.none Apiary.none { user }
-    res
-      # either
-          (pure <<< Left)
-          ( match
-              { ok:
-                  \{ user: currentUser } -> do
-                    ask >>= \{ auth } -> liftEffect $ modify auth.signal $ const $ toAuth currentUser.token (Just $ Record.delete (SProxy :: _ "token") currentUser)
-                    pure $ Right currentUser
-              , unprocessableEntity: pure <<< Left <<< UnprocessableEntity <<< _.errors
-              }
-          )
+    f <- AppM $ asks _.user.registerUser
+    f user
   updateUser user = do
-    res <- makeSecureRequest (Apiary.Route :: Endpoints.UpdateUser) Apiary.none Apiary.none { user }
-    res
-      # either
-          (pure <<< Left)
-          ( match
-              { ok:
-                  \{ user: currentUser } -> do
-                    ask >>= \{ auth } -> liftEffect $ modify auth.signal $ map $ _ { user = Just $ Record.delete (SProxy :: _ "token") currentUser }
-                    pure $ Right currentUser
-              , unprocessableEntity: pure <<< Left <<< UnprocessableEntity <<< _.errors
-              }
-          )
+    f <- AppM $ asks _.user.updateUser
+    f user
+  logoutUser = join $ AppM $ asks _.user.logoutUser
 
 -- | Article
-instance articleApiAppM :: ArticleApi AppM where
+instance monadArticleAppM :: MonadArticle AppM where
   listArticles query = do
-    res <- makeRequest (Apiary.Route :: Endpoints.ListArticles) Apiary.none query Apiary.none
-    pure $ res >>= match { ok: Right }
+    f <- AppM $ asks _.article.listArticles
+    f query
   listFeed query = do
-    res <- makeSecureRequest (Apiary.Route :: Endpoints.ListFeed) Apiary.none query Apiary.none
-    pure $ res >>= match { ok: Right }
+    f <- AppM $ asks _.article.listFeed
+    f query
   getArticle slug = do
-    res <- makeRequest (Apiary.Route :: Endpoints.GetArticle) { slug } Apiary.none Apiary.none
-    pure $ res >>= (match { ok: Right <<< _.article, notFound: Left <<< NotFound })
+    f <- AppM $ asks _.article.getArticle
+    f slug
   submitArticle slug article = do
-    res <- case slug of
-      Nothing -> map expand <$> makeSecureRequest (Apiary.Route :: Endpoints.CreateArticle) Apiary.none Apiary.none { article }
-      Just slug' -> map expand <$> makeSecureRequest (Apiary.Route :: Endpoints.UpdateArticle) { slug: slug' } Apiary.none { article }
-    pure $ res >>= (match { ok: Right <<< _.article, unprocessableEntity: Left <<< UnprocessableEntity <<< _.errors })
+    f <- AppM $ asks _.article.submitArticle
+    f slug article
   deleteArticle slug = do
-    res <- makeSecureRequest (Apiary.Route :: Endpoints.DeleteArticle) { slug } Apiary.none Apiary.none
-    pure $ res >>= (match { ok: const $ Right unit })
-  toggleFavorite { slug, favorited } = do
-    res <-
-      if favorited then
-        makeSecureRequest (Apiary.Route :: Endpoints.UnfavoriteArticle) { slug } Apiary.none Apiary.none
-      else
-        makeSecureRequest (Apiary.Route :: Endpoints.FavoriteArticle) { slug } Apiary.none Apiary.none
-    pure $ res >>= match { ok: Right <<< _.article }
+    f <- AppM $ asks _.article.deleteArticle
+    f slug
+  toggleFavorite article = do
+    f <- AppM $ asks _.article.toggleFavorite
+    f article
 
 -- | Comment
-instance commentApiAppM :: CommentApi AppM where
+instance monadCommentAppM :: MonadComment AppM where
   listComments slug = do
-    res <- makeRequest (Apiary.Route :: Endpoints.ListComments) { slug } Apiary.none Apiary.none
-    pure $ res >>= match { ok: Right <<< _.comments }
+    f <- AppM $ asks _.comment.listComments
+    f slug
   createComment slug comment = do
-    res <- makeSecureRequest (Apiary.Route :: Endpoints.CreateComment) { slug } Apiary.none { comment }
-    pure $ res >>= (match { ok: Right <<< _.comment })
+    f <- AppM $ asks _.comment.createComment
+    f slug comment
   deleteComment slug id = do
-    res <- makeSecureRequest (Apiary.Route :: Endpoints.DeleteComment) { slug, id } Apiary.none Apiary.none
-    pure $ res >>= (match { ok: const $ Right unit })
+    f <- AppM $ asks _.comment.deleteComment
+    f slug id
 
 -- | Profile
-instance profileApiAppM :: ProfileApi AppM where
+instance monadProfileAppM :: MonadProfile AppM where
   getProfile username = do
-    res <- makeRequest (Apiary.Route :: Endpoints.GetProfile) { username } Apiary.none Apiary.none
-    pure $ res >>= (match { ok: Right <<< _.profile, notFound: Left <<< NotFound })
-  toggleFollow { username, following } = do
-    res <-
-      if following then
-        makeSecureRequest (Apiary.Route :: Endpoints.UnfollowProfile) { username } Apiary.none Apiary.none
-      else
-        makeSecureRequest (Apiary.Route :: Endpoints.FollowProfile) { username } Apiary.none Apiary.none
-    pure $ res >>= match { ok: Right <<< _.profile }
+    f <- AppM $ asks _.profile.getProfile
+    f username
+  toggleFollow profile = do
+    f <- AppM $ asks _.profile.toggleFollow
+    f profile
 
 -- | Tag
-instance tagApiAppM :: TagApi AppM where
-  listTags = do
-    res <- makeRequest (Apiary.Route :: Endpoints.ListTags) Apiary.none Apiary.none Apiary.none
-    pure $ res >>= match { ok: Right <<< _.tags }
+instance monadTagAppM :: MonadTag AppM where
+  listTags = join $ AppM $ asks _.tag.listTags

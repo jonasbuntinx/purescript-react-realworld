@@ -135,22 +135,12 @@ let additions =
         }
       , react-halo =
         { dependencies =
-          [ "aff", "free", "freeap", "react-basic-hooks", "refs", "wire" ]
+          [ "aff", "event", "free", "freeap", "react-basic-hooks", "refs" ]
         , repo = "https://github.com/robertdp/purescript-react-halo"
-        , version = "v1.0.0"
-        }
-      , wire =
-        { dependencies = [ "aff", "filterable", "refs", "unsafe-reference" ]
-        , repo = "https://github.com/robertdp/purescript-wire"
-        , version = "v0.4.2"
-        }
-      , wire-react =
-        { dependencies = [ "wire", "free", "freet", "react-basic-hooks" ]
-        , repo = "https://github.com/robertdp/purescript-wire-react"
-        , version = "v0.0.1"
+        , version = "v1.2.0"
         }
       , wire-react-router =
-        { dependencies = [ "aff", "indexed-monad", "freet", "profunctor-lenses", "react-basic-hooks", "routing", "wire" ]
+        { dependencies =  [ "aff", "freet", "indexed-monad", "profunctor-lenses", "react-basic-hooks", "routing" ]
         , repo = "https://github.com/robertdp/purescript-wire-react-router"
         , version = "v0.2.1"
         }

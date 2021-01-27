@@ -1,66 +1,98 @@
 module Conduit.Root where
 
 import Prelude
+import Conduit.Capability.Auth (readAuth, readAuthEvent)
+import Conduit.Capability.Routing (navigate, readRoute, readRoutingEvent, redirect)
+import Conduit.Component.App as App
 import Conduit.Component.Footer as Footer
 import Conduit.Component.Header as Header
-import Conduit.Data.Env (Env)
+import Conduit.Data.Auth (Auth)
 import Conduit.Data.Route (Route(..))
-import Conduit.Hook.Auth (useAuth)
-import Conduit.Hook.Router (useRoute)
-import Conduit.Page.Article (makeArticlePage)
-import Conduit.Page.Editor (makeEditorPage)
-import Conduit.Page.Home (makeHomePage)
-import Conduit.Page.Login (makeLoginPage)
-import Conduit.Page.Profile (Tab(..), makeProfilePage)
-import Conduit.Page.Register (makeRegisterPage)
-import Conduit.Page.Settings (makeSettingsPage)
-import Control.Monad.Reader (ReaderT, ask)
-import Data.Maybe (Maybe(..), isJust)
-import Data.Tuple.Nested ((/\))
-import Effect (Effect)
-import Effect.Class (liftEffect)
+import Conduit.Page.Article (mkArticlePage)
+import Conduit.Page.Editor (mkEditorPage)
+import Conduit.Page.Home (mkHomePage)
+import Conduit.Page.Login (mkLoginPage)
+import Conduit.Page.Profile (Tab(..), mkProfilePage)
+import Conduit.Page.Register (mkRegisterPage)
+import Conduit.Page.Settings (mkSettingsPage)
+import Control.Parallel (parTraverse_)
+import Data.Maybe (Maybe(..))
 import React.Basic.Hooks as React
+import React.Halo as Halo
 
-type RootComponent
-  = ReaderT Env Effect (Unit -> React.JSX)
+data Action
+  = Initialize (Array Action)
+  | SubscribeToAuth
+  | UpdateAuth (Maybe Auth)
+  | SubscribeToRouting
+  | UpdateRoute Route
+  | Navigate Route
 
-makeRoot :: RootComponent
-makeRoot = do
-  env <- ask
-  homePage <- makeHomePage
-  loginPage <- makeLoginPage
-  registerPage <- makeRegisterPage
-  settingsPage <- makeSettingsPage
-  editorPage <- makeEditorPage
-  articlePage <- makeArticlePage
-  profilePage <- makeProfilePage
-  liftEffect
-    $ React.component "Root" \props -> React.do
-        auth <- useAuth env
-        route <- useRoute env
-        React.useEffect (route /\ (isJust auth)) do
-          case route, auth of
-            Login, Just _ -> env.router.redirect Home
-            Register, Just _ -> env.router.redirect Home
-            Settings, Nothing -> env.router.redirect Home
-            CreateArticle, Nothing -> env.router.redirect Home
-            UpdateArticle _, Nothing -> env.router.redirect Home
-            Error, _ -> env.router.redirect Home
-            _, _ -> pure unit
-          mempty
-        pure
-          $ React.fragment
-              [ Header.header { auth, currentRoute: route, onNavigate: env.router.navigate }
-              , case route of
-                  Home -> homePage unit
-                  Login -> loginPage unit
-                  Register -> registerPage unit
-                  Settings -> settingsPage unit
-                  CreateArticle -> editorPage { slug: Nothing }
-                  UpdateArticle slug -> editorPage { slug: Just slug }
-                  ViewArticle slug -> articlePage { slug }
-                  Profile username -> profilePage { username, tab: Published }
-                  Favorites username -> profilePage { username, tab: Favorited }
-                  Error -> React.empty
-              , Footer.footer
-              ]
+mkRoot :: App.Component Unit
+mkRoot = do
+  render <- mkRender
+  App.component "Root" { initialState, eval, render }
+  where
+  initialState =
+    { auth: Nothing
+    , route: Error
+    }
+
+  eval =
+    Halo.mkEval
+      _
+        { onInitialize = \_ -> Just $ Initialize [ SubscribeToAuth, SubscribeToRouting ]
+        , onAction = handleAction
+        }
+
+  handleAction = case _ of
+    Initialize actions -> parTraverse_ handleAction actions
+    SubscribeToAuth -> do
+      auth <- readAuth
+      handleAction $ UpdateAuth auth
+      authEvent <- readAuthEvent
+      void $ Halo.subscribe $ map UpdateAuth authEvent
+    UpdateAuth auth -> Halo.modify_ _ { auth = auth }
+    SubscribeToRouting -> do
+      route <- readRoute
+      handleAction $ UpdateRoute route
+      routingEvent <- readRoutingEvent
+      void $ Halo.subscribe $ map UpdateRoute routingEvent
+    UpdateRoute route -> do
+      Halo.modify_ _ { route = route }
+      auth <- readAuth
+      case route, auth of
+        Login, Just _ -> redirect Home
+        Register, Just _ -> redirect Home
+        Settings, Nothing -> redirect Home
+        CreateArticle, Nothing -> redirect Home
+        UpdateArticle _, Nothing -> redirect Home
+        Error, _ -> redirect Home
+        _, _ -> pure unit
+    Navigate route -> navigate route
+
+  mkRender = do
+    homePage <- mkHomePage
+    loginPage <- mkLoginPage
+    registerPage <- mkRegisterPage
+    settingsPage <- mkSettingsPage
+    editorPage <- mkEditorPage
+    articlePage <- mkArticlePage
+    profilePage <- mkProfilePage
+    pure
+      $ \{ state, send } ->
+          React.fragment
+            [ Header.header { auth: state.auth, currentRoute: state.route, onNavigate: send <<< Navigate }
+            , case state.route of
+                Home -> homePage unit
+                Login -> loginPage unit
+                Register -> registerPage unit
+                Settings -> settingsPage unit
+                CreateArticle -> editorPage { slug: Nothing }
+                UpdateArticle slug -> editorPage { slug: Just slug }
+                ViewArticle slug -> articlePage { slug }
+                Profile username -> profilePage { username, tab: Published }
+                Favorites username -> profilePage { username, tab: Favorited }
+                Error -> React.empty
+            , Footer.footer
+            ]

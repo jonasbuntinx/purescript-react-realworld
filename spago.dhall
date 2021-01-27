@@ -3,6 +3,7 @@
     [ "apiary"
     , "console"
     , "effect"
+    , "event"
     , "foreign-generic"
     , "heterogeneous"
     , "js-timers"
@@ -15,8 +16,6 @@
     , "routing-duplex"
     , "unicode"
     , "web-uievents"
-    , "wire"
-    , "wire-react"
     , "wire-react-router"
     ]
 , packages = ./packages.dhall

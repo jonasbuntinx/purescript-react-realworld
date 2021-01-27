@@ -1,16 +1,15 @@
-module Conduit.Page.Login (makeLoginPage) where
+module Conduit.Page.Login (mkLoginPage) where
 
 import Prelude
-import Conduit.Capability.Api (loginUser)
-import Conduit.Capability.Routing (redirect)
+import Conduit.Capability.Resource.User (loginUser)
+import Conduit.Capability.Routing (navigate, redirect)
+import Conduit.Component.App as App
 import Conduit.Component.Link as Link
-import Conduit.Component.Page as Page
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Data.Route (Route(..))
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Control.Comonad (extract)
-import Control.Monad.State (modify_)
 import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Foldable (traverse_)
@@ -25,14 +24,13 @@ import React.Basic.Events (handler, handler_)
 import React.Halo as Halo
 
 data Action
-  = UpdateEmail String
+  = Navigate Route
+  | UpdateEmail String
   | UpdatePassword String
   | Submit
 
-makeLoginPage :: Page.Component Unit
-makeLoginPage =
-  Page.component "LoginPage" { initialState, eval } \self -> React.do
-    pure $ render self
+mkLoginPage :: App.Component Unit
+mkLoginPage = App.component "LoginPage" { initialState, eval, render }
   where
   initialState =
     { email: pure ""
@@ -41,33 +39,34 @@ makeLoginPage =
     }
 
   eval =
-    Halo.makeEval
+    Halo.mkEval
       _
         { onAction = handleAction
         }
 
   handleAction = case _ of
-    UpdateEmail email -> modify_ _ { email = V.Modified email }
-    UpdatePassword password -> modify_ _ { password = V.Modified password }
+    Navigate route -> navigate route
+    UpdateEmail email -> Halo.modify_ _ { email = V.Modified email }
+    UpdatePassword password -> Halo.modify_ _ { password = V.Modified password }
     Submit -> do
       state <- V.setModified <$> Halo.get
       case toEither (validate state) of
-        Left _ -> modify_ (const state)
+        Left _ -> Halo.modify_ (const state)
         Right validated -> do
-          modify_ _ { submitResponse = RemoteData.Loading }
+          Halo.modify_ _ { submitResponse = RemoteData.Loading }
           response <- loginUser validated
           case response of
             Right user -> do
-              modify_ _ { submitResponse = RemoteData.Success unit }
+              Halo.modify_ _ { submitResponse = RemoteData.Success unit }
               redirect Home
-            Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
+            Left err -> Halo.modify_ _ { submitResponse = RemoteData.Failure err }
 
   validate values = ado
     email <- values.email # V.validated (LR.prop (SProxy :: _ "email")) \email -> F.nonEmpty email `andThen` F.validEmail
     password <- values.password # V.validated (LR.prop (SProxy :: _ "password")) \password -> F.nonEmpty password `andThen` (F.minimumLength 3 *> F.maximunLength 20)
     in { email, password }
 
-  render { env, state, send } =
+  render { state, send } =
     let
       errors = validate state # unV identity (const mempty) :: { email :: _, password :: _ }
     in
@@ -82,7 +81,7 @@ makeLoginPage =
                 [ Link.link
                     { className: ""
                     , route: Register
-                    , onClick: env.router.navigate
+                    , onClick: send <<< Navigate
                     , children: [ R.text "Need an account?" ]
                     }
                 ]

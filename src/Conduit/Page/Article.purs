@@ -1,11 +1,15 @@
-module Conduit.Page.Article (Props, makeArticlePage) where
+module Conduit.Page.Article (Props, mkArticlePage) where
 
 import Prelude
-import Conduit.Capability.Api (createComment, deleteArticle, deleteComment, getArticle, listComments, toggleFavorite, toggleFollow)
+import Conduit.Capability.Auth (readAuth, readAuthEvent)
+import Conduit.Capability.Resource.Article (deleteArticle, getArticle, toggleFavorite)
+import Conduit.Capability.Resource.Comment (createComment, deleteComment, listComments)
+import Conduit.Capability.Resource.Profile (toggleFollow)
 import Conduit.Capability.Routing (navigate, redirect)
+import Conduit.Component.App as App
 import Conduit.Component.Buttons (ButtonSize(..), favoriteButton, followButton)
 import Conduit.Component.Link as Link
-import Conduit.Component.Page as Page
+import Conduit.Data.Auth (Auth)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Comment (CommentId)
 import Conduit.Data.Error (Error(..))
@@ -15,10 +19,8 @@ import Conduit.Data.Username as Username
 import Conduit.Form.Validated (Validated)
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
-import Conduit.Hook.Auth (useAuth)
 import Conduit.Page.Utils (_article, _author)
 import Control.Comonad (extract)
-import Control.Monad.State (modify_)
 import Control.Parallel (parTraverse_)
 import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
@@ -44,6 +46,9 @@ type Props
 
 data Action
   = Initialize (Array Action)
+  | SubscribeToAuth
+  | UpdateAuth (Maybe Auth)
+  | Navigate Route
   | LoadArticle
   | LoadComments
   | DeleteArticle
@@ -53,89 +58,94 @@ data Action
   | DeleteComment CommentId
   | SubmitComment
 
-makeArticlePage :: Page.Component Props
-makeArticlePage =
-  Page.component "ArticlePage" { initialState, eval } \self@{ env } -> React.do
-    auth <- useAuth env
-    pure $ render auth self
+mkArticlePage :: App.Component Props
+mkArticlePage = App.component "ArticlePage" { initialState, eval, render }
   where
   initialState =
-    { article: RemoteData.NotAsked
+    { auth: Nothing
+    , article: RemoteData.NotAsked
     , comments: RemoteData.NotAsked
     , body: pure ""
     , submitResponse: RemoteData.NotAsked
     }
 
   eval =
-    Halo.makeEval
+    Halo.mkEval
       _
-        { onInitialize = \_ -> Just $ Initialize [ LoadArticle, LoadComments ]
+        { onInitialize = \_ -> Just $ Initialize [ SubscribeToAuth, LoadArticle, LoadComments ]
         , onUpdate = \prev next -> Just $ Initialize $ guard (prev.slug /= next.slug) [ LoadArticle, LoadComments ]
         , onAction = handleAction
         }
 
   handleAction = case _ of
     Initialize actions -> parTraverse_ handleAction actions
+    SubscribeToAuth -> do
+      auth <- readAuth
+      handleAction $ UpdateAuth auth
+      authEvent <- readAuthEvent
+      void $ Halo.subscribe $ map UpdateAuth authEvent
+    UpdateAuth auth -> Halo.modify_ _ { auth = auth }
+    Navigate route -> navigate route
     LoadArticle -> do
       props <- Halo.props
-      modify_ _ { article = RemoteData.Loading }
+      Halo.modify_ _ { article = RemoteData.Loading }
       response <- getArticle props.slug
       case response of
         Left (NotFound _) -> redirect Home
-        Left error -> modify_ _ { article = RemoteData.Failure error }
-        Right article -> modify_ _ { article = RemoteData.Success article }
+        Left error -> Halo.modify_ _ { article = RemoteData.Failure error }
+        Right article -> Halo.modify_ _ { article = RemoteData.Success article }
     LoadComments -> do
       props <- Halo.props
-      modify_ _ { comments = RemoteData.Loading }
+      Halo.modify_ _ { comments = RemoteData.Loading }
       response <- listComments props.slug
-      modify_ _ { comments = RemoteData.fromEither response }
+      Halo.modify_ _ { comments = RemoteData.fromEither response }
     DeleteArticle -> do
       props <- Halo.props
-      modify_ _ { submitResponse = RemoteData.Loading }
+      Halo.modify_ _ { submitResponse = RemoteData.Loading }
       response <- deleteArticle props.slug
       case response of
         Right res -> do
-          modify_ _ { submitResponse = RemoteData.Success res }
+          Halo.modify_ _ { submitResponse = RemoteData.Success res }
           navigate Home
-        Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
+        Left err -> Halo.modify_ _ { submitResponse = RemoteData.Failure err }
     ToggleFollow -> do
       state <- Halo.get
-      for_ (preview _author state) (toggleFollow >=> traverse_ (modify_ <<< set _author))
+      for_ (preview _author state) (toggleFollow >=> traverse_ (Halo.modify_ <<< set _author))
     ToggleFavorite -> do
       state <- Halo.get
-      for_ (preview _article state) (toggleFavorite >=> traverse_ (modify_ <<< set _article))
-    UpdateBody body -> modify_ _ { body = V.Modified body }
+      for_ (preview _article state) (toggleFavorite >=> traverse_ (Halo.modify_ <<< set _article))
+    UpdateBody body -> Halo.modify_ _ { body = V.Modified body }
     DeleteComment id -> do
       props <- Halo.props
-      modify_ _ { submitResponse = RemoteData.Loading }
+      Halo.modify_ _ { submitResponse = RemoteData.Loading }
       response <- deleteComment props.slug id
       case response of
         Right _ -> do
-          modify_ _ { submitResponse = RemoteData.Success unit }
+          Halo.modify_ _ { submitResponse = RemoteData.Success unit }
           response' <- listComments props.slug
-          modify_ _ { comments = RemoteData.fromEither response' }
-        Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
+          Halo.modify_ _ { comments = RemoteData.fromEither response' }
+        Left err -> Halo.modify_ _ { submitResponse = RemoteData.Failure err }
     SubmitComment -> do
       props <- Halo.props
       state <- V.setModified <$> Halo.get
       case toEither (validate state) of
-        Left _ -> modify_ (const state)
+        Left _ -> Halo.modify_ (const state)
         Right validated -> do
-          modify_ _ { submitResponse = RemoteData.Loading }
+          Halo.modify_ _ { submitResponse = RemoteData.Loading }
           response <- createComment props.slug validated
           case response of
             Right _ -> do
-              modify_ _ { submitResponse = RemoteData.Success unit, body = pure "" }
+              Halo.modify_ _ { submitResponse = RemoteData.Success unit, body = pure "" }
               response' <- listComments props.slug
-              modify_ _ { comments = RemoteData.fromEither response' }
-            Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
+              Halo.modify_ _ { comments = RemoteData.fromEither response' }
+            Left err -> Halo.modify_ _ { submitResponse = RemoteData.Failure err }
 
   validate :: forall r. { body :: Validated String | r } -> V { body :: Array String } { body :: String }
   validate values = ado
     body <- values.body # V.validated (LR.prop (SProxy :: _ "body")) F.nonEmpty
     in { body }
 
-  render auth { env, state, send } =
+  render { state, send } =
     state.article
       # RemoteData.maybe React.empty \article ->
           React.fragment
@@ -172,7 +182,7 @@ makeArticlePage =
                         [ R.div
                             { className: "col-xs-12 col-md-8 offset-md-2"
                             , children:
-                                [ case auth of
+                                [ case state.auth of
                                     Just _ ->
                                       R.form
                                         { className: "card comment-form"
@@ -195,7 +205,7 @@ makeArticlePage =
                                                 , children:
                                                     [ R.img
                                                         { className: "comment-author-img"
-                                                        , src: Avatar.toString $ maybe Avatar.blank (Avatar.withDefault <<< _.image) (_.user =<< auth)
+                                                        , src: Avatar.toString $ maybe Avatar.blank (Avatar.withDefault <<< _.image) (_.user =<< state.auth)
                                                         }
                                                     , R.button
                                                         { className: "btn btn-sm btn-primary"
@@ -211,14 +221,14 @@ makeArticlePage =
                                         [ Link.link
                                             { className: ""
                                             , route: Login
-                                            , onClick: env.router.navigate
+                                            , onClick: send <<< Navigate
                                             , children: [ R.text "Sign in" ]
                                             }
                                         , R.text " or "
                                         , Link.link
                                             { className: ""
                                             , route: Register
-                                            , onClick: env.router.navigate
+                                            , onClick: send <<< Navigate
                                             , children: [ R.text "sign up" ]
                                             }
                                         , R.text " to add comments on this article."
@@ -239,7 +249,7 @@ makeArticlePage =
             [ Link.link
                 { className: ""
                 , route: Profile article.author.username
-                , onClick: env.router.navigate
+                , onClick: send <<< Navigate
                 , children:
                     [ R.img
                         { src: Avatar.toString $ Avatar.withDefault article.author.image
@@ -253,7 +263,7 @@ makeArticlePage =
                     [ Link.link
                         { className: "author"
                         , route: Profile article.author.username
-                        , onClick: env.router.navigate
+                        , onClick: send <<< Navigate
                         , children: [ R.text $ Username.toString article.author.username ]
                         }
                     , R.span
@@ -264,14 +274,14 @@ makeArticlePage =
                         }
                     ]
                 }
-            , case _.username <$> auth of
+            , case _.username <$> state.auth of
                 Just username
                   | username == article.author.username ->
                     R.span_
                       [ Link.link
                           { className: "btn btn-outline-secondary btn-sm"
                           , route: UpdateArticle article.slug
-                          , onClick: env.router.navigate
+                          , onClick: send <<< Navigate
                           , children:
                               [ R.i
                                   { className: "ion-edit"
@@ -331,7 +341,7 @@ makeArticlePage =
                       [ Link.link
                           { className: "comment-author"
                           , route: Profile comment.author.username
-                          , onClick: env.router.navigate
+                          , onClick: send <<< Navigate
                           , children:
                               [ R.img
                                   { className: "comment-author-img"
@@ -343,7 +353,7 @@ makeArticlePage =
                       , Link.link
                           { className: "comment-author"
                           , route: Profile comment.author.username
-                          , onClick: env.router.navigate
+                          , onClick: send <<< Navigate
                           , children:
                               [ R.text $ Username.toString comment.author.username ]
                           }
@@ -353,7 +363,7 @@ makeArticlePage =
                           , children:
                               [ R.text $ toDisplay comment.createdAt ]
                           }
-                      , guard (Just comment.author.username == map _.username auth) R.span
+                      , guard (Just comment.author.username == map _.username state.auth) R.span
                           { className: "mod-options"
                           , children:
                               [ R.i

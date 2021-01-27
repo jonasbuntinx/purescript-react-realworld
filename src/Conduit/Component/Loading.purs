@@ -9,10 +9,10 @@ import React.Basic.DOM as R
 import React.Basic.Hooks as React
 
 loading :: React.JSX
-loading = (unsafePerformEffect makeLoading) unit
+loading = (unsafePerformEffect mkLoading) unit
 
-makeLoading :: React.Component Unit
-makeLoading = do
+mkLoading :: React.Component Unit
+mkLoading = do
   React.component "Loading" \content -> React.do
     visible /\ setVisible <- React.useState false
     React.useEffectOnce do
