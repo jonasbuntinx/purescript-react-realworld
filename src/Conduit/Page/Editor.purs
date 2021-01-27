@@ -2,7 +2,7 @@ module Conduit.Page.Editor (Props, makeEditorPage) where
 
 import Prelude
 import Conduit.AppM (getArticle, navigate, redirect, submitArticle)
-import Conduit.Component.Page as Page
+import Conduit.Component.App as App
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Component.TagInput (tagInput)
 import Conduit.Data.Error (Error(..))
@@ -11,7 +11,6 @@ import Conduit.Data.Slug (Slug)
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Control.Comonad (extract)
-import Control.Monad.State (modify_, put)
 import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Foldable (traverse_)
@@ -40,10 +39,8 @@ data Action
   | UpdateTagList (Set String)
   | Submit
 
-makeEditorPage :: Page.Component Props
-makeEditorPage =
-  Page.component "SettingsPage" { initialState, eval } \self -> React.do
-    pure $ render self
+makeEditorPage :: App.Component Props
+makeEditorPage = App.component "SettingsPage" { initialState, eval, render }
   where
   initialState =
     { article: RemoteData.NotAsked
@@ -66,15 +63,15 @@ makeEditorPage =
     Initialize -> do
       props <- Halo.props
       case props.slug of
-        Nothing -> put initialState
+        Nothing -> Halo.put initialState
         Just slug -> do
-          modify_ _ { article = RemoteData.Loading }
+          Halo.modify_ _ { article = RemoteData.Loading }
           response <- getArticle slug
           case response of
             Left (NotFound _) -> redirect Home
-            Left error -> modify_ _ { article = RemoteData.Failure error }
+            Left error -> Halo.modify_ _ { article = RemoteData.Failure error }
             Right article ->
-              modify_
+              Halo.modify_
                 _
                   { article = RemoteData.Success article
                   , title = pure article.title
@@ -82,23 +79,23 @@ makeEditorPage =
                   , body = pure article.body
                   , tagList = Set.fromFoldable article.tagList
                   }
-    UpdateTitle title -> modify_ _ { title = V.Modified title }
-    UpdateDescription description -> modify_ _ { description = V.Modified description }
-    UpdateBody body -> modify_ _ { body = V.Modified body }
-    UpdateTagList tagList -> modify_ _ { tagList = tagList }
+    UpdateTitle title -> Halo.modify_ _ { title = V.Modified title }
+    UpdateDescription description -> Halo.modify_ _ { description = V.Modified description }
+    UpdateBody body -> Halo.modify_ _ { body = V.Modified body }
+    UpdateTagList tagList -> Halo.modify_ _ { tagList = tagList }
     Submit -> do
       props <- Halo.props
       state <- V.setModified <$> Halo.get
       case toEither (validate state) of
-        Left _ -> modify_ (const state)
+        Left _ -> Halo.modify_ (const state)
         Right validated -> do
-          modify_ _ { submitResponse = RemoteData.Loading }
+          Halo.modify_ _ { submitResponse = RemoteData.Loading }
           response <- submitArticle props.slug validated
           case response of
             Right article -> do
-              modify_ _ { submitResponse = RemoteData.Success unit }
+              Halo.modify_ _ { submitResponse = RemoteData.Success unit }
               navigate $ ViewArticle article.slug
-            Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
+            Left err -> Halo.modify_ _ { submitResponse = RemoteData.Failure err }
 
   validate values = ado
     title <- values.title # V.validated (LR.prop (SProxy :: _ "title")) F.nonEmpty

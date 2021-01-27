@@ -41,7 +41,9 @@ type AuthImpl m
     }
 
 type RoutingImpl m
-  = { navigate :: Route -> m Unit
+  = { readRoute :: m Route
+    , readRoutingEvent :: m (Event Route)
+    , navigate :: Route -> m Unit
     , redirect :: Route -> m Unit
     }
 
@@ -117,14 +119,20 @@ instance authHaloM :: MonadAuth m => MonadAuth (HaloM props state action m) wher
 -- | Routing
 class
   Monad m <= MonadRouting m where
+  readRoute :: m Route
+  readRoutingEvent :: m (Event Route)
   navigate :: Route -> m Unit
   redirect :: Route -> m Unit
 
 instance monadRoutingAppM :: MonadRouting AppM where
+  readRoute = join $ AppM $ asks _.routing.readRoute
+  readRoutingEvent = join $ AppM $ asks _.routing.readRoutingEvent
   navigate route = (AppM $ asks _.routing.navigate) >>= (#) route
   redirect route = (AppM $ asks _.routing.redirect) >>= (#) route
 
 instance routingHaloM :: MonadRouting m => MonadRouting (HaloM props state action m) where
+  readRoute = lift readRoute
+  readRoutingEvent = lift readRoutingEvent
   navigate = lift <<< navigate
   redirect = lift <<< redirect
 

@@ -1,10 +1,10 @@
 module Conduit.Root where
 
 import Prelude
-import Conduit.AppM (navigate, readAuth, readAuthEvent, redirect)
+import Conduit.AppM (navigate, readAuth, readAuthEvent, readRoute, readRoutingEvent, redirect)
+import Conduit.Component.App as App
 import Conduit.Component.Footer as Footer
 import Conduit.Component.Header as Header
-import Conduit.Component.Page as Page
 import Conduit.Data.Auth (Auth)
 import Conduit.Data.Route (Route(..))
 import Conduit.Page.Article (makeArticlePage)
@@ -15,11 +15,8 @@ import Conduit.Page.Profile (Tab(..), makeProfilePage)
 import Conduit.Page.Register (makeRegisterPage)
 import Conduit.Page.Settings (makeSettingsPage)
 import Control.Parallel (parTraverse_)
-import Data.Maybe (Maybe(..), isJust)
-import Data.Tuple.Nested ((/\))
-import Effect.Console (log)
+import Data.Maybe (Maybe(..))
 import React.Basic.Hooks as React
-import React.Halo (liftEffect)
 import React.Halo as Halo
 
 data Action
@@ -28,24 +25,12 @@ data Action
   | UpdateAuth (Maybe Auth)
   | SubscribeToRouting
   | UpdateRoute Route
-  | Redirect Route
   | Navigate Route
 
-makeRoot :: Page.Component Unit
+makeRoot :: App.Component Unit
 makeRoot = do
   render <- mkRender
-  Page.component "Root" { initialState, eval } \self@{ state, send } -> React.do
-    React.useEffect (state.route /\ (isJust state.auth)) do
-      case state.route, state.auth of
-        Login, Just _ -> send $ Redirect Home
-        Register, Just _ -> send $ Redirect Home
-        Settings, Nothing -> send $ Redirect Home
-        CreateArticle, Nothing -> send $ Redirect Home
-        UpdateArticle _, Nothing -> send $ Redirect Home
-        Error, _ -> send $ Redirect Home
-        _, _ -> pure unit
-      mempty
-    pure $ render self
+  App.component "Root" { initialState, eval, render }
   where
   initialState =
     { auth: Nothing
@@ -63,14 +48,26 @@ makeRoot = do
     Initialize actions -> parTraverse_ handleAction actions
     SubscribeToAuth -> do
       auth <- readAuth
-      Halo.modify_ _ { auth = auth }
+      handleAction $ UpdateAuth auth
       authEvent <- readAuthEvent
       void $ Halo.subscribe $ map UpdateAuth authEvent
-    SubscribeToRouting -> do
-      liftEffect $ log "FOOBAR"
     UpdateAuth auth -> Halo.modify_ _ { auth = auth }
-    UpdateRoute route -> Halo.modify_ _ { route = route }
-    Redirect route -> redirect route
+    SubscribeToRouting -> do
+      route <- readRoute
+      handleAction $ UpdateRoute route
+      routingEvent <- readRoutingEvent
+      void $ Halo.subscribe $ map UpdateRoute routingEvent
+    UpdateRoute route -> do
+      Halo.modify_ _ { route = route }
+      auth <- readAuth
+      case route, auth of
+        Login, Just _ -> redirect Home
+        Register, Just _ -> redirect Home
+        Settings, Nothing -> redirect Home
+        CreateArticle, Nothing -> redirect Home
+        UpdateArticle _, Nothing -> redirect Home
+        Error, _ -> redirect Home
+        _, _ -> pure unit
     Navigate route -> navigate route
 
   mkRender = do

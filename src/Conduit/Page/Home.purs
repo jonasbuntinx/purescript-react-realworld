@@ -1,18 +1,19 @@
 module Conduit.Page.Home (makeHomePage) where
 
 import Prelude
-import Conduit.AppM (listArticles, listFeed, listTags, navigate, toggleFavorite)
+import Conduit.AppM (listArticles, listFeed, listTags, navigate, readAuth, readAuthEvent, toggleFavorite)
+import Conduit.Component.App as App
 import Conduit.Component.ArticleList (articleList)
-import Conduit.Component.Page as Page
 import Conduit.Component.Pagination (pagination)
 import Conduit.Component.Tabs as Tabs
 import Conduit.Data.Article (defaultArticlesQuery)
+import Conduit.Data.Auth (Auth)
 import Conduit.Data.Route (Route)
 import Conduit.Page.Utils (_articles)
-import Control.Monad.State (modify_)
+import Control.Parallel (parTraverse_)
 import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
-import Data.Maybe (Maybe(..), isJust, isNothing)
+import Data.Maybe (Maybe(..), isNothing)
 import Data.Monoid (guard)
 import Network.RemoteData (RemoteData(..))
 import Network.RemoteData as RemoteData
@@ -30,26 +31,20 @@ data Tab
 derive instance eqTab :: Eq Tab
 
 data Action
-  = Initialize
+  = Initialize (Array Action)
+  | SubscribeToAuth
+  | UpdateAuth (Maybe Auth)
   | Navigate Route
+  | LoadTags
   | LoadArticles Tab { offset :: Int, limit :: Int }
   | ToggleFavorite Int
 
-makeHomePage :: Page.Component Unit
-makeHomePage =
-  Page.component "HomePage" { initialState, eval } \self -> React.do
-    -- auth <- useAuth env
-    let
-      auth = Nothing
-    React.useEffect (isJust auth) do
-      case auth of
-        Nothing -> self.send $ LoadArticles self.state.tab self.state.pagination
-        Just _ -> self.send $ LoadArticles Feed self.state.pagination
-      mempty
-    pure $ render auth self
+makeHomePage :: App.Component Unit
+makeHomePage = App.component "HomePage" { initialState, eval, render }
   where
   initialState =
-    { tags: NotAsked
+    { auth: Nothing
+    , tags: NotAsked
     , articles: NotAsked
     , pagination: { offset: 0, limit: 10 }
     , tab: Global
@@ -58,31 +53,43 @@ makeHomePage =
   eval =
     Halo.mkEval
       _
-        { onInitialize = \_ -> Just Initialize
+        { onInitialize = \_ -> Just $ Initialize [ SubscribeToAuth, LoadTags ]
         , onAction = handleAction
         }
 
   handleAction = case _ of
-    Initialize -> do
-      modify_ _ { tags = RemoteData.Loading }
-      response <- listTags
-      modify_ _ { tags = RemoteData.fromEither response }
+    Initialize actions -> parTraverse_ handleAction actions
+    SubscribeToAuth -> do
+      auth <- readAuth
+      handleAction $ UpdateAuth auth
+      authEvent <- readAuthEvent
+      void $ Halo.subscribe $ map UpdateAuth authEvent
+    UpdateAuth auth -> do
+      state <- Halo.get
+      Halo.modify_ _ { auth = auth }
+      case auth of
+        Nothing -> handleAction $ LoadArticles state.tab state.pagination
+        Just _ -> handleAction $ LoadArticles Feed state.pagination
     Navigate route -> navigate route
+    LoadTags -> do
+      Halo.modify_ _ { tags = RemoteData.Loading }
+      response <- listTags
+      Halo.modify_ _ { tags = RemoteData.fromEither response }
     LoadArticles tab pagination -> do
-      modify_ _ { articles = RemoteData.Loading, tab = tab, pagination = pagination }
+      Halo.modify_ _ { articles = RemoteData.Loading, tab = tab, pagination = pagination }
       let
         query = defaultArticlesQuery { offset = Just pagination.offset, limit = Just pagination.limit }
       response <- case tab of
         Feed -> listFeed query
         Global -> listArticles query
         Tag tag -> listArticles (query { tag = Just tag })
-      modify_ _ { articles = RemoteData.fromEither response }
+      Halo.modify_ _ { articles = RemoteData.fromEither response }
     ToggleFavorite ix -> do
       state <- Halo.get
-      for_ (preview (_articles ix) state) (toggleFavorite >=> traverse_ (modify_ <<< set (_articles ix)))
+      for_ (preview (_articles ix) state) (toggleFavorite >=> traverse_ (Halo.modify_ <<< set (_articles ix)))
 
-  render auth { state, send } =
-    container (guard (isNothing auth) banner)
+  render { state, send } =
+    container (guard (isNothing state.auth) banner)
       [ mainView
       , R.div
           { className: "col-md-3 col-xs-12"
@@ -108,7 +115,7 @@ makeHomePage =
                 , tabs:
                     [ { id: Feed
                       , label: R.text "Your Feed"
-                      , disabled: isNothing auth
+                      , disabled: isNothing state.auth
                       , content: tabContent
                       }
                     , { id: Global

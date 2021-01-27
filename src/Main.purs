@@ -6,9 +6,10 @@ import Conduit.Api.Endpoints as Endpoints
 import Conduit.Api.Utils (makeRequest, makeSecureRequest)
 import Conduit.AppM (AppImpl, AppM, modifyAuth, runAppM)
 import Conduit.Component.Auth as Auth
+import Conduit.Component.Routing as Routing
 import Conduit.Data.Auth (Auth, toAuth)
 import Conduit.Data.Error (Error(..))
-import Conduit.Data.Route (Route(..), routeCodec)
+import Conduit.Data.Route (Route(..))
 import Conduit.Root as Root
 import Data.Either (Either(..), either)
 import Data.Maybe (Maybe(..))
@@ -22,14 +23,10 @@ import FRP.Event as Event
 import React.Basic as React
 import React.Basic.DOM (render)
 import Record as Record
-import Routing.Duplex (parse, print)
-import Routing.PushState as PushState
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)
 import Web.HTML.HTMLDocument (toNonElementParentNode)
 import Web.HTML.Window (document)
-import Wire.React.Router as Router
-import Wire.Signal as Signal
 
 main :: Effect Unit
 main = do
@@ -38,49 +35,39 @@ main = do
     Nothing -> Exception.throw "Conduit container element not found."
     Just c -> do
       auth <- Auth.makeAuthManager
-      interface <- PushState.makeInterface
-      routing <- Signal.create Error
-      router <-
-        Router.makeRouter interface
-          { parse: parse routeCodec
-          , print: print routeCodec
-          , onRoute: const $ Router.continue
-          , onTransition:
-              case _ of
-                Router.Resolved _ route -> routing.modify $ const route
-                _ -> pure unit
-          }
+      routing <- Routing.makeRoutingManager
       launchAff_ do
-        root <-
-          runAppM
-            ( appImpl
-                { read: auth.read
-                , event: auth.event
-                , modify: auth.modify
-                , navigate: router.navigate
-                , redirect: router.redirect
-                }
-            )
-            Root.makeRoot
-        liftEffect $ render (React.fragment [ router.component, auth.component, root unit ]) c
+        root <- runAppM (appImpl { auth, routing }) Root.makeRoot
+        liftEffect $ render (React.fragment [ routing.component, auth.component, root unit ]) c
 
 appImpl ::
-  { read :: Effect (Maybe Auth)
-  , event :: Event.Event (Maybe Auth)
-  , modify :: (Maybe Auth -> Maybe Auth) -> Effect (Maybe Auth)
-  , navigate :: Route -> Effect Unit
-  , redirect :: Route -> Effect Unit
+  forall r s.
+  { auth ::
+      { read :: Effect (Maybe Auth)
+      , event :: Event.Event (Maybe Auth)
+      , modify :: (Maybe Auth -> Maybe Auth) -> Effect (Maybe Auth)
+      | r
+      }
+  , routing ::
+      { read :: Effect Route
+      , event :: Event.Event Route
+      , navigate :: Route -> Effect Unit
+      , redirect :: Route -> Effect Unit
+      | s
+      }
   } ->
   AppImpl AppM
-appImpl { read, event, modify, navigate, redirect } =
+appImpl { auth, routing } =
   { auth:
-      { readAuth: liftEffect read
-      , readAuthEvent: liftEffect $ pure event
-      , modifyAuth: liftEffect <<< modify
+      { readAuth: liftEffect auth.read
+      , readAuthEvent: liftEffect $ pure auth.event
+      , modifyAuth: liftEffect <<< auth.modify
       }
   , routing:
-      { navigate: liftEffect <<< navigate
-      , redirect: liftEffect <<< redirect
+      { readRoute: liftEffect routing.read
+      , readRoutingEvent: liftEffect $ pure routing.event
+      , navigate: liftEffect <<< routing.navigate
+      , redirect: liftEffect <<< routing.redirect
       }
   , userApi:
       { loginUser:
@@ -128,7 +115,7 @@ appImpl { read, event, modify, navigate, redirect } =
       , logoutUser:
           do
             void $ modifyAuth $ const Nothing
-            liftEffect $ redirect Home
+            liftEffect $ routing.redirect Home
       }
   , articleApi:
       { listArticles:

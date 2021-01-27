@@ -1,20 +1,20 @@
 module Conduit.Page.Profile (Props, Tab(..), makeProfilePage) where
 
 import Prelude
-import Conduit.AppM (getProfile, listArticles, navigate, redirect, toggleFavorite, toggleFollow)
+import Conduit.AppM (getProfile, listArticles, navigate, readAuth, readAuthEvent, redirect, toggleFavorite, toggleFollow)
+import Conduit.Component.App as App
 import Conduit.Component.ArticleList (articleList)
 import Conduit.Component.Buttons (followButton)
-import Conduit.Component.Page as Page
 import Conduit.Component.Pagination (pagination)
 import Conduit.Component.Tabs as Tabs
 import Conduit.Data.Article (defaultArticlesQuery)
+import Conduit.Data.Auth (Auth)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
 import Conduit.Page.Utils (_articles, _profile)
-import Control.Monad.State (modify_)
 import Control.Parallel (parTraverse_)
 import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
@@ -40,22 +40,20 @@ derive instance eqTab :: Eq Tab
 
 data Action
   = Initialize (Array Action)
+  | SubscribeToAuth
+  | UpdateAuth (Maybe Auth)
   | Navigate Route
   | LoadProfile
   | LoadArticles { offset :: Int, limit :: Int }
   | ToggleFavorite Int
   | ToggleFollow
 
-makeProfilePage :: Page.Component Props
-makeProfilePage =
-  Page.component "ProfilePage" { initialState, eval } \self -> React.do
-    -- auth <- useAuth env
-    let
-      auth = Nothing
-    pure $ render auth self
+makeProfilePage :: App.Component Props
+makeProfilePage = App.component "ProfilePage" { initialState, eval, render }
   where
   initialState =
-    { selectedTab: Nothing
+    { auth: Nothing
+    , selectedTab: Nothing
     , profile: RemoteData.NotAsked
     , articles: RemoteData.NotAsked
     , pagination: { offset: 0, limit: 5 }
@@ -64,7 +62,7 @@ makeProfilePage =
   eval =
     Halo.mkEval
       _
-        { onInitialize = \_ -> Just $ Initialize [ LoadProfile, LoadArticles initialState.pagination ]
+        { onInitialize = \_ -> Just $ Initialize [ SubscribeToAuth, LoadProfile, LoadArticles initialState.pagination ]
         , onUpdate =
           \prev next ->
             Just $ Initialize
@@ -79,33 +77,39 @@ makeProfilePage =
 
   handleAction = case _ of
     Initialize actions -> parTraverse_ handleAction actions
+    SubscribeToAuth -> do
+      auth <- readAuth
+      handleAction $ UpdateAuth auth
+      authEvent <- readAuthEvent
+      void $ Halo.subscribe $ map UpdateAuth authEvent
+    UpdateAuth auth -> Halo.modify_ _ { auth = auth }
     Navigate route -> navigate route
     LoadProfile -> do
       props <- Halo.props
-      modify_ _ { profile = RemoteData.Loading }
+      Halo.modify_ _ { profile = RemoteData.Loading }
       response <- getProfile props.username
       case response of
         Left (NotFound _) -> redirect Home
-        Left error -> modify_ _ { profile = RemoteData.Failure error }
-        Right profile -> modify_ _ { profile = RemoteData.Success profile }
+        Left error -> Halo.modify_ _ { profile = RemoteData.Failure error }
+        Right profile -> Halo.modify_ _ { profile = RemoteData.Success profile }
     LoadArticles pagination -> do
       props <- Halo.props
       let
         query = defaultArticlesQuery { offset = Just pagination.offset, limit = Just pagination.limit }
-      modify_ _ { articles = RemoteData.Loading, pagination = pagination }
+      Halo.modify_ _ { articles = RemoteData.Loading, pagination = pagination }
       response <-
         listArticles case props.tab of
           Published -> query { author = Just props.username }
           Favorited -> query { favorited = Just props.username }
-      modify_ _ { articles = RemoteData.fromEither response }
+      Halo.modify_ _ { articles = RemoteData.fromEither response }
     ToggleFavorite ix -> do
       state <- Halo.get
-      for_ (preview (_articles ix) state) (toggleFavorite >=> traverse_ (modify_ <<< set (_articles ix)))
+      for_ (preview (_articles ix) state) (toggleFavorite >=> traverse_ (Halo.modify_ <<< set (_articles ix)))
     ToggleFollow -> do
       state <- Halo.get
-      for_ (preview _profile state) (toggleFollow >=> traverse_ (modify_ <<< set _profile))
+      for_ (preview _profile state) (toggleFollow >=> traverse_ (Halo.modify_ <<< set _profile))
 
-  render auth { props, state, send } =
+  render { props, state, send } =
     guard (RemoteData.isSuccess state.profile) container userInfo
       [ Tabs.tabs
           { className: "articles-toggle"
@@ -167,7 +171,7 @@ makeProfilePage =
                                         }
                                     , R.h4_ [ R.text $ Username.toString props.username ]
                                     , maybe React.empty (\bio -> R.p_ [ R.text bio ]) (RemoteData.toMaybe state.profile >>= _.bio)
-                                    , if (Just props.username == map _.username auth) then
+                                    , if (Just props.username == map _.username state.auth) then
                                         R.button
                                           { className: "btn btn-sm action-btn btn-outline-secondary"
                                           , onClick: handler_ $ send $ Navigate Settings

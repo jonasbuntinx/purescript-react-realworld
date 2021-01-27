@@ -2,14 +2,13 @@ module Conduit.Page.Register (makeRegisterPage) where
 
 import Prelude
 import Conduit.AppM (navigate, redirect, registerUser)
+import Conduit.Component.App as App
 import Conduit.Component.Link as Link
-import Conduit.Component.Page as Page
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Data.Route (Route(..))
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Control.Comonad (extract)
-import Control.Monad.State (modify_)
 import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Foldable (traverse_)
@@ -30,10 +29,8 @@ data Action
   | UpdatePassword String
   | Submit
 
-makeRegisterPage :: Page.Component Unit
-makeRegisterPage =
-  Page.component "RegisterPage" { initialState, eval } \self -> React.do
-    pure $ render self
+makeRegisterPage :: App.Component Unit
+makeRegisterPage = App.component "RegisterPage" { initialState, eval, render }
   where
   initialState =
     { username: pure ""
@@ -50,21 +47,21 @@ makeRegisterPage =
 
   handleAction = case _ of
     Navigate route -> navigate route
-    UpdateUsername username -> modify_ _ { username = V.Modified username }
-    UpdateEmail email -> modify_ _ { email = V.Modified email }
-    UpdatePassword password -> modify_ _ { password = V.Modified password }
+    UpdateUsername username -> Halo.modify_ _ { username = V.Modified username }
+    UpdateEmail email -> Halo.modify_ _ { email = V.Modified email }
+    UpdatePassword password -> Halo.modify_ _ { password = V.Modified password }
     Submit -> do
       state <- V.setModified <$> Halo.get
       case toEither (validate state) of
-        Left _ -> modify_ (const state)
+        Left _ -> Halo.modify_ (const state)
         Right validated -> do
-          modify_ _ { submitResponse = RemoteData.Loading }
+          Halo.modify_ _ { submitResponse = RemoteData.Loading }
           response <- registerUser validated
           case response of
             Right user -> do
-              modify_ _ { submitResponse = RemoteData.Success unit }
+              Halo.modify_ _ { submitResponse = RemoteData.Success unit }
               redirect Home
-            Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
+            Left err -> Halo.modify_ _ { submitResponse = RemoteData.Failure err }
 
   validate values = ado
     username <- values.username # V.validated (LR.prop (SProxy :: _ "username")) \username -> F.nonEmpty username `andThen` F.validUsername

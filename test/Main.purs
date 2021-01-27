@@ -20,7 +20,9 @@ appImpl =
       , modifyAuth: \_ -> liftEffect $ Exception.throw "modifyAuth not implemented"
       }
   , routing:
-      { navigate: \_ -> liftEffect $ Exception.throw "navigate not implemented"
+      { readRoute: liftEffect $ Exception.throw "readRoute not implemented"
+      , readRoutingEvent: liftEffect $ Exception.throw "readRoutingEvent not implemented"
+      , navigate: \_ -> liftEffect $ Exception.throw "navigate not implemented"
       , redirect: \_ -> liftEffect $ Exception.throw "redirect not implemented"
       }
   , userApi:
