@@ -18,11 +18,11 @@ import Effect.Exception as Exception
 type AppInst m
   = { auth :: AuthInst m
     , routing :: RoutingInst m
-    , userApi :: UserInst m
-    , articleApi :: ArticleInst m
-    , commentApi :: CommentInst m
-    , profileApi :: ProfileInst m
-    , tagApi :: TagInst m
+    , user :: UserInst m
+    , article :: ArticleInst m
+    , comment :: CommentInst m
+    , profile :: ProfileInst m
+    , tag :: TagInst m
     }
 
 newtype AppM a
@@ -71,58 +71,58 @@ instance monadRoutingAppM :: MonadRouting AppM where
 -- | User
 instance monadUserAppM :: MonadUser AppM where
   loginUser creds = do
-    f <- AppM $ asks _.userApi.loginUser
+    f <- AppM $ asks _.user.loginUser
     f creds
   registerUser user = do
-    f <- AppM $ asks _.userApi.registerUser
+    f <- AppM $ asks _.user.registerUser
     f user
   updateUser user = do
-    f <- AppM $ asks _.userApi.updateUser
+    f <- AppM $ asks _.user.updateUser
     f user
-  logoutUser = join $ AppM $ asks _.userApi.logoutUser
+  logoutUser = join $ AppM $ asks _.user.logoutUser
 
 -- | Article
 instance monadArticleAppM :: MonadArticle AppM where
   listArticles query = do
-    f <- AppM $ asks _.articleApi.listArticles
+    f <- AppM $ asks _.article.listArticles
     f query
   listFeed query = do
-    f <- AppM $ asks _.articleApi.listFeed
+    f <- AppM $ asks _.article.listFeed
     f query
   getArticle slug = do
-    f <- AppM $ asks _.articleApi.getArticle
+    f <- AppM $ asks _.article.getArticle
     f slug
   submitArticle slug article = do
-    f <- AppM $ asks _.articleApi.submitArticle
+    f <- AppM $ asks _.article.submitArticle
     f slug article
   deleteArticle slug = do
-    f <- AppM $ asks _.articleApi.deleteArticle
+    f <- AppM $ asks _.article.deleteArticle
     f slug
   toggleFavorite article = do
-    f <- AppM $ asks _.articleApi.toggleFavorite
+    f <- AppM $ asks _.article.toggleFavorite
     f article
 
 -- | Comment
 instance monadCommentAppM :: MonadComment AppM where
   listComments slug = do
-    f <- AppM $ asks _.commentApi.listComments
+    f <- AppM $ asks _.comment.listComments
     f slug
   createComment slug comment = do
-    f <- AppM $ asks _.commentApi.createComment
+    f <- AppM $ asks _.comment.createComment
     f slug comment
   deleteComment slug id = do
-    f <- AppM $ asks _.commentApi.deleteComment
+    f <- AppM $ asks _.comment.deleteComment
     f slug id
 
 -- | Profile
 instance monadProfileAppM :: MonadProfile AppM where
   getProfile username = do
-    f <- AppM $ asks _.profileApi.getProfile
+    f <- AppM $ asks _.profile.getProfile
     f username
   toggleFollow profile = do
-    f <- AppM $ asks _.profileApi.toggleFollow
+    f <- AppM $ asks _.profile.toggleFollow
     f profile
 
 -- | Tag
 instance monadTagAppM :: MonadTag AppM where
-  listTags = join $ AppM $ asks _.tagApi.listTags
+  listTags = join $ AppM $ asks _.tag.listTags

@@ -25,13 +25,13 @@ appInst =
       , navigate: \_ -> liftEffect $ Exception.throw "navigate not implemented"
       , redirect: \_ -> liftEffect $ Exception.throw "redirect not implemented"
       }
-  , userApi:
+  , user:
       { loginUser: \_ -> liftEffect $ Exception.throw "loginUser not implemented"
       , registerUser: \_ -> liftEffect $ Exception.throw "registerUser not implemented"
       , updateUser: \_ -> liftEffect $ Exception.throw "updateUser not implemented"
       , logoutUser: liftEffect $ Exception.throw " logoutUser not implemented"
       }
-  , articleApi:
+  , article:
       { listArticles: \_ -> liftEffect $ Exception.throw "listArticles not implemented"
       , listFeed: \_ -> liftEffect $ Exception.throw "listFeed not implemented"
       , getArticle: \_ -> liftEffect $ Exception.throw "getArticle not implemented"
@@ -39,16 +39,16 @@ appInst =
       , deleteArticle: \_ -> liftEffect $ Exception.throw "deleteArticle not implemented"
       , toggleFavorite: \_ -> liftEffect $ Exception.throw "toggleFavorite not implemented"
       }
-  , commentApi:
+  , comment:
       { listComments: \_ -> liftEffect $ Exception.throw "listComments not implemented"
       , createComment: \_ _ -> liftEffect $ Exception.throw "createComment not implemented"
       , deleteComment: \_ _ -> liftEffect $ Exception.throw "deleteComment not implemented"
       }
-  , profileApi:
+  , profile:
       { getProfile: \_ -> liftEffect $ Exception.throw "getProfile not implemented"
       , toggleFollow: \_ -> liftEffect $ Exception.throw "toggleFollow not implemented"
       }
-  , tagApi:
+  , tag:
       { listTags: liftEffect $ Exception.throw "listTags not implemented"
       }
   }
