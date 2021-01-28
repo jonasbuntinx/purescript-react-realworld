@@ -46,7 +46,7 @@ type Props
 
 data Action
   = Initialize
-  | LoadResources
+  | OnPropsUpdate Props Props
   | UpdateAuth (Maybe Auth)
   | Navigate Route
   | LoadArticle
@@ -73,7 +73,7 @@ mkArticlePage = App.component "ArticlePage" { initialState, eval, render }
     Halo.mkEval
       _
         { onInitialize = \_ -> Just Initialize
-        , onUpdate = \prev next -> if (prev.slug /= next.slug) then Just LoadResources else Nothing
+        , onUpdate = \prev next -> Just $ OnPropsUpdate prev next
         , onAction = handleAction
         }
 
@@ -83,12 +83,16 @@ mkArticlePage = App.component "ArticlePage" { initialState, eval, render }
       handleAction $ UpdateAuth auth
       authEvent <- readAuthEvent
       void $ Halo.subscribe $ map UpdateAuth authEvent
-      handleAction LoadResources
-    LoadResources -> do
       parTraverse_ handleAction
         [ LoadArticle
         , LoadComments
         ]
+    OnPropsUpdate prev next -> do
+      when (prev.slug /= next.slug) do
+        parTraverse_ handleAction
+          [ LoadArticle
+          , LoadComments
+          ]
     UpdateAuth auth -> do
       Halo.modify_ _ { auth = auth }
     Navigate route -> do
