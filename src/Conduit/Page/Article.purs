@@ -98,13 +98,12 @@ mkArticlePage = App.component "ArticlePage" { initialState, eval, render }
     Navigate route -> do
       navigate route
     LoadArticle -> do
-      props <- Halo.props
+      { slug } <- Halo.props
       Halo.modify_ _ { article = RemoteData.Loading }
-      response <- getArticle props.slug
+      response <- getArticle slug
       case response of
         Left (NotFound _) -> redirect Home
-        Left error -> Halo.modify_ _ { article = RemoteData.Failure error }
-        Right article -> Halo.modify_ _ { article = RemoteData.Success article }
+        _ -> Halo.modify_ _ { article = RemoteData.fromEither response }
     LoadComments -> do
       props <- Halo.props
       Halo.modify_ _ { comments = RemoteData.Loading }
@@ -114,11 +113,8 @@ mkArticlePage = App.component "ArticlePage" { initialState, eval, render }
       props <- Halo.props
       Halo.modify_ _ { submitResponse = RemoteData.Loading }
       response <- deleteArticle props.slug
-      case response of
-        Right res -> do
-          Halo.modify_ _ { submitResponse = RemoteData.Success res }
-          navigate Home
-        Left err -> Halo.modify_ _ { submitResponse = RemoteData.Failure err }
+      Halo.modify_ _ { submitResponse = RemoteData.fromEither response }
+      for_ response \_ -> navigate Home
     ToggleFollow -> do
       state <- Halo.get
       for_ (preview _author state) (toggleFollow >=> traverse_ (Halo.modify_ <<< set _author))
@@ -130,12 +126,10 @@ mkArticlePage = App.component "ArticlePage" { initialState, eval, render }
       props <- Halo.props
       Halo.modify_ _ { submitResponse = RemoteData.Loading }
       response <- deleteComment props.slug id
-      case response of
-        Right _ -> do
-          Halo.modify_ _ { submitResponse = RemoteData.Success unit }
-          response' <- listComments props.slug
-          Halo.modify_ _ { comments = RemoteData.fromEither response' }
-        Left err -> Halo.modify_ _ { submitResponse = RemoteData.Failure err }
+      Halo.modify_ _ { submitResponse = RemoteData.fromEither response }
+      for_ response \_ -> do
+        response' <- listComments props.slug
+        Halo.modify_ _ { comments = RemoteData.fromEither response' }
     SubmitComment -> do
       props <- Halo.props
       state <- V.setModified <$> Halo.get
@@ -144,12 +138,11 @@ mkArticlePage = App.component "ArticlePage" { initialState, eval, render }
         Right validated -> do
           Halo.modify_ _ { submitResponse = RemoteData.Loading }
           response <- createComment props.slug validated
-          case response of
-            Right _ -> do
-              Halo.modify_ _ { submitResponse = RemoteData.Success unit, body = pure "" }
-              response' <- listComments props.slug
-              Halo.modify_ _ { comments = RemoteData.fromEither response' }
-            Left err -> Halo.modify_ _ { submitResponse = RemoteData.Failure err }
+          Halo.modify_ _ { submitResponse = RemoteData.fromEither (void response) }
+          for_ response \_ -> do
+            Halo.modify_ _ { body = pure "" }
+            response' <- listComments props.slug
+            Halo.modify_ _ { comments = RemoteData.fromEither response' }
 
   validate :: forall r. { body :: Validated String | r } -> V { body :: Array String } { body :: String }
   validate values = ado

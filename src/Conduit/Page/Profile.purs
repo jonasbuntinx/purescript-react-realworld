@@ -98,10 +98,10 @@ mkProfilePage = App.component "ProfilePage" { initialState, eval, render }
       props <- Halo.props
       Halo.modify_ _ { profile = RemoteData.Loading }
       response <- getProfile props.username
+      Halo.modify_ _ { profile = RemoteData.fromEither response }
       case response of
         Left (NotFound _) -> redirect Home
-        Left error -> Halo.modify_ _ { profile = RemoteData.Failure error }
-        Right profile -> Halo.modify_ _ { profile = RemoteData.Success profile }
+        _ -> pure unit
     LoadArticles pagination -> do
       props <- Halo.props
       let

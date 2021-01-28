@@ -68,14 +68,14 @@ mkEditorPage = App.component "SettingsPage" { initialState, eval, render }
         Just slug -> do
           Halo.modify_ _ { article = RemoteData.Loading }
           response <- getArticle slug
+          Halo.modify_ _ { article = RemoteData.fromEither response }
           case response of
             Left (NotFound _) -> redirect Home
-            Left error -> Halo.modify_ _ { article = RemoteData.Failure error }
-            Right article ->
+            Left _ -> pure unit
+            Right article -> do
               Halo.modify_
                 _
-                  { article = RemoteData.Success article
-                  , title = pure article.title
+                  { title = pure article.title
                   , description = pure article.description
                   , body = pure article.body
                   , tagList = Set.fromFoldable article.tagList
