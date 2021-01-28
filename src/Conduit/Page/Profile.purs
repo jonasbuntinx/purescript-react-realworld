@@ -18,6 +18,7 @@ import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
 import Conduit.Page.Utils (_articles, _profile)
+import Control.Parallel (parTraverse_)
 import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
@@ -83,10 +84,13 @@ mkProfilePage = App.component "ProfilePage" { initialState, eval, render }
       authEvent <- readAuthEvent
       void $ Halo.subscribe $ map UpdateAuth authEvent
     LoadResources { profile, articles } -> do
-      when profile do
-        void $ Halo.fork $ handleAction LoadProfile
-      when articles do
-        void $ Halo.fork $ handleAction $ LoadArticles initialState.pagination
+      let
+        actions =
+          join
+            [ guard profile [ LoadProfile ]
+            , guard articles [ LoadArticles initialState.pagination ]
+            ]
+      parTraverse_ handleAction actions
     UpdateAuth auth -> Halo.modify_ _ { auth = auth }
     Navigate route -> navigate route
     LoadProfile -> do
