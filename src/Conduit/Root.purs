@@ -15,16 +15,13 @@ import Conduit.Page.Login (mkLoginPage)
 import Conduit.Page.Profile (Tab(..), mkProfilePage)
 import Conduit.Page.Register (mkRegisterPage)
 import Conduit.Page.Settings (mkSettingsPage)
-import Control.Parallel (parTraverse_)
 import Data.Maybe (Maybe(..))
 import React.Basic.Hooks as React
 import React.Halo as Halo
 
 data Action
-  = Initialize (Array Action)
-  | SubscribeToAuth
+  = Initialize
   | UpdateAuth (Maybe Auth)
-  | SubscribeToRouting
   | UpdateRoute Route
   | Navigate Route
 
@@ -41,23 +38,23 @@ mkRoot = do
   eval =
     Halo.mkEval
       _
-        { onInitialize = \_ -> Just $ Initialize [ SubscribeToAuth, SubscribeToRouting ]
+        { onInitialize = \_ -> Just Initialize
         , onAction = handleAction
         }
 
   handleAction = case _ of
-    Initialize actions -> parTraverse_ handleAction actions
-    SubscribeToAuth -> do
+    Initialize -> do
+      -- auth
       auth <- readAuth
       handleAction $ UpdateAuth auth
       authEvent <- readAuthEvent
       void $ Halo.subscribe $ map UpdateAuth authEvent
-    UpdateAuth auth -> Halo.modify_ _ { auth = auth }
-    SubscribeToRouting -> do
+      -- routing
       route <- readRoute
       handleAction $ UpdateRoute route
       routingEvent <- readRoutingEvent
       void $ Halo.subscribe $ map UpdateRoute routingEvent
+    UpdateAuth auth -> Halo.modify_ _ { auth = auth }
     UpdateRoute route -> do
       Halo.modify_ _ { route = route }
       auth <- readAuth
