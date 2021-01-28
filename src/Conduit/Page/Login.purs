@@ -12,7 +12,7 @@ import Conduit.Form.Validator as F
 import Control.Comonad (extract)
 import Data.Array as Array
 import Data.Either (Either(..))
-import Data.Foldable (traverse_)
+import Data.Foldable (for_, traverse_)
 import Data.Lens.Record as LR
 import Data.Monoid (guard)
 import Data.Symbol (SProxy(..))
@@ -55,11 +55,8 @@ mkLoginPage = App.component "LoginPage" { initialState, eval, render }
         Right validated -> do
           Halo.modify_ _ { submitResponse = RemoteData.Loading }
           response <- loginUser validated
-          case response of
-            Right user -> do
-              Halo.modify_ _ { submitResponse = RemoteData.Success unit }
-              redirect Home
-            Left err -> Halo.modify_ _ { submitResponse = RemoteData.Failure err }
+          Halo.modify_ _ { submitResponse = RemoteData.fromEither response }
+          for_ response \_ -> redirect Home
 
   validate values = ado
     email <- values.email # V.validated (LR.prop (SProxy :: _ "email")) \email -> F.nonEmpty email `andThen` F.validEmail

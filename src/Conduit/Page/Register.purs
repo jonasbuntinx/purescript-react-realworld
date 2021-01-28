@@ -12,7 +12,7 @@ import Conduit.Form.Validator as F
 import Control.Comonad (extract)
 import Data.Array as Array
 import Data.Either (Either(..))
-import Data.Foldable (traverse_)
+import Data.Foldable (for_, traverse_)
 import Data.Lens.Record as LR
 import Data.Monoid (guard)
 import Data.Symbol (SProxy(..))
@@ -58,11 +58,8 @@ mkRegisterPage = App.component "RegisterPage" { initialState, eval, render }
         Right validated -> do
           Halo.modify_ _ { submitResponse = RemoteData.Loading }
           response <- registerUser validated
-          case response of
-            Right user -> do
-              Halo.modify_ _ { submitResponse = RemoteData.Success unit }
-              redirect Home
-            Left err -> Halo.modify_ _ { submitResponse = RemoteData.Failure err }
+          Halo.modify_ _ { submitResponse = RemoteData.fromEither response }
+          for_ response \_ -> redirect Home
 
   validate values = ado
     username <- values.username # V.validated (LR.prop (SProxy :: _ "username")) \username -> F.nonEmpty username `andThen` F.validUsername

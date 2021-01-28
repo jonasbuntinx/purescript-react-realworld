@@ -15,7 +15,7 @@ import Conduit.Form.Validator as F
 import Control.Comonad (extract)
 import Data.Array as Array
 import Data.Either (Either(..))
-import Data.Foldable (traverse_)
+import Data.Foldable (for_, traverse_)
 import Data.Lens.Record as LR
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Monoid (guard)
@@ -88,11 +88,8 @@ mkSettingsPage = App.component "SettingsPage" { initialState, eval, render }
         Right validated -> do
           Halo.modify_ _ { submitResponse = RemoteData.Loading }
           response <- updateUser validated
-          case response of
-            Right user -> do
-              Halo.modify_ _ { submitResponse = RemoteData.Success unit }
-              navigate Home
-            Left err -> Halo.modify_ _ { submitResponse = RemoteData.Failure err }
+          Halo.modify_ _ { submitResponse = RemoteData.fromEither response }
+          for_ response \_ -> navigate Home
     Logout -> logoutUser
 
   validate values = ado
