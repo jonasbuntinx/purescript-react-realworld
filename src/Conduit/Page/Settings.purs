@@ -3,7 +3,7 @@ module Conduit.Page.Settings (mkSettingsPage) where
 import Prelude
 import Conduit.Capability.Auth (readAuth, readAuthEvent)
 import Conduit.Capability.Resource.User (logoutUser, updateUser)
-import Conduit.Capability.Routing (navigate)
+import Conduit.Capability.Routing (navigate, redirect)
 import Conduit.Component.App as App
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Data.Avatar as Avatar
@@ -12,12 +12,10 @@ import Conduit.Data.User (User)
 import Conduit.Data.Username as Username
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
-import Control.Bind (bindFlipped)
 import Control.Comonad (extract)
-import Control.Parallel (parTraverse_)
 import Data.Array as Array
 import Data.Either (Either(..))
-import Data.Foldable (for_, traverse_)
+import Data.Foldable (traverse_)
 import Data.Lens.Record as LR
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Monoid (guard)
@@ -30,8 +28,7 @@ import React.Basic.Events (handler, handler_)
 import React.Halo as Halo
 
 data Action
-  = Initialize (Array Action)
-  | SubscribeToAuth
+  = Initialize
   | UpdateUser (Maybe { | User () })
   | UpdateImage String
   | UpdateUsername String
@@ -57,22 +54,23 @@ mkSettingsPage = App.component "SettingsPage" { initialState, eval, render }
   eval =
     Halo.mkEval
       _
-        { onInitialize = \_ -> Just $ Initialize [ SubscribeToAuth ]
+        { onInitialize = \_ -> Just Initialize
         , onAction = handleAction
         }
 
   handleAction = case _ of
-    Initialize actions -> parTraverse_ handleAction actions
-    SubscribeToAuth -> do
+    Initialize -> do
       auth <- readAuth
-      handleAction $ UpdateUser (_.user =<< auth)
+      handleAction $ UpdateUser $ _.user =<< auth
       authEvent <- readAuthEvent
-      void $ Halo.subscribe $ map (UpdateUser <<< bindFlipped _.user) authEvent
-    UpdateUser user -> do
-      for_ user \{ image, username, bio, email } ->
+      void $ Halo.subscribe $ map (UpdateUser <<< (_.user =<< _)) authEvent
+    UpdateUser maybeUser -> case maybeUser of
+      Nothing -> do
+        redirect Login
+      Just user@{ image, username, bio, email } -> do
         Halo.modify_
           _
-            { user = user
+            { user = Just user
             , image = Avatar.toString <$> image
             , username = pure $ Username.toString username
             , bio = bio

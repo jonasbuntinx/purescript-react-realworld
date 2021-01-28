@@ -1,9 +1,9 @@
 module Test.Main where
 
 import Prelude
-import Conduit.AppM (AppInst, AppM)
+import Conduit.AppM (AppInstance, AppM)
 import Effect (Effect)
-import Effect.Class (liftEffect)
+import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Class.Console (log)
 import Effect.Exception as Exception
 
@@ -12,43 +12,47 @@ main = do
   log "🍝"
   log "You should add some tests."
 
-appInst :: AppInst AppM
-appInst =
-  { auth:
-      { readAuth: liftEffect $ Exception.throw "readAuth not implemented"
-      , readAuthEvent: liftEffect $ Exception.throw "readAuthEvent not implemented"
-      , modifyAuth: \_ -> liftEffect $ Exception.throw "modifyAuth not implemented"
-      }
-  , routing:
-      { readRoute: liftEffect $ Exception.throw "readRoute not implemented"
-      , readRoutingEvent: liftEffect $ Exception.throw "readRoutingEvent not implemented"
-      , navigate: \_ -> liftEffect $ Exception.throw "navigate not implemented"
-      , redirect: \_ -> liftEffect $ Exception.throw "redirect not implemented"
-      }
-  , user:
-      { loginUser: \_ -> liftEffect $ Exception.throw "loginUser not implemented"
-      , registerUser: \_ -> liftEffect $ Exception.throw "registerUser not implemented"
-      , updateUser: \_ -> liftEffect $ Exception.throw "updateUser not implemented"
-      , logoutUser: liftEffect $ Exception.throw " logoutUser not implemented"
-      }
-  , article:
-      { listArticles: \_ -> liftEffect $ Exception.throw "listArticles not implemented"
-      , listFeed: \_ -> liftEffect $ Exception.throw "listFeed not implemented"
-      , getArticle: \_ -> liftEffect $ Exception.throw "getArticle not implemented"
-      , submitArticle: \_ _ -> liftEffect $ Exception.throw "submitArticle not implemented"
-      , deleteArticle: \_ -> liftEffect $ Exception.throw "deleteArticle not implemented"
-      , toggleFavorite: \_ -> liftEffect $ Exception.throw "toggleFavorite not implemented"
-      }
-  , comment:
-      { listComments: \_ -> liftEffect $ Exception.throw "listComments not implemented"
-      , createComment: \_ _ -> liftEffect $ Exception.throw "createComment not implemented"
-      , deleteComment: \_ _ -> liftEffect $ Exception.throw "deleteComment not implemented"
-      }
-  , profile:
-      { getProfile: \_ -> liftEffect $ Exception.throw "getProfile not implemented"
-      , toggleFollow: \_ -> liftEffect $ Exception.throw "toggleFollow not implemented"
-      }
-  , tag:
-      { listTags: liftEffect $ Exception.throw "listTags not implemented"
-      }
-  }
+appInstance :: AppInstance AppM
+appInstance =
+  let
+    throw :: forall m a. MonadEffect m => String -> m a
+    throw = liftEffect <<< Exception.throw
+  in
+    { auth:
+        { readAuth: throw "readAuth not implemented"
+        , readAuthEvent: throw "readAuthEvent not implemented"
+        , modifyAuth: \_ -> throw "modifyAuth not implemented"
+        }
+    , routing:
+        { readRoute: throw "readRoute not implemented"
+        , readRoutingEvent: throw "readRoutingEvent not implemented"
+        , navigate: \_ -> throw "navigate not implemented"
+        , redirect: \_ -> throw "redirect not implemented"
+        }
+    , user:
+        { loginUser: \_ -> throw "loginUser not implemented"
+        , registerUser: \_ -> throw "registerUser not implemented"
+        , updateUser: \_ -> throw "updateUser not implemented"
+        , logoutUser: throw " logoutUser not implemented"
+        }
+    , article:
+        { listArticles: \_ -> throw "listArticles not implemented"
+        , listFeed: \_ -> throw "listFeed not implemented"
+        , getArticle: \_ -> throw "getArticle not implemented"
+        , submitArticle: \_ _ -> throw "submitArticle not implemented"
+        , deleteArticle: \_ -> throw "deleteArticle not implemented"
+        , toggleFavorite: \_ -> throw "toggleFavorite not implemented"
+        }
+    , comment:
+        { listComments: \_ -> throw "listComments not implemented"
+        , createComment: \_ _ -> throw "createComment not implemented"
+        , deleteComment: \_ _ -> throw "deleteComment not implemented"
+        }
+    , profile:
+        { getProfile: \_ -> throw "getProfile not implemented"
+        , toggleFollow: \_ -> throw "toggleFollow not implemented"
+        }
+    , tag:
+        { listTags: throw "listTags not implemented"
+        }
+    }

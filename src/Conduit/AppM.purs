@@ -1,13 +1,13 @@
 module Conduit.AppM where
 
 import Prelude
-import Conduit.Capability.Auth (class MonadAuth, AuthInst)
-import Conduit.Capability.Resource.Article (class MonadArticle, ArticleInst)
-import Conduit.Capability.Resource.Comment (class MonadComment, CommentInst)
-import Conduit.Capability.Resource.Profile (class MonadProfile, ProfileInst)
-import Conduit.Capability.Resource.Tag (class MonadTag, TagInst)
-import Conduit.Capability.Resource.User (class MonadUser, UserInst)
-import Conduit.Capability.Routing (class MonadRouting, RoutingInst)
+import Conduit.Capability.Auth (class MonadAuth, AuthInstance)
+import Conduit.Capability.Resource.Article (class ArticleRepository, ArticleInstance)
+import Conduit.Capability.Resource.Comment (class CommentRepository, CommentInstance)
+import Conduit.Capability.Resource.Profile (class ProfileRepository, ProfileInstance)
+import Conduit.Capability.Resource.Tag (class TagRepository, TagInstance)
+import Conduit.Capability.Resource.User (class UserRepository, UserInstance)
+import Conduit.Capability.Routing (class MonadRouting, RoutingInstance)
 import Control.Monad.Error.Class (class MonadError, class MonadThrow)
 import Control.Monad.Reader (ReaderT, asks, runReaderT)
 import Effect.Aff (Aff)
@@ -15,20 +15,20 @@ import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
 import Effect.Exception as Exception
 
-type AppInst m
-  = { auth :: AuthInst m
-    , routing :: RoutingInst m
-    , user :: UserInst m
-    , article :: ArticleInst m
-    , comment :: CommentInst m
-    , profile :: ProfileInst m
-    , tag :: TagInst m
+type AppInstance m
+  = { auth :: AuthInstance m
+    , routing :: RoutingInstance m
+    , user :: UserInstance m
+    , article :: ArticleInstance m
+    , comment :: CommentInstance m
+    , profile :: ProfileInstance m
+    , tag :: TagInstance m
     }
 
 newtype AppM a
-  = AppM (ReaderT (AppInst AppM) Aff a)
+  = AppM (ReaderT (AppInstance AppM) Aff a)
 
-runAppM :: AppInst AppM -> AppM ~> Aff
+runAppM :: AppInstance AppM -> AppM ~> Aff
 runAppM inst (AppM go) = runReaderT go inst
 
 derive newtype instance functorAppM :: Functor AppM
@@ -69,7 +69,7 @@ instance monadRoutingAppM :: MonadRouting AppM where
     f route
 
 -- | User
-instance monadUserAppM :: MonadUser AppM where
+instance userRepositoryAppM :: UserRepository AppM where
   loginUser creds = do
     f <- AppM $ asks _.user.loginUser
     f creds
@@ -82,7 +82,7 @@ instance monadUserAppM :: MonadUser AppM where
   logoutUser = join $ AppM $ asks _.user.logoutUser
 
 -- | Article
-instance monadArticleAppM :: MonadArticle AppM where
+instance articleRepositoryAppM :: ArticleRepository AppM where
   listArticles query = do
     f <- AppM $ asks _.article.listArticles
     f query
@@ -103,7 +103,7 @@ instance monadArticleAppM :: MonadArticle AppM where
     f article
 
 -- | Comment
-instance monadCommentAppM :: MonadComment AppM where
+instance commentRepositoryAppM :: CommentRepository AppM where
   listComments slug = do
     f <- AppM $ asks _.comment.listComments
     f slug
@@ -115,7 +115,7 @@ instance monadCommentAppM :: MonadComment AppM where
     f slug id
 
 -- | Profile
-instance monadProfileAppM :: MonadProfile AppM where
+instance profileRepositoryAppM :: ProfileRepository AppM where
   getProfile username = do
     f <- AppM $ asks _.profile.getProfile
     f username
@@ -124,5 +124,5 @@ instance monadProfileAppM :: MonadProfile AppM where
     f profile
 
 -- | Tag
-instance monadTagAppM :: MonadTag AppM where
+instance tagRepositoryAppM :: TagRepository AppM where
   listTags = join $ AppM $ asks _.tag.listTags

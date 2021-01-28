@@ -8,7 +8,7 @@ import Data.Either (Either)
 import Data.Maybe (Maybe)
 import React.Halo (HaloM, lift)
 
-type ArticleInst m
+type ArticleInstance m
   = { listArticles :: ArticlesQuery -> m (Either Error { articles :: Array Article, articlesCount :: Int })
     , listFeed :: ArticlesQuery -> m (Either Error { articles :: Array Article, articlesCount :: Int })
     , getArticle :: Slug -> m (Either Error Article)
@@ -18,7 +18,7 @@ type ArticleInst m
     }
 
 class
-  Monad m <= MonadArticle m where
+  Monad m <= ArticleRepository m where
   listArticles :: ArticlesQuery -> m (Either Error { articles :: Array Article, articlesCount :: Int })
   listFeed :: ArticlesQuery -> m (Either Error { articles :: Array Article, articlesCount :: Int })
   getArticle :: Slug -> m (Either Error Article)
@@ -26,7 +26,7 @@ class
   deleteArticle :: Slug -> m (Either Error Unit)
   toggleFavorite :: Article -> m (Either Error Article)
 
-instance monadArticleHaloM :: MonadArticle m => MonadArticle (HaloM props state action m) where
+instance articleRepositoryHaloM :: ArticleRepository m => ArticleRepository (HaloM props state action m) where
   listArticles = lift <<< listArticles
   listFeed = lift <<< listFeed
   getArticle = lift <<< getArticle

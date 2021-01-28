@@ -13,7 +13,6 @@ import Conduit.Data.Article (defaultArticlesQuery)
 import Conduit.Data.Auth (Auth)
 import Conduit.Data.Route (Route)
 import Conduit.Page.Utils (_articles)
-import Control.Parallel (parTraverse_)
 import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
 import Data.Maybe (Maybe(..), isNothing)
@@ -34,8 +33,7 @@ data Tab
 derive instance eqTab :: Eq Tab
 
 data Action
-  = Initialize (Array Action)
-  | SubscribeToAuth
+  = Initialize
   | UpdateAuth (Maybe Auth)
   | Navigate Route
   | LoadTags
@@ -56,24 +54,25 @@ mkHomePage = App.component "HomePage" { initialState, eval, render }
   eval =
     Halo.mkEval
       _
-        { onInitialize = \_ -> Just $ Initialize [ SubscribeToAuth, LoadTags ]
+        { onInitialize = \_ -> Just Initialize
         , onAction = handleAction
         }
 
   handleAction = case _ of
-    Initialize actions -> parTraverse_ handleAction actions
-    SubscribeToAuth -> do
+    Initialize -> do
       auth <- readAuth
       handleAction $ UpdateAuth auth
       authEvent <- readAuthEvent
       void $ Halo.subscribe $ map UpdateAuth authEvent
+      handleAction LoadTags
     UpdateAuth auth -> do
       state <- Halo.get
       Halo.modify_ _ { auth = auth }
       case auth of
         Nothing -> handleAction $ LoadArticles state.tab state.pagination
         Just _ -> handleAction $ LoadArticles Feed state.pagination
-    Navigate route -> navigate route
+    Navigate route -> do
+      navigate route
     LoadTags -> do
       Halo.modify_ _ { tags = RemoteData.Loading }
       response <- listTags
