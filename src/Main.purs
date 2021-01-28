@@ -6,11 +6,11 @@ import Conduit.Api.Endpoints as Endpoints
 import Conduit.Api.Utils (makeRequest, makeSecureRequest)
 import Conduit.AppM (AppM, runAppM)
 import Conduit.Capability.Auth (modifyAuth)
-import Conduit.Capability.Resource.Article (ArticleInst)
-import Conduit.Capability.Resource.Comment (CommentInst)
-import Conduit.Capability.Resource.Profile (ProfileInst)
-import Conduit.Capability.Resource.Tag (TagInst)
-import Conduit.Capability.Resource.User (UserInst)
+import Conduit.Capability.Resource.Article (ArticleInstance)
+import Conduit.Capability.Resource.Comment (CommentInstance)
+import Conduit.Capability.Resource.Profile (ProfileInstance)
+import Conduit.Capability.Resource.Tag (TagInstance)
+import Conduit.Capability.Resource.User (UserInstance)
 import Conduit.Capability.Routing (redirect)
 import Conduit.Component.Auth as Auth
 import Conduit.Component.Routing as Routing
@@ -56,17 +56,17 @@ main = do
                 , navigate: liftEffect <<< routing.navigate
                 , redirect: liftEffect <<< routing.redirect
                 }
-            , user: userInst
-            , article: articleInst
-            , comment: commentInst
-            , profile: profileInst
-            , tag: tagInst
+            , user: userInstance
+            , article: articleInstance
+            , comment: commentInstance
+            , profile: profileInstance
+            , tag: tagInstance
             }
             Root.mkRoot
         liftEffect $ render (React.fragment [ routing.component, auth.component, root unit ]) c
 
-userInst :: UserInst AppM
-userInst =
+userInstance :: UserInstance AppM
+userInstance =
   let
     handleAuthRes =
       either
@@ -108,8 +108,8 @@ userInst =
           redirect Home
     }
 
-articleInst :: ArticleInst AppM
-articleInst =
+articleInstance :: ArticleInstance AppM
+articleInstance =
   { listArticles:
       \query -> do
         res <- makeRequest (Apiary.Route :: Endpoints.ListArticles) Apiary.none query Apiary.none
@@ -142,8 +142,8 @@ articleInst =
         pure $ res >>= match { ok: Right <<< _.article }
   }
 
-commentInst :: CommentInst AppM
-commentInst =
+commentInstance :: CommentInstance AppM
+commentInstance =
   { listComments:
       \slug -> do
         res <- makeRequest (Apiary.Route :: Endpoints.ListComments) { slug } Apiary.none Apiary.none
@@ -158,8 +158,8 @@ commentInst =
         pure $ res >>= (match { ok: const $ Right unit })
   }
 
-profileInst :: ProfileInst AppM
-profileInst =
+profileInstance :: ProfileInstance AppM
+profileInstance =
   { getProfile:
       \username -> do
         res <- makeRequest (Apiary.Route :: Endpoints.GetProfile) { username } Apiary.none Apiary.none
@@ -174,8 +174,8 @@ profileInst =
         pure $ res >>= match { ok: Right <<< _.profile }
   }
 
-tagInst :: TagInst AppM
-tagInst =
+tagInstance :: TagInstance AppM
+tagInstance =
   { listTags:
       do
         res <- makeRequest (Apiary.Route :: Endpoints.ListTags) Apiary.none Apiary.none Apiary.none

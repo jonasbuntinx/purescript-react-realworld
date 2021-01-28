@@ -5,7 +5,7 @@ import Conduit.Data.Route (Route)
 import FRP.Event (Event)
 import React.Halo (HaloM, lift)
 
-type RoutingInst m
+type RoutingInstance m
   = { readRoute :: m Route
     , readRoutingEvent :: m (Event Route)
     , navigate :: Route -> m Unit

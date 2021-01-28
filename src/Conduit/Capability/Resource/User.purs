@@ -7,7 +7,7 @@ import Conduit.Data.Username (Username)
 import Data.Either (Either)
 import React.Halo (HaloM, lift)
 
-type UserInst m
+type UserInstance m
   = { loginUser :: { email :: String, password :: String } -> m (Either Error CurrentUser)
     , registerUser :: { username :: Username, email :: String, password :: String } -> m (Either Error CurrentUser)
     , updateUser :: { | User ( password :: String ) } -> m (Either Error CurrentUser)
@@ -15,13 +15,13 @@ type UserInst m
     }
 
 class
-  Monad m <= MonadUser m where
+  Monad m <= UserRepository m where
   loginUser :: { email :: String, password :: String } -> m (Either Error CurrentUser)
   registerUser :: { username :: Username, email :: String, password :: String } -> m (Either Error CurrentUser)
   updateUser :: { | User ( password :: String ) } -> m (Either Error CurrentUser)
   logoutUser :: m Unit
 
-instance monadUserHaloM :: MonadUser m => MonadUser (HaloM props state action m) where
+instance userRepositoryHaloM :: UserRepository m => UserRepository (HaloM props state action m) where
   loginUser = lift <<< loginUser
   registerUser = lift <<< registerUser
   updateUser = lift <<< updateUser

@@ -18,7 +18,6 @@ import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
 import Conduit.Page.Utils (_articles, _profile)
-import Control.Parallel (parTraverse_)
 import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
@@ -42,8 +41,8 @@ data Tab
 derive instance eqTab :: Eq Tab
 
 data Action
-  = Initialize (Array Action)
-  | SubscribeToAuth
+  = Initialize
+  | LoadResources { profile :: Boolean, articles :: Boolean }
   | UpdateAuth (Maybe Auth)
   | Navigate Route
   | LoadProfile
@@ -65,26 +64,23 @@ mkProfilePage = App.component "ProfilePage" { initialState, eval, render }
   eval =
     Halo.mkEval
       _
-        { onInitialize = \_ -> Just $ Initialize [ SubscribeToAuth, LoadProfile, LoadArticles initialState.pagination ]
+        { onInitialize = \_ -> Just Initialize
         , onUpdate =
-          \prev next ->
-            Just $ Initialize
-              $ join
-                  [ guard (prev.username /= next.username)
-                      [ LoadProfile ]
-                  , guard (prev.username /= next.username || prev.tab /= next.tab)
-                      [ LoadArticles initialState.pagination ]
-                  ]
+          \prev next -> Just $ LoadResources { profile: prev.username /= next.username, articles: prev.username /= next.username || prev.tab /= next.tab }
         , onAction = handleAction
         }
 
   handleAction = case _ of
-    Initialize actions -> parTraverse_ handleAction actions
-    SubscribeToAuth -> do
+    Initialize -> do
       auth <- readAuth
       handleAction $ UpdateAuth auth
       authEvent <- readAuthEvent
       void $ Halo.subscribe $ map UpdateAuth authEvent
+    LoadResources { profile, articles } -> do
+      when profile do
+        void $ Halo.fork $ handleAction LoadProfile
+      when articles do
+        void $ Halo.fork $ handleAction $ LoadArticles initialState.pagination
     UpdateAuth auth -> Halo.modify_ _ { auth = auth }
     Navigate route -> navigate route
     LoadProfile -> do

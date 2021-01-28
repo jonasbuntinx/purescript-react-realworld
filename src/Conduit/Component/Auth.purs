@@ -54,15 +54,15 @@ mkAuthManager = do
   create = do
     initial <- load
     value <- Ref.new initial
-    event <- Event.create
+    { event, push } <- Event.create
     pure
-      { event: event.event
+      { event: event
       , read: Ref.read value
       , modify:
           \f -> do
             newValue <- Ref.modify f value
-            event.push newValue
             save newValue
+            push newValue
             pure newValue
       }
 

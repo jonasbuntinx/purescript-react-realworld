@@ -6,7 +6,7 @@ import Data.Maybe (Maybe)
 import FRP.Event (Event)
 import React.Halo (HaloM, lift)
 
-type AuthInst m
+type AuthInstance m
   = { readAuth :: m (Maybe Auth)
     , readAuthEvent :: m (Event (Maybe Auth))
     , modifyAuth :: (Maybe Auth -> Maybe Auth) -> m (Maybe Auth)

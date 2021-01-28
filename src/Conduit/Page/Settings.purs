@@ -12,10 +12,9 @@ import Conduit.Data.User (User)
 import Conduit.Data.Username as Username
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
-import Control.Bind (bindFlipped)
 import Control.Comonad (extract)
-import Control.Parallel (parTraverse_)
 import Data.Array as Array
+import Data.Compactable (compact)
 import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
 import Data.Lens.Record as LR
@@ -30,9 +29,8 @@ import React.Basic.Events (handler, handler_)
 import React.Halo as Halo
 
 data Action
-  = Initialize (Array Action)
-  | SubscribeToAuth
-  | UpdateUser (Maybe { | User () })
+  = Initialize
+  | UpdateUser { | User () }
   | UpdateImage String
   | UpdateUsername String
   | UpdateBio String
@@ -57,27 +55,25 @@ mkSettingsPage = App.component "SettingsPage" { initialState, eval, render }
   eval =
     Halo.mkEval
       _
-        { onInitialize = \_ -> Just $ Initialize [ SubscribeToAuth ]
+        { onInitialize = \_ -> Just Initialize
         , onAction = handleAction
         }
 
   handleAction = case _ of
-    Initialize actions -> parTraverse_ handleAction actions
-    SubscribeToAuth -> do
+    Initialize -> do
       auth <- readAuth
-      handleAction $ UpdateUser (_.user =<< auth)
+      for_ (auth >>= _.user) (handleAction <<< UpdateUser)
       authEvent <- readAuthEvent
-      void $ Halo.subscribe $ map (UpdateUser <<< bindFlipped _.user) authEvent
-    UpdateUser user -> do
-      for_ user \{ image, username, bio, email } ->
-        Halo.modify_
-          _
-            { user = user
-            , image = Avatar.toString <$> image
-            , username = pure $ Username.toString username
-            , bio = bio
-            , email = pure email
-            }
+      void $ Halo.subscribe $ map UpdateUser $ compact $ map (_.user =<< _) authEvent
+    UpdateUser user@{ image, username, bio, email } -> do
+      Halo.modify_
+        _
+          { user = Just user
+          , image = Avatar.toString <$> image
+          , username = pure $ Username.toString username
+          , bio = bio
+          , email = pure email
+          }
     UpdateImage image -> Halo.modify_ _ { image = Just image }
     UpdateUsername username -> Halo.modify_ _ { username = V.Modified username }
     UpdateBio bio -> Halo.modify_ _ { bio = Just bio }

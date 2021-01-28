@@ -45,8 +45,8 @@ type Props
     }
 
 data Action
-  = Initialize (Array Action)
-  | SubscribeToAuth
+  = Initialize
+  | LoadResources
   | UpdateAuth (Maybe Auth)
   | Navigate Route
   | LoadArticle
@@ -72,20 +72,27 @@ mkArticlePage = App.component "ArticlePage" { initialState, eval, render }
   eval =
     Halo.mkEval
       _
-        { onInitialize = \_ -> Just $ Initialize [ SubscribeToAuth, LoadArticle, LoadComments ]
-        , onUpdate = \prev next -> Just $ Initialize $ guard (prev.slug /= next.slug) [ LoadArticle, LoadComments ]
+        { onInitialize = \_ -> Just Initialize
+        , onUpdate = \prev next -> if (prev.slug /= next.slug) then Just LoadResources else Nothing
         , onAction = handleAction
         }
 
   handleAction = case _ of
-    Initialize actions -> parTraverse_ handleAction actions
-    SubscribeToAuth -> do
+    Initialize -> do
       auth <- readAuth
       handleAction $ UpdateAuth auth
       authEvent <- readAuthEvent
       void $ Halo.subscribe $ map UpdateAuth authEvent
-    UpdateAuth auth -> Halo.modify_ _ { auth = auth }
-    Navigate route -> navigate route
+      handleAction LoadResources
+    LoadResources -> do
+      parTraverse_ handleAction
+        [ LoadArticle
+        , LoadComments
+        ]
+    UpdateAuth auth -> do
+      Halo.modify_ _ { auth = auth }
+    Navigate route -> do
+      navigate route
     LoadArticle -> do
       props <- Halo.props
       Halo.modify_ _ { article = RemoteData.Loading }
