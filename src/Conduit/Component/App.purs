@@ -11,12 +11,9 @@ type Component props
   = AppM (props -> React.JSX)
 
 component :: forall state action props. String -> Halo.ComponentSpec props state action AppM -> Component props
-component name { initialState, eval, render } =
+component name spec =
   AppM do
     impl <- ask
     liftEffect
       $ Halo.component name
-          { initialState
-          , eval: Halo.hoist (runAppM impl) <<< eval
-          , render
-          }
+          spec { eval = Halo.hoist (runAppM impl) <<< spec.eval }
