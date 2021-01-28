@@ -17,7 +17,7 @@ class Fixture label a where
 instance fixtureRecord :: (RowToList r rl, FixtureRecord label r rl) => Fixture label (Record r) where
   fixture _ = Builder.build (buildFixtureRecord (SProxy :: SProxy label) (RLProxy :: RLProxy rl)) {}
 else instance fixtureFunction :: Fixture label b => Fixture label (a -> b) where
-  fixture = fixture
+  fixture label _ = fixture label
 else instance fixtureEffect :: (IsSymbol label, MonadEffect m) => Fixture label (m a) where
   fixture _ = liftEffect (Exception.throw ("Fixture `" <> reflectSymbol (SProxy :: SProxy label) <> "` is not implemented."))
 
