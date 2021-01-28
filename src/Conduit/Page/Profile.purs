@@ -43,7 +43,7 @@ derive instance eqTab :: Eq Tab
 
 data Action
   = Initialize
-  | LoadResources { profile :: Boolean, articles :: Boolean }
+  | OnPropsUpdate Props Props
   | UpdateAuth (Maybe Auth)
   | Navigate Route
   | LoadProfile
@@ -66,14 +66,7 @@ mkProfilePage = App.component "ProfilePage" { initialState, eval, render }
     Halo.mkEval
       _
         { onInitialize = \_ -> Just Initialize
-        , onUpdate =
-          \prev next ->
-            let
-              profile = prev.username /= next.username
-
-              articles = profile || prev.tab /= next.tab
-            in
-              Just $ LoadResources { profile, articles }
+        , onUpdate = \prev next -> Just $ OnPropsUpdate prev next
         , onAction = handleAction
         }
 
@@ -83,12 +76,20 @@ mkProfilePage = App.component "ProfilePage" { initialState, eval, render }
       handleAction $ UpdateAuth auth
       authEvent <- readAuthEvent
       void $ Halo.subscribe $ map UpdateAuth authEvent
-    LoadResources { profile, articles } -> do
+      parTraverse_ handleAction
+        [ LoadProfile
+        , LoadArticles initialState.pagination
+        ]
+    OnPropsUpdate prev next -> do
       let
+        reloadProfile = prev.username /= next.username
+
+        reloadArticles = reloadProfile || prev.tab /= next.tab
+
         actions =
           join
-            [ guard profile [ LoadProfile ]
-            , guard articles [ LoadArticles initialState.pagination ]
+            [ guard reloadProfile [ LoadProfile ]
+            , guard reloadArticles [ LoadArticles initialState.pagination ]
             ]
       parTraverse_ handleAction actions
     UpdateAuth auth -> Halo.modify_ _ { auth = auth }
