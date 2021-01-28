@@ -2,7 +2,6 @@ module Test.Main where
 
 import Prelude
 import Conduit.AppM (AppInstance, AppM)
-import Data.Symbol (SProxy(..))
 import Effect (Effect)
 import Effect.Class.Console (log)
 import Test.Fixture (fixture)
@@ -13,4 +12,4 @@ main = do
   log "You should add some tests."
 
 appInstance :: AppInstance AppM
-appInstance = fixture (SProxy :: SProxy "")
+appInstance = fixture
