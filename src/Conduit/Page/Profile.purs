@@ -66,7 +66,13 @@ mkProfilePage = App.component "ProfilePage" { initialState, eval, render }
       _
         { onInitialize = \_ -> Just Initialize
         , onUpdate =
-          \prev next -> Just $ LoadResources { profile: prev.username /= next.username, articles: prev.username /= next.username || prev.tab /= next.tab }
+          \prev next ->
+            let
+              profile = prev.username /= next.username
+
+              articles = profile || prev.tab /= next.tab
+            in
+              Just $ LoadResources { profile, articles }
         , onAction = handleAction
         }
 
