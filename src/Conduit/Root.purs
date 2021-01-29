@@ -28,13 +28,12 @@ data Action
 mkRoot :: App.Component Unit
 mkRoot = do
   render <- mkRender
-  route <- readRoute
-  App.component "Root" { initialState: initialState route, eval, render }
+  initialState <- mkInitialState
+  App.component "Root" { initialState, eval, render }
   where
-  initialState route =
-    { auth: Nothing
-    , route: route
-    }
+  mkInitialState = do
+    route <- readRoute
+    pure { auth: Nothing, route: route }
 
   eval =
     Halo.mkEval
