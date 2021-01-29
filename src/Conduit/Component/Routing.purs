@@ -2,8 +2,7 @@ module Conduit.Component.Routing where
 
 import Prelude
 import Conduit.Data.Route (Route(..), routeCodec)
-import Data.Either (hush)
-import Data.Maybe (fromMaybe)
+import Data.Either (either)
 import Effect (Effect)
 import Effect.Ref as Ref
 import FRP.Event as Event
@@ -23,7 +22,7 @@ mkRoutingManager ::
 mkRoutingManager = do
   interface <- PushState.makeInterface
   { path } <- interface.locationState
-  value <- Ref.new $ fromMaybe Error $ hush $ parse routeCodec path
+  value <- Ref.new $ either (const Error) identity $ parse routeCodec path
   event <- Event.create
   router <-
     Router.makeRouter interface
