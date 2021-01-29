@@ -23,7 +23,7 @@ mkRoutingManager = do
   interface <- PushState.makeInterface
   { path } <- interface.locationState
   value <- Ref.new $ either (const Error) identity $ parse routeCodec path
-  event <- Event.create
+  { event, push } <- Event.create
   router <-
     Router.makeRouter interface
       { parse: parse routeCodec
@@ -33,12 +33,12 @@ mkRoutingManager = do
           case _ of
             Router.Resolved _ route -> do
               newRoute <- Ref.modify (const route) value
-              event.push newRoute
+              push newRoute
             _ -> pure unit
       }
   pure
     { read: Ref.read value
-    , event: event.event
+    , event: event
     , navigate: router.navigate
     , redirect: router.redirect
     , component: router.component
