@@ -1,0 +1,50 @@
+name: BUILD
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # SETUP
+      - uses: actions/checkout@v2
+
+      - name: Cache PureScript dependencies
+        uses: actions/cache@v2
+        with:
+          key: ${{ runner.os }}-spago-${{ hashFiles('**/*.dhall') }}
+          path: .spago
+
+      - uses: actions/setup-node@v1
+        with:
+          node-version: "12.x"
+
+      - name: Install YARN
+        run: npm install -g yarn
+
+      - name: Cache node modules
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-node-modules
+        with:
+          # yarn cache files are stored in `~/.cache/yarn` on Linux/macOS
+          path: ~/.cache/yarn
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+
+      - name: Install YARN dependencies
+        run: yarn install --frozen-lockfile
+
+      # BUILD
+      - name: Build source
+        run: yarn build
+
+      # TEST
+      - name: Run tests
+        run: yarn test
