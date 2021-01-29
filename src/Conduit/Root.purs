@@ -28,11 +28,12 @@ data Action
 mkRoot :: App.Component Unit
 mkRoot = do
   render <- mkRender
-  App.component "Root" { initialState, eval, render }
+  route <- readRoute
+  App.component "Root" { initialState: initialState route, eval, render }
   where
-  initialState =
+  initialState route =
     { auth: Nothing
-    , route: Error
+    , route: route
     }
 
   eval =

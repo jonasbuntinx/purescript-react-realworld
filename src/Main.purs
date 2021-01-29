@@ -19,8 +19,8 @@ import Conduit.Data.Auth (toAuth)
 import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..), routeCodec)
 import Conduit.Root as Root
-import Data.Either (Either(..), either, hush)
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Either (Either(..), either)
+import Data.Maybe (Maybe(..))
 import Data.Nullable (Nullable, null)
 import Data.Symbol (SProxy(..))
 import Data.Variant (expand, match)
@@ -85,34 +85,19 @@ handler ::
     Unit
 handler =
   mkEffectFn3 \{ path } _ callback -> do
-    auth <- do
-      { event } <- Event.create
-      pure
-        { event
-        , read: pure Nothing
-        , modify: \_ -> pure Nothing
-        }
-    routing <- do
-      { event } <- Event.create
-      pure
-        { event
-        , read: pure $ fromMaybe Error $ hush $ parse routeCodec path
-        , navigate: \_ -> pure unit
-        , redirect: \_ -> pure unit
-        }
     launchAff_ do
       root <-
         runAppM
           { auth:
-              { readAuth: liftEffect auth.read
-              , readAuthEvent: liftEffect $ pure auth.event
-              , modifyAuth: liftEffect <<< auth.modify
+              { readAuth: liftEffect $ pure Nothing
+              , readAuthEvent: liftEffect $ map _.event Event.create
+              , modifyAuth: liftEffect <<< (const $ pure Nothing)
               }
           , routing:
-              { readRoute: liftEffect routing.read
-              , readRoutingEvent: liftEffect $ pure routing.event
-              , navigate: liftEffect <<< routing.navigate
-              , redirect: liftEffect <<< routing.redirect
+              { readRoute: liftEffect $ pure $ either (const Error) identity $ parse routeCodec path
+              , readRoutingEvent: liftEffect $ map _.event Event.create
+              , navigate: liftEffect <<< (const $ pure unit)
+              , redirect: liftEffect <<< (const $ pure unit)
               }
           , user: userInstance
           , article: articleInstance

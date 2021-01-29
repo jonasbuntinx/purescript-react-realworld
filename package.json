@@ -11,7 +11,8 @@
   "license": "MIT",
   "scripts": {
     "build": "spago build",
-    "bundle": "yarn bundle:build && yarn bundle:dce && yarn bundle:client && yarn bundle:server",
+    "bundle": "yarn bundle:clean && yarn bundle:build && yarn bundle:dce && yarn bundle:client && yarn bundle:server",
+    "bundle:clean": "rm -Rf dist output dce-output",
     "bundle:build": "spago build --purs-args '--codegen corefn'",
     "bundle:dce": "zephyr -f Main",
     "bundle:client": "parcel build index.js -d dist --no-source-maps",
