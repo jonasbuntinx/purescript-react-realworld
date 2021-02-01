@@ -7,6 +7,7 @@
     , "foreign-generic"
     , "heterogeneous"
     , "js-timers"
+    , "node-fs"
     , "profunctor-lenses"
     , "react-basic-dom"
     , "react-basic-hooks"
