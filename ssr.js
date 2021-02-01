@@ -1,3 +1,3 @@
-global.window = Object.create( { fetch: function() { console.log("FOOBAR"); return; } } );
+global.XMLHttpRequest = require('xhr2');
 
 exports.handler = require("/dce-output/Main").handler;
