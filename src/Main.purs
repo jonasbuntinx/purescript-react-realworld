@@ -2,26 +2,13 @@ module Main where
 
 import Prelude
 import Conduit.Client (client)
-import Conduit.Server (server)
-import Data.Nullable (Nullable, null)
+import Conduit.Serverless (Context, Event, Response, serverless)
+import Control.Promise (Promise, fromAff)
 import Effect (Effect)
-import Effect.Uncurried (EffectFn2, EffectFn3, mkEffectFn3, runEffectFn2)
-import Foreign (Foreign)
+import Effect.Uncurried (EffectFn2, mkEffectFn2)
 
 main :: Effect Unit
 main = client
 
-handler ::
-  forall r.
-  EffectFn3
-    { path :: String | r }
-    Foreign
-    (EffectFn2 (Nullable Foreign) { body :: String, statusCode :: Int } Unit)
-    Unit
-handler =
-  mkEffectFn3 \{ path } _ callback -> do
-    server path \body ->
-      runEffectFn2 callback null
-        { statusCode: 200
-        , body
-        }
+handler :: EffectFn2 Event Context (Promise Response)
+handler = mkEffectFn2 \event context -> fromAff $ serverless event context

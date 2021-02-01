@@ -1,4 +1,4 @@
-module Conduit.Server where
+module Conduit.Serverless where
 
 import Prelude
 import Apiary as Apiary
@@ -21,46 +21,59 @@ import Data.Maybe (Maybe(..))
 import Data.String (Pattern(..), Replacement(..), replace)
 import Data.Symbol (SProxy(..))
 import Data.Variant (expand, match)
-import Effect (Effect)
-import Effect.Aff (launchAff_)
+import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import FRP.Event as Event
+import Foreign (Foreign)
 import Node.Encoding (Encoding(..))
 import Node.FS.Sync (readTextFile)
 import React.Basic.DOM.Server (renderToString)
 import Record as Record
 import Routing.Duplex (parse)
 
-server :: String -> (String -> Effect Unit) -> Effect Unit
-server path fn = do
-  document <- readTextFile UTF8 "index.html"
-  launchAff_ do
-    root <-
-      runAppM
-        { auth:
-            { readAuth: liftEffect $ pure Nothing
-            , readAuthEvent: liftEffect $ map _.event Event.create
-            , modifyAuth: liftEffect <<< (const $ pure Nothing)
-            }
-        , routing:
-            { readRoute: liftEffect $ pure $ either (const Error) identity $ parse routeCodec path
-            , readRoutingEvent: liftEffect $ map _.event Event.create
-            , navigate: liftEffect <<< (const $ pure unit)
-            , redirect: liftEffect <<< (const $ pure unit)
-            }
-        , user: userInstance
-        , article: articleInstance
-        , comment: commentInstance
-        , profile: profileInstance
-        , tag: tagInstance
-        }
-        Root.mkRoot
-    liftEffect
-      $ fn
-      $ replace
+type Event
+  = { path :: String
+    }
+
+type Context
+  = Foreign
+
+type Response
+  = { body :: String
+    , statusCode :: Int
+    }
+
+serverless :: Event -> Context -> Aff Response
+serverless { path } _ = do
+  document <- liftEffect $ readTextFile UTF8 "index.html"
+  root <-
+    runAppM
+      { auth:
+          { readAuth: liftEffect $ pure Nothing
+          , readAuthEvent: liftEffect $ map _.event Event.create
+          , modifyAuth: liftEffect <<< (const $ pure Nothing)
+          }
+      , routing:
+          { readRoute: liftEffect $ pure $ either (const Error) identity $ parse routeCodec path
+          , readRoutingEvent: liftEffect $ map _.event Event.create
+          , navigate: liftEffect <<< (const $ pure unit)
+          , redirect: liftEffect <<< (const $ pure unit)
+          }
+      , user: userInstance
+      , article: articleInstance
+      , comment: commentInstance
+      , profile: profileInstance
+      , tag: tagInstance
+      }
+      Root.mkRoot
+  pure
+    { statusCode: 200
+    , body:
+        replace
           (Pattern "<div id=\"conduit\"></div>")
           (Replacement $ "<div id=\"conduit\">" <> (renderToString $ root unit) <> "</div>")
           document
+    }
 
 userInstance :: UserInstance AppM
 userInstance =
