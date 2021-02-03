@@ -90,32 +90,31 @@ mkHomePage = do
       handleAction $ UpdateAuth auth
       authEvent <- readAuthEvent
       void $ Halo.subscribe $ map UpdateAuth authEvent
-      handleAction LoadTags
+      prevRoute <- _.prevRoute <$> readRouting
+      when (isJust prevRoute) do
+        handleAction LoadTags
     UpdateAuth auth -> do
       state <- Halo.get
       Halo.modify_ _ { auth = auth }
-      case auth of
-        Nothing -> handleAction $ LoadArticles state.tab state.pagination
-        Just _ -> handleAction $ LoadArticles Feed state.pagination
+      when (auth /= state.auth) do
+        case auth of
+          Nothing -> handleAction $ LoadArticles state.tab state.pagination
+          Just _ -> handleAction $ LoadArticles Feed state.pagination
     Navigate route -> do
       navigate route
     LoadTags -> do
-      prevRoute <- _.prevRoute <$> readRouting
-      when (isJust prevRoute) do
-        Halo.modify_ _ { tags = RemoteData.Loading }
-        response <- listTags
-        Halo.modify_ _ { tags = RemoteData.fromEither response }
+      Halo.modify_ _ { tags = RemoteData.Loading }
+      response <- listTags
+      Halo.modify_ _ { tags = RemoteData.fromEither response }
     LoadArticles tab pagination -> do
-      prevRoute <- _.prevRoute <$> readRouting
-      when (isJust prevRoute) do
-        Halo.modify_ _ { articles = RemoteData.Loading, tab = tab, pagination = pagination }
-        let
-          query = defaultArticlesQuery { offset = Just pagination.offset, limit = Just pagination.limit }
-        response <- case tab of
-          Feed -> listFeed query
-          Global -> listArticles query
-          Tag tag -> listArticles (query { tag = Just tag })
-        Halo.modify_ _ { articles = RemoteData.fromEither response }
+      Halo.modify_ _ { articles = RemoteData.Loading, tab = tab, pagination = pagination }
+      let
+        query = defaultArticlesQuery { offset = Just pagination.offset, limit = Just pagination.limit }
+      response <- case tab of
+        Feed -> listFeed query
+        Global -> listArticles query
+        Tag tag -> listArticles (query { tag = Just tag })
+      Halo.modify_ _ { articles = RemoteData.fromEither response }
     ToggleFavorite ix -> do
       state <- Halo.get
       for_ (preview (_articles ix) state) (toggleFavorite >=> traverse_ (Halo.modify_ <<< set (_articles ix)))
