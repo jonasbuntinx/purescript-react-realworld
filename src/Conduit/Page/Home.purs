@@ -86,21 +86,20 @@ mkHomePage = do
 
   handleAction = case _ of
     Initialize -> do
+      prevRoute <- _.prevRoute <$> readRouting
       auth <- readAuth
-      handleAction $ UpdateAuth auth
+      when (isJust prevRoute || isJust auth) do
+        handleAction $ UpdateAuth auth
       authEvent <- readAuthEvent
       void $ Halo.subscribe $ map UpdateAuth authEvent
-      prevRoute <- _.prevRoute <$> readRouting
       when (isJust prevRoute) do
         handleAction LoadTags
     UpdateAuth auth -> do
       state <- Halo.get
       Halo.modify_ _ { auth = auth }
-      prevRoute <- _.prevRoute <$> readRouting
-      when (isJust prevRoute || state.auth /= auth) do
-        case auth of
-          Nothing -> handleAction $ LoadArticles state.tab state.pagination
-          Just _ -> handleAction $ LoadArticles Feed state.pagination
+      case auth of
+        Nothing -> handleAction $ LoadArticles state.tab state.pagination
+        Just _ -> handleAction $ LoadArticles Feed state.pagination
     Navigate route -> do
       navigate route
     LoadTags -> do
