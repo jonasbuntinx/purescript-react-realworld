@@ -12,6 +12,7 @@ import Conduit.Capability.Resource.Profile (ProfileInstance)
 import Conduit.Capability.Resource.Tag (TagInstance)
 import Conduit.Capability.Resource.User (UserInstance)
 import Conduit.Capability.Routing (redirect)
+import Conduit.Capability.Serverless (mkStateBuilder)
 import Conduit.Component.Auth as Auth
 import Conduit.Component.Routing as Routing
 import Conduit.Config as Config
@@ -52,10 +53,13 @@ client = do
                 , modifyAuth: liftEffect <<< auth.modify
                 }
             , routing:
-                { readRoute: liftEffect routing.read
+                { readRouting: liftEffect routing.read
                 , readRoutingEvent: liftEffect $ pure routing.event
                 , navigate: liftEffect <<< routing.navigate
                 , redirect: liftEffect <<< routing.redirect
+                }
+            , serverless:
+                { getStateBuilder: mkStateBuilder \s _ -> s
                 }
             , user: userInstance
             , article: articleInstance

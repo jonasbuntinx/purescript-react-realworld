@@ -8,4 +8,3 @@ data Error
   | NotFound { status :: String, error :: String }
   | UnprocessableEntity (Object (Array String))
   | ApiaryError Apiary.Error
-  | Unavailable

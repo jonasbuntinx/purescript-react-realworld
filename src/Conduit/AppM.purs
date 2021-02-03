@@ -8,6 +8,7 @@ import Conduit.Capability.Resource.Profile (class ProfileRepository, ProfileInst
 import Conduit.Capability.Resource.Tag (class TagRepository, TagInstance)
 import Conduit.Capability.Resource.User (class UserRepository, UserInstance)
 import Conduit.Capability.Routing (class MonadRouting, RoutingInstance)
+import Conduit.Capability.Serverless (class MonadServerless, ServerlessInstance, runStateBuilder)
 import Control.Monad.Error.Class (class MonadError, class MonadThrow)
 import Control.Monad.Reader (ReaderT, asks, runReaderT)
 import Effect.Aff (Aff)
@@ -18,6 +19,7 @@ import Effect.Exception as Exception
 type AppInstance m
   = { auth :: AuthInstance m
     , routing :: RoutingInstance m
+    , serverless :: ServerlessInstance m
     , user :: UserInstance m
     , article :: ArticleInstance m
     , comment :: CommentInstance m
@@ -59,7 +61,7 @@ instance monadAuthAppM :: MonadAuth AppM where
 
 -- | Routing
 instance monadRoutingAppM :: MonadRouting AppM where
-  readRoute = join $ AppM $ asks _.routing.readRoute
+  readRouting = join $ AppM $ asks _.routing.readRouting
   readRoutingEvent = join $ AppM $ asks _.routing.readRoutingEvent
   navigate route = do
     f <- AppM $ asks _.routing.navigate
@@ -67,6 +69,12 @@ instance monadRoutingAppM :: MonadRouting AppM where
   redirect route = do
     f <- AppM $ asks _.routing.redirect
     f route
+
+-- | Serverless
+instance serverlessAppM :: MonadServerless AppM where
+  buildInitialState ms fms = do
+    sb <- AppM $ asks _.serverless.getStateBuilder
+    runStateBuilder sb ms fms
 
 -- | User
 instance userRepositoryAppM :: UserRepository AppM where

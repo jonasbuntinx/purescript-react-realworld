@@ -4,18 +4,19 @@ import Prelude
 import Conduit.Capability.Auth (readAuth, readAuthEvent)
 import Conduit.Capability.Resource.Article (listArticles, listFeed, toggleFavorite)
 import Conduit.Capability.Resource.Tag (listTags)
-import Conduit.Capability.Routing (navigate)
+import Conduit.Capability.Routing (navigate, readRouting)
+import Conduit.Capability.Serverless (buildInitialState)
 import Conduit.Component.App as App
 import Conduit.Component.ArticleList (articleList)
 import Conduit.Component.Pagination (pagination)
 import Conduit.Component.Tabs as Tabs
 import Conduit.Data.Article (defaultArticlesQuery)
 import Conduit.Data.Auth (Auth)
-import Conduit.Data.Route (Route)
+import Conduit.Data.Route (Route(..))
 import Conduit.Page.Utils (_articles)
 import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
-import Data.Maybe (Maybe(..), isNothing)
+import Data.Maybe (Maybe(..), isJust, isNothing)
 import Data.Monoid (guard)
 import Network.RemoteData (RemoteData(..))
 import Network.RemoteData as RemoteData
@@ -41,7 +42,32 @@ data Action
   | ToggleFavorite Int
 
 mkHomePage :: App.Component Unit
-mkHomePage = App.component "HomePage" { initialState, eval, render }
+mkHomePage = do
+  initialState' <-
+    buildInitialState
+      ( do
+          route <- _.route <$> readRouting
+          case route of
+            Home -> do
+              tags <- listTags
+              articles <- listArticles defaultArticlesQuery
+              pure
+                $ initialState
+                    { tags = RemoteData.fromEither tags
+                    , articles = RemoteData.fromEither articles
+                    }
+            _ -> pure initialState
+      )
+      ( \_ _ -> do
+          tags <- listTags
+          articles <- listArticles defaultArticlesQuery
+          pure
+            $ initialState
+                { tags = RemoteData.fromEither tags
+                , articles = RemoteData.fromEither articles
+                }
+      )
+  App.component "HomePage" { initialState: initialState', eval, render }
   where
   initialState =
     { auth: Nothing
@@ -74,18 +100,22 @@ mkHomePage = App.component "HomePage" { initialState, eval, render }
     Navigate route -> do
       navigate route
     LoadTags -> do
-      Halo.modify_ _ { tags = RemoteData.Loading }
-      response <- listTags
-      Halo.modify_ _ { tags = RemoteData.fromEither response }
+      prevRoute <- _.prevRoute <$> readRouting
+      when (isJust prevRoute) do
+        Halo.modify_ _ { tags = RemoteData.Loading }
+        response <- listTags
+        Halo.modify_ _ { tags = RemoteData.fromEither response }
     LoadArticles tab pagination -> do
-      Halo.modify_ _ { articles = RemoteData.Loading, tab = tab, pagination = pagination }
-      let
-        query = defaultArticlesQuery { offset = Just pagination.offset, limit = Just pagination.limit }
-      response <- case tab of
-        Feed -> listFeed query
-        Global -> listArticles query
-        Tag tag -> listArticles (query { tag = Just tag })
-      Halo.modify_ _ { articles = RemoteData.fromEither response }
+      prevRoute <- _.prevRoute <$> readRouting
+      when (isJust prevRoute) do
+        Halo.modify_ _ { articles = RemoteData.Loading, tab = tab, pagination = pagination }
+        let
+          query = defaultArticlesQuery { offset = Just pagination.offset, limit = Just pagination.limit }
+        response <- case tab of
+          Feed -> listFeed query
+          Global -> listArticles query
+          Tag tag -> listArticles (query { tag = Just tag })
+        Halo.modify_ _ { articles = RemoteData.fromEither response }
     ToggleFavorite ix -> do
       state <- Halo.get
       for_ (preview (_articles ix) state) (toggleFavorite >=> traverse_ (Halo.modify_ <<< set (_articles ix)))

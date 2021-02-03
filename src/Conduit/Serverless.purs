@@ -10,49 +10,38 @@ import Conduit.Capability.Resource.Comment (CommentInstance)
 import Conduit.Capability.Resource.Profile (ProfileInstance)
 import Conduit.Capability.Resource.Tag (TagInstance)
 import Conduit.Capability.Resource.User (UserInstance)
+import Conduit.Capability.Serverless (mkStateBuilder)
 import Conduit.Data.Error (Error(..))
-import Conduit.Data.Route (Route(..), routeCodec)
+import Conduit.Data.Serverless (Context, Event, Response)
 import Conduit.Root as Root
-import Data.Either (Either(..), either)
-import Data.Maybe (Maybe(..))
+import Data.Either (Either(..))
 import Data.String (Pattern(..), Replacement(..), replace)
 import Data.Variant (match)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
-import FRP.Event as Event
-import Foreign (Foreign)
+import Effect.Exception as Exception
 import Node.Encoding (Encoding(..))
 import Node.FS.Sync (readTextFile)
 import React.Basic.DOM.Server (renderToString)
-import Routing.Duplex (parse)
-
-type Event
-  = { path :: String
-    }
-
-type Context
-  = Foreign
-
-type Response
-  = { body :: String
-    , statusCode :: Int
-    }
 
 serverless :: Event -> Context -> Aff Response
-serverless { path } _ = do
+serverless event context = do
   document <- liftEffect $ readTextFile UTF8 "index.html"
   root <-
     runAppM
       { auth:
-          { readAuth: liftEffect $ pure Nothing
-          , readAuthEvent: liftEffect $ map _.event Event.create
-          , modifyAuth: liftEffect <<< (const $ pure Nothing)
+          { readAuth: notImplemented "readAuth"
+          , readAuthEvent: notImplemented "readAuthEvent"
+          , modifyAuth: \_ -> notImplemented "modifyAuth"
           }
       , routing:
-          { readRoute: liftEffect $ pure $ either (const Error) identity $ parse routeCodec path
-          , readRoutingEvent: liftEffect $ map _.event Event.create
-          , navigate: liftEffect <<< (const $ pure unit)
-          , redirect: liftEffect <<< (const $ pure unit)
+          { readRouting: notImplemented "readRouting"
+          , readRoutingEvent: notImplemented "readRoutingEvent"
+          , navigate: \_ -> notImplemented "navigate"
+          , redirect: \_ -> notImplemented "redirect"
+          }
+      , serverless:
+          { getStateBuilder: mkStateBuilder \_ f -> f event context
           }
       , user: userInstance
       , article: articleInstance
@@ -70,12 +59,15 @@ serverless { path } _ = do
           document
     }
 
+notImplemented :: forall a. String -> AppM a
+notImplemented label = liftEffect $ Exception.throw ("Fixture `" <> label <> "` is not implemented.")
+
 userInstance :: UserInstance AppM
 userInstance =
-  { loginUser: \_ -> pure $ Left Unavailable
-  , registerUser: \_ -> pure $ Left Unavailable
-  , updateUser: \_ -> pure $ Left Unavailable
-  , logoutUser: pure unit
+  { loginUser: \_ -> notImplemented "loginUser"
+  , registerUser: \_ -> notImplemented "registerUser"
+  , updateUser: \_ -> notImplemented "updateUser"
+  , logoutUser: notImplemented "logoutUser"
   }
 
 articleInstance :: ArticleInstance AppM
@@ -84,14 +76,14 @@ articleInstance =
       \query -> do
         res <- makeRequest (Apiary.Route :: Endpoints.ListArticles) Apiary.none query Apiary.none
         pure $ res >>= match { ok: Right }
-  , listFeed: \_ -> pure $ Left Unavailable
+  , listFeed: \_ -> notImplemented "listFeed"
   , getArticle:
       \slug -> do
         res <- makeRequest (Apiary.Route :: Endpoints.GetArticle) { slug } Apiary.none Apiary.none
         pure $ res >>= (match { ok: Right <<< _.article, notFound: Left <<< NotFound })
-  , submitArticle: \_ _ -> pure $ Left Unavailable
-  , deleteArticle: \_ -> pure $ Left Unavailable
-  , toggleFavorite: \_ -> pure $ Left Unavailable
+  , submitArticle: \_ _ -> notImplemented "submitArticle"
+  , deleteArticle: \_ -> notImplemented "deleteArticle"
+  , toggleFavorite: \_ -> notImplemented "toggleFavorite"
   }
 
 commentInstance :: CommentInstance AppM
@@ -100,8 +92,8 @@ commentInstance =
       \slug -> do
         res <- makeRequest (Apiary.Route :: Endpoints.ListComments) { slug } Apiary.none Apiary.none
         pure $ res >>= match { ok: Right <<< _.comments }
-  , createComment: \_ _ -> pure $ Left Unavailable
-  , deleteComment: \_ _ -> pure $ Left Unavailable
+  , createComment: \_ _ -> notImplemented "createComment"
+  , deleteComment: \_ _ -> notImplemented "deleteComment"
   }
 
 profileInstance :: ProfileInstance AppM
@@ -110,7 +102,7 @@ profileInstance =
       \username -> do
         res <- makeRequest (Apiary.Route :: Endpoints.GetProfile) { username } Apiary.none Apiary.none
         pure $ res >>= (match { ok: Right <<< _.profile, notFound: Left <<< NotFound })
-  , toggleFollow: \_ -> pure $ Left Unavailable
+  , toggleFollow: \_ -> notImplemented "toggleFollow"
   }
 
 tagInstance :: TagInstance AppM

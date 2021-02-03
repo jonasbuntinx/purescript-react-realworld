@@ -2,7 +2,8 @@ module Main where
 
 import Prelude
 import Conduit.Client (client)
-import Conduit.Serverless (Context, Event, Response, serverless)
+import Conduit.Data.Serverless (Context, Event, Response)
+import Conduit.Serverless (serverless)
 import Control.Promise (Promise, fromAff)
 import Effect (Effect)
 import Effect.Uncurried (EffectFn2, mkEffectFn2)
