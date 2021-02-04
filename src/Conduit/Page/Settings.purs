@@ -3,7 +3,7 @@ module Conduit.Page.Settings (mkSettingsPage) where
 import Prelude
 import Conduit.Capability.Auth (readAuth, readAuthEvent)
 import Conduit.Capability.Resource.User (logoutUser, updateUser)
-import Conduit.Capability.Routing (navigate, redirect)
+import Conduit.Capability.Routing (navigate)
 import Conduit.Component.App as App
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Data.Avatar as Avatar
@@ -64,10 +64,8 @@ mkSettingsPage = App.component "SettingsPage" { initialState, eval, render }
       handleAction $ UpdateUser $ _.user =<< auth
       authEvent <- readAuthEvent
       void $ Halo.subscribe $ map (UpdateUser <<< (_.user =<< _)) authEvent
-    UpdateUser maybeUser -> case maybeUser of
-      Nothing -> do
-        redirect Login
-      Just user@{ image, username, bio, email } -> do
+    UpdateUser maybeUser ->
+      for_ maybeUser \user@{ image, username, bio, email } -> do
         Halo.modify_
           _
             { user = Just user
