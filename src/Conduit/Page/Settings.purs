@@ -64,7 +64,7 @@ mkSettingsPage = App.component "SettingsPage" { initialState, eval, render }
       handleAction $ UpdateUser $ _.user =<< auth
       authEvent <- readAuthEvent
       void $ Halo.subscribe $ map (UpdateUser <<< (_.user =<< _)) authEvent
-    UpdateUser maybeUser ->
+    UpdateUser maybeUser -> do
       for_ maybeUser \user@{ image, username, bio, email } -> do
         Halo.modify_
           _
