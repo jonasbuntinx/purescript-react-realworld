@@ -1,4 +1,4 @@
-module Conduit.Client where
+module Entries.Client where
 
 import Prelude
 import Apiary as Apiary
@@ -36,8 +36,8 @@ import Web.HTML (window)
 import Web.HTML.HTMLDocument (toNonElementParentNode)
 import Web.HTML.Window (document)
 
-client :: Effect Unit
-client = do
+main :: Effect Unit
+main = do
   container <- getElementById "conduit" =<< (map toNonElementParentNode $ document =<< window)
   case container of
     Nothing -> Exception.throw "Conduit container element not found."

@@ -1,4 +1,4 @@
-module Conduit.Serverless where
+module Entries.Serverless where
 
 import Prelude
 import Apiary as Apiary
@@ -12,52 +12,70 @@ import Conduit.Capability.Resource.Tag (TagInstance)
 import Conduit.Capability.Resource.User (UserInstance)
 import Conduit.Capability.Serverless (mkStateBuilder)
 import Conduit.Data.Error (Error(..))
-import Conduit.Data.Serverless (Context, Event, Response)
 import Conduit.Root as Root
+import Control.Promise (Promise, fromAff)
 import Data.Either (Either(..))
 import Data.String (Pattern(..), Replacement(..), replace)
 import Data.Variant (match)
-import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import Effect.Exception as Exception
+import Effect.Uncurried (EffectFn2, mkEffectFn2)
+import Foreign (Foreign)
 import Node.Encoding (Encoding(..))
 import Node.FS.Sync (readTextFile)
 import React.Basic.DOM.Server (renderToString)
 
-serverless :: Event -> Context -> Aff Response
-serverless event context = do
-  document <- liftEffect $ readTextFile UTF8 "index.html"
-  root <-
-    runAppM
-      { auth:
-          { readAuth: notImplemented "readAuth"
-          , readAuthEvent: notImplemented "readAuthEvent"
-          , modifyAuth: \_ -> notImplemented "modifyAuth"
-          }
-      , routing:
-          { readRouting: notImplemented "readRouting"
-          , readRoutingEvent: notImplemented "readRoutingEvent"
-          , navigate: \_ -> notImplemented "navigate"
-          , redirect: \_ -> notImplemented "redirect"
-          }
-      , serverless:
-          { getStateBuilder: mkStateBuilder \_ f -> f event context
-          }
-      , user: userInstance
-      , article: articleInstance
-      , comment: commentInstance
-      , profile: profileInstance
-      , tag: tagInstance
-      }
-      Root.mkRoot
-  pure
-    { statusCode: 200
-    , body:
-        replace
-          (Pattern "<div id=\"conduit\"></div>")
-          (Replacement $ "<div id=\"conduit\">" <> (renderToString $ root unit) <> "</div>")
-          document
+type Handler
+  = EffectFn2 Event Context (Promise Response)
+
+type Event
+  = { path :: String
     }
+
+type Context
+  = Foreign
+
+type Response
+  = { body :: String
+    , statusCode :: Int
+    }
+
+handler :: Handler
+handler =
+  mkEffectFn2 \event context ->
+    fromAff do
+      document <- liftEffect $ readTextFile UTF8 "index.html"
+      root <-
+        runAppM
+          { auth:
+              { readAuth: notImplemented "readAuth"
+              , readAuthEvent: notImplemented "readAuthEvent"
+              , modifyAuth: \_ -> notImplemented "modifyAuth"
+              }
+          , routing:
+              { readRouting: notImplemented "readRouting"
+              , readRoutingEvent: notImplemented "readRoutingEvent"
+              , navigate: \_ -> notImplemented "navigate"
+              , redirect: \_ -> notImplemented "redirect"
+              }
+          , serverless:
+              { getStateBuilder: mkStateBuilder \_ f -> f event context
+              }
+          , user: userInstance
+          , article: articleInstance
+          , comment: commentInstance
+          , profile: profileInstance
+          , tag: tagInstance
+          }
+          Root.mkRoot
+      pure
+        { statusCode: 200
+        , body:
+            replace
+              (Pattern "<div id=\"conduit\"></div>")
+              (Replacement $ "<div id=\"conduit\">" <> (renderToString $ root unit) <> "</div>")
+              document
+        }
 
 notImplemented :: forall a. String -> AppM a
 notImplemented label = liftEffect $ Exception.throw ("Fixture `" <> label <> "` is not implemented.")

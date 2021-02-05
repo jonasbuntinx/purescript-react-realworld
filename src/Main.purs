@@ -1,15 +1,12 @@
 module Main where
 
 import Prelude
-import Conduit.Client (client)
-import Conduit.Data.Serverless (Context, Event, Response)
-import Conduit.Serverless (serverless)
-import Control.Promise (Promise, fromAff)
 import Effect (Effect)
-import Effect.Uncurried (EffectFn2, mkEffectFn2)
+import Entries.Client as Client
+import Entries.Serverless as Serverless
 
 main :: Effect Unit
-main = client
+main = Client.main
 
-handler :: EffectFn2 Event Context (Promise Response)
-handler = mkEffectFn2 \event context -> fromAff $ serverless event context
+handler :: Serverless.Handler
+handler = Serverless.handler

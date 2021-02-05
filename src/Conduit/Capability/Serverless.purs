@@ -1,7 +1,7 @@
 module Conduit.Capability.Serverless where
 
 import Prelude
-import Conduit.Data.Serverless (Event, Context)
+import Foreign (Foreign)
 
 type ServerlessInstance m
   = { getStateBuilder :: m (StateBuilder m)
@@ -12,7 +12,7 @@ class
   buildInitialState :: forall s. StateBuilder' m s
 
 type StateBuilder' m s
-  = m s -> (Event -> Context -> m s) -> m s
+  = m s -> ({ path :: String } -> Foreign -> m s) -> m s
 
 newtype StateBuilder m
   = StateBuilder (forall s. StateBuilder' m s)
