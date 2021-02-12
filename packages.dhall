@@ -141,7 +141,7 @@ let additions =
         }
       , wire-react-router =
         { dependencies =  [ "aff", "freet", "indexed-monad", "profunctor-lenses", "react-basic-hooks", "routing" ]
-        , repo = "https://github.com/jonasbuntinx/purescript-wire-react-router"
+        , repo = "https://github.com/robertdp/purescript-wire-react-router"
         , version = "master"
         }
       }
