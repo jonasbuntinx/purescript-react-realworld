@@ -1,4 +1,4 @@
-module Conduit.Page.Editor (Props, mkEditorPage) where
+module Conduit.Page.Editor (Props, mkComponent) where
 
 import Prelude
 import Conduit.Capability.Resource.Article (getArticle, submitArticle)
@@ -28,10 +28,12 @@ import React.Basic.DOM.Events (targetValue)
 import React.Basic.Events (handler, handler_)
 import React.Halo as Halo
 
+-- | Props
 type Props
   = { slug :: Maybe Slug
     }
 
+-- | Component
 data Action
   = Initialize
   | UpdateTitle String
@@ -40,8 +42,8 @@ data Action
   | UpdateTagList (Set String)
   | Submit
 
-mkEditorPage :: App.Component Props
-mkEditorPage = App.component "SettingsPage" { initialState, eval, render }
+mkComponent :: App.Component Props
+mkComponent = App.component "SettingsPage" { initialState, eval, render }
   where
   initialState =
     { article: RemoteData.NotAsked

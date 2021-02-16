@@ -1,73 +1,59 @@
-module Entries.Serverless where
+module Serverless.Main where
 
 import Prelude
 import Apiary as Apiary
 import Conduit.Api.Endpoints as Endpoints
 import Conduit.Api.Utils (makeRequest)
-import Conduit.AppM (AppM, runAppM)
+import Conduit.AppM (AppM, AppInstance, runAppM)
 import Conduit.Capability.Resource.Article (ArticleInstance)
 import Conduit.Capability.Resource.Comment (CommentInstance)
 import Conduit.Capability.Resource.Profile (ProfileInstance)
 import Conduit.Capability.Resource.Tag (TagInstance)
-import Conduit.Capability.Resource.User (UserInstance)
+import Conduit.Capability.Routing (RoutingInstance)
 import Conduit.Capability.Serverless (mkStateBuilder)
 import Conduit.Data.Error (Error(..))
+import Conduit.Data.Route (Route(..), routeCodec)
 import Conduit.Root as Root
 import Control.Promise (Promise, fromAff)
-import Data.Either (Either(..))
+import Data.Either (Either(..), either)
+import Data.Maybe (Maybe(..))
 import Data.String (Pattern(..), Replacement(..), replace)
 import Data.Variant (match)
 import Effect.Class (liftEffect)
-import Effect.Exception as Exception
 import Effect.Uncurried (EffectFn2, mkEffectFn2)
 import Foreign (Foreign)
 import Node.Encoding (Encoding(..))
 import Node.FS.Sync (readTextFile)
 import React.Basic.DOM.Server (renderToString)
+import Routing.Duplex (parse)
+import Serverless.Fixture (fixture)
 
-type Handler
-  = EffectFn2 Event Context (Promise Response)
-
-type Event
-  = { path :: String
-    }
-
-type Context
-  = Foreign
-
-type Response
-  = { body :: String
-    , statusCode :: Int
-    }
-
-handler :: Handler
+handler :: EffectFn2 { path :: String } Foreign (Promise { body :: String, statusCode :: Int })
 handler =
   mkEffectFn2 \event context ->
     fromAff do
       document <- liftEffect $ readTextFile UTF8 "index.html"
       root <-
         runAppM
-          { auth:
-              { readAuth: notImplemented "readAuth"
-              , readAuthEvent: notImplemented "readAuthEvent"
-              , modifyAuth: \_ -> notImplemented "modifyAuth"
+          ( (fixture :: AppInstance AppM)
+              { routing =
+                (fixture :: RoutingInstance AppM)
+                  { readRouting =
+                    pure
+                      { route: either (const Error) identity $ parse routeCodec event.path
+                      , prevRoute: Nothing
+                      }
+                  }
+              , serverless =
+                { getStateBuilder: mkStateBuilder \_ f -> f event context
+                }
+              , article = articleInstance
+              , comment = commentInstance
+              , profile = profileInstance
+              , tag = tagInstance
               }
-          , routing:
-              { readRouting: notImplemented "readRouting"
-              , readRoutingEvent: notImplemented "readRoutingEvent"
-              , navigate: \_ -> notImplemented "navigate"
-              , redirect: \_ -> notImplemented "redirect"
-              }
-          , serverless:
-              { getStateBuilder: mkStateBuilder \_ f -> f event context
-              }
-          , user: userInstance
-          , article: articleInstance
-          , comment: commentInstance
-          , profile: profileInstance
-          , tag: tagInstance
-          }
-          Root.mkRoot
+          )
+          Root.mkComponent
       pure
         { statusCode: 200
         , body:
@@ -77,51 +63,36 @@ handler =
               document
         }
 
-notImplemented :: forall a. String -> AppM a
-notImplemented label = liftEffect $ Exception.throw ("Fixture `" <> label <> "` is not implemented.")
-
-userInstance :: UserInstance AppM
-userInstance =
-  { loginUser: \_ -> notImplemented "loginUser"
-  , registerUser: \_ -> notImplemented "registerUser"
-  , updateUser: \_ -> notImplemented "updateUser"
-  , logoutUser: notImplemented "logoutUser"
-  }
-
 articleInstance :: ArticleInstance AppM
 articleInstance =
-  { listArticles:
+  (fixture :: ArticleInstance AppM)
+    { listArticles =
       \query -> do
         res <- makeRequest (Apiary.Route :: Endpoints.ListArticles) Apiary.none query Apiary.none
         pure $ res >>= match { ok: Right }
-  , listFeed: \_ -> notImplemented "listFeed"
-  , getArticle:
+    , getArticle =
       \slug -> do
         res <- makeRequest (Apiary.Route :: Endpoints.GetArticle) { slug } Apiary.none Apiary.none
         pure $ res >>= (match { ok: Right <<< _.article, notFound: Left <<< NotFound })
-  , submitArticle: \_ _ -> notImplemented "submitArticle"
-  , deleteArticle: \_ -> notImplemented "deleteArticle"
-  , toggleFavorite: \_ -> notImplemented "toggleFavorite"
-  }
+    }
 
 commentInstance :: CommentInstance AppM
 commentInstance =
-  { listComments:
+  (fixture :: CommentInstance AppM)
+    { listComments =
       \slug -> do
         res <- makeRequest (Apiary.Route :: Endpoints.ListComments) { slug } Apiary.none Apiary.none
         pure $ res >>= match { ok: Right <<< _.comments }
-  , createComment: \_ _ -> notImplemented "createComment"
-  , deleteComment: \_ _ -> notImplemented "deleteComment"
-  }
+    }
 
 profileInstance :: ProfileInstance AppM
 profileInstance =
-  { getProfile:
+  (fixture :: ProfileInstance AppM)
+    { getProfile =
       \username -> do
         res <- makeRequest (Apiary.Route :: Endpoints.GetProfile) { username } Apiary.none Apiary.none
         pure $ res >>= (match { ok: Right <<< _.profile, notFound: Left <<< NotFound })
-  , toggleFollow: \_ -> notImplemented "toggleFollow"
-  }
+    }
 
 tagInstance :: TagInstance AppM
 tagInstance =

@@ -1,7 +1,8 @@
-module Conduit.Page.Article (Props, mkArticlePage) where
+module Conduit.Page.Article (Props, mkInitialState, mkComponent) where
 
 import Prelude
-import Conduit.Capability.Auth (readAuth, readAuthEvent)
+import Conduit.AppM (AppM)
+import Conduit.Capability.Access (readAccess, readAccessEvent)
 import Conduit.Capability.Resource.Article (deleteArticle, getArticle, toggleFavorite)
 import Conduit.Capability.Resource.Comment (createComment, deleteComment, listComments)
 import Conduit.Capability.Resource.Profile (toggleFollow)
@@ -9,9 +10,12 @@ import Conduit.Capability.Routing (navigate, redirect)
 import Conduit.Component.App as App
 import Conduit.Component.Buttons (ButtonSize(..), favoriteButton, followButton)
 import Conduit.Component.Link as Link
+import Conduit.Data.Access (Access(..))
+import Conduit.Data.Access as Access
+import Conduit.Data.Article (Article)
 import Conduit.Data.Auth (Auth)
 import Conduit.Data.Avatar as Avatar
-import Conduit.Data.Comment (CommentId)
+import Conduit.Data.Comment (CommentId, Comment)
 import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Slug (Slug)
@@ -26,7 +30,7 @@ import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
 import Data.Lens.Record as LR
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe(..), fromMaybe, isNothing, maybe)
 import Data.Monoid (guard)
 import Data.Symbol (SProxy(..))
 import Data.Validation.Semigroup (V, toEither)
@@ -40,14 +44,44 @@ import React.Basic.Events (handler, handler_)
 import React.Basic.Hooks as React
 import React.Halo as Halo
 
+-- | Props
 type Props
   = { slug :: Slug
     }
 
+-- | State
+type State
+  = { access :: Access Auth
+    , article :: RemoteData.RemoteData Error Article
+    , comments :: RemoteData.RemoteData Error (Array Comment)
+    , body :: Validated String
+    , submitResponse :: RemoteData.RemoteData Error Unit
+    }
+
+emptyState :: State
+emptyState =
+  { access: Public
+  , article: RemoteData.NotAsked
+  , comments: RemoteData.NotAsked
+  , body: pure ""
+  , submitResponse: RemoteData.NotAsked
+  }
+
+mkInitialState :: Props -> AppM State
+mkInitialState { slug } = do
+  article <- getArticle slug
+  comments <- listComments slug
+  pure
+    $ emptyState
+        { article = RemoteData.fromEither article
+        , comments = RemoteData.fromEither comments
+        }
+
+-- | Component
 data Action
   = Initialize
   | OnPropsUpdate Props Props
-  | UpdateAuth (Maybe Auth)
+  | UpdateAccess (Access Auth)
   | Navigate Route
   | LoadArticle
   | LoadComments
@@ -58,16 +92,10 @@ data Action
   | DeleteComment CommentId
   | SubmitComment
 
-mkArticlePage :: App.Component Props
-mkArticlePage = App.component "ArticlePage" { initialState, eval, render }
+mkComponent :: Maybe State -> App.Component Props
+mkComponent maybeInitialState = App.component "ArticlePage" { initialState, eval, render }
   where
-  initialState =
-    { auth: Nothing
-    , article: RemoteData.NotAsked
-    , comments: RemoteData.NotAsked
-    , body: pure ""
-    , submitResponse: RemoteData.NotAsked
-    }
+  initialState = fromMaybe emptyState maybeInitialState
 
   eval =
     Halo.mkEval
@@ -79,22 +107,23 @@ mkArticlePage = App.component "ArticlePage" { initialState, eval, render }
 
   handleAction = case _ of
     Initialize -> do
-      auth <- readAuth
-      handleAction $ UpdateAuth auth
-      authEvent <- readAuthEvent
-      void $ Halo.subscribe $ map UpdateAuth authEvent
-      parTraverse_ handleAction
-        [ LoadArticle
-        , LoadComments
-        ]
+      access <- readAccess
+      handleAction $ UpdateAccess access
+      accessEvent <- readAccessEvent
+      void $ Halo.subscribe $ map UpdateAccess accessEvent
+      guard (isNothing maybeInitialState) do
+        parTraverse_ handleAction
+          [ LoadArticle
+          , LoadComments
+          ]
     OnPropsUpdate prev next -> do
       when (prev.slug /= next.slug) do
         parTraverse_ handleAction
           [ LoadArticle
           , LoadComments
           ]
-    UpdateAuth auth -> do
-      Halo.modify_ _ { auth = auth }
+    UpdateAccess access -> do
+      Halo.modify_ _ { access = access }
     Navigate route -> do
       navigate route
     LoadArticle -> do
@@ -186,8 +215,8 @@ mkArticlePage = App.component "ArticlePage" { initialState, eval, render }
                         [ R.div
                             { className: "col-xs-12 col-md-8 offset-md-2"
                             , children:
-                                [ case state.auth of
-                                    Just _ ->
+                                [ case state.access of
+                                    Authorized _ ->
                                       R.form
                                         { className: "card comment-form"
                                         , onSubmit: handler preventDefault $ const $ send SubmitComment
@@ -209,7 +238,7 @@ mkArticlePage = App.component "ArticlePage" { initialState, eval, render }
                                                 , children:
                                                     [ R.img
                                                         { className: "comment-author-img"
-                                                        , src: Avatar.toString $ maybe Avatar.blank (Avatar.withDefault <<< _.image) (_.user =<< state.auth)
+                                                        , src: Avatar.toString $ maybe Avatar.blank (Avatar.withDefault <<< _.image) (_.user =<< Access.toMaybe state.access)
                                                         }
                                                     , R.button
                                                         { className: "btn btn-sm btn-primary"
@@ -220,7 +249,7 @@ mkArticlePage = App.component "ArticlePage" { initialState, eval, render }
                                                 }
                                             ]
                                         }
-                                    Nothing ->
+                                    _ ->
                                       R.p_
                                         [ Link.link
                                             { className: ""
@@ -278,7 +307,7 @@ mkArticlePage = App.component "ArticlePage" { initialState, eval, render }
                         }
                     ]
                 }
-            , case _.username <$> state.auth of
+            , case _.username <$> Access.toMaybe state.access of
                 Just username
                   | username == article.author.username ->
                     R.span_
@@ -367,7 +396,7 @@ mkArticlePage = App.component "ArticlePage" { initialState, eval, render }
                           , children:
                               [ R.text $ toDisplay comment.createdAt ]
                           }
-                      , guard (Just comment.author.username == map _.username state.auth) R.span
+                      , guard (Just comment.author.username == map _.username (Access.toMaybe state.access)) R.span
                           { className: "mod-options"
                           , children:
                               [ R.i

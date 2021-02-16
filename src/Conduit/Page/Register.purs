@@ -1,4 +1,4 @@
-module Conduit.Page.Register (mkRegisterPage) where
+module Conduit.Page.Register (mkComponent) where
 
 import Prelude
 import Conduit.Capability.Resource.User (registerUser)
@@ -23,6 +23,7 @@ import React.Basic.DOM.Events (targetValue)
 import React.Basic.Events (handler, handler_)
 import React.Halo as Halo
 
+-- | Component
 data Action
   = Navigate Route
   | UpdateUsername String
@@ -30,8 +31,8 @@ data Action
   | UpdatePassword String
   | Submit
 
-mkRegisterPage :: App.Component Unit
-mkRegisterPage = App.component "RegisterPage" { initialState, eval, render }
+mkComponent :: App.Component Unit
+mkComponent = App.component "RegisterPage" { initialState, eval, render }
   where
   initialState =
     { username: pure ""

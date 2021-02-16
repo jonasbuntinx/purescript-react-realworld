@@ -1,11 +1,12 @@
-module Conduit.Page.Settings (mkSettingsPage) where
+module Conduit.Page.Settings (mkComponent) where
 
 import Prelude
-import Conduit.Capability.Auth (readAuth, readAuthEvent)
+import Conduit.Capability.Access (readAccess, readAccessEvent)
 import Conduit.Capability.Resource.User (logoutUser, updateUser)
 import Conduit.Capability.Routing (navigate)
 import Conduit.Component.App as App
 import Conduit.Component.ResponseErrors (responseErrors)
+import Conduit.Data.Access as Access
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.User (User)
@@ -27,6 +28,7 @@ import React.Basic.DOM.Events (targetValue)
 import React.Basic.Events (handler, handler_)
 import React.Halo as Halo
 
+-- | Component
 data Action
   = Initialize
   | UpdateUser (Maybe { | User () })
@@ -38,8 +40,8 @@ data Action
   | Submit
   | Logout
 
-mkSettingsPage :: App.Component Unit
-mkSettingsPage = App.component "SettingsPage" { initialState, eval, render }
+mkComponent :: App.Component Unit
+mkComponent = App.component "SettingsPage" { initialState, eval, render }
   where
   initialState =
     { user: Nothing
@@ -60,10 +62,10 @@ mkSettingsPage = App.component "SettingsPage" { initialState, eval, render }
 
   handleAction = case _ of
     Initialize -> do
-      auth <- readAuth
-      handleAction $ UpdateUser $ _.user =<< auth
-      authEvent <- readAuthEvent
-      void $ Halo.subscribe $ map (UpdateUser <<< (_.user =<< _)) authEvent
+      access <- readAccess
+      handleAction $ UpdateUser $ _.user =<< Access.toMaybe access
+      accessEvent <- readAccessEvent
+      void $ Halo.subscribe $ map (UpdateUser <<< (_.user =<< _) <<< Access.toMaybe) accessEvent
     UpdateUser maybeUser -> do
       for_ maybeUser \user@{ image, username, bio, email } -> do
         Halo.modify_

@@ -2,16 +2,16 @@ module Conduit.Api.Utils (makeRequest, makeSecureRequest, makeSecureRequest') wh
 
 import Prelude
 import Apiary as Apiary
-import Conduit.Capability.Auth (class MonadAuth, readAuth)
+import Conduit.Capability.Access (class MonadAccess, readAccess)
 import Conduit.Capability.Routing (class MonadRouting, redirect)
 import Conduit.Config as Config
+import Conduit.Data.Access (Access(..))
 import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..))
 import Data.Array as Array
 import Data.Bifunctor (lmap)
 import Data.Bitraversable (lfor)
 import Data.Either (Either(..))
-import Data.Maybe (Maybe(..))
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect)
 import Effect.Class.Console as Console
@@ -33,7 +33,7 @@ makeRequest route path query body = do
 
 makeSecureRequest ::
   forall m rep body query path route response.
-  MonadAuth m =>
+  MonadAccess m =>
   MonadRouting m =>
   MonadAff m =>
   Apiary.BuildRequest route path query body rep =>
@@ -44,13 +44,13 @@ makeSecureRequest ::
   body ->
   m (Either Error response)
 makeSecureRequest route path query body = do
-  auth <- readAuth
+  auth <- readAccess
   case auth of
-    Nothing -> do
+    Authorized { token } -> do
+      makeSecureRequest' token route path query body
+    _ -> do
       redirect Register
       pure $ Left $ NotAuthorized
-    Just { token } -> do
-      makeSecureRequest' token route path query body
 
 makeSecureRequest' ::
   forall m rep body query path route response.

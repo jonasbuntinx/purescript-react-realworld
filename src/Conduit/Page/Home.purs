@@ -1,22 +1,22 @@
-module Conduit.Page.Home (mkHomePage) where
+module Conduit.Page.Home (mkComponent) where
 
 import Prelude
-import Conduit.Capability.Auth (readAuth, readAuthEvent)
+import Conduit.Capability.Access (readAccess, readAccessEvent)
 import Conduit.Capability.Resource.Article (listArticles, listFeed, toggleFavorite)
 import Conduit.Capability.Resource.Tag (listTags)
-import Conduit.Capability.Routing (navigate, readRouting)
-import Conduit.Capability.Serverless (buildInitialState)
+import Conduit.Capability.Routing (navigate)
 import Conduit.Component.App as App
 import Conduit.Component.ArticleList (articleList)
 import Conduit.Component.Pagination (pagination)
 import Conduit.Component.Tabs as Tabs
+import Conduit.Data.Access (Access(..), isAuthorized)
 import Conduit.Data.Article (defaultArticlesQuery)
 import Conduit.Data.Auth (Auth)
-import Conduit.Data.Route (Route(..))
+import Conduit.Data.Route (Route)
 import Conduit.Page.Utils (_articles)
 import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
-import Data.Maybe (Maybe(..), isJust, isNothing)
+import Data.Maybe (Maybe(..))
 import Data.Monoid (guard)
 import Network.RemoteData (RemoteData(..))
 import Network.RemoteData as RemoteData
@@ -26,6 +26,15 @@ import React.Basic.Events (handler)
 import React.Basic.Hooks as React
 import React.Halo as Halo
 
+-- | Component
+data Action
+  = Initialize
+  | UpdateAccess (Access Auth)
+  | Navigate Route
+  | LoadTags
+  | LoadArticles Tab { offset :: Int, limit :: Int }
+  | ToggleFavorite Int
+
 data Tab
   = Feed
   | Global
@@ -33,44 +42,11 @@ data Tab
 
 derive instance eqTab :: Eq Tab
 
-data Action
-  = Initialize
-  | UpdateAuth (Maybe Auth)
-  | Navigate Route
-  | LoadTags
-  | LoadArticles Tab { offset :: Int, limit :: Int }
-  | ToggleFavorite Int
-
-mkHomePage :: App.Component Unit
-mkHomePage = do
-  initialState' <-
-    buildInitialState
-      ( do
-          route <- _.route <$> readRouting
-          case route of
-            Home -> do
-              tags <- listTags
-              articles <- listArticles defaultArticlesQuery
-              pure
-                $ initialState
-                    { tags = RemoteData.fromEither tags
-                    , articles = RemoteData.fromEither articles
-                    }
-            _ -> pure initialState
-      )
-      ( \_ _ -> do
-          tags <- listTags
-          articles <- listArticles defaultArticlesQuery
-          pure
-            $ initialState
-                { tags = RemoteData.fromEither tags
-                , articles = RemoteData.fromEither articles
-                }
-      )
-  App.component "HomePage" { initialState: initialState', eval, render }
+mkComponent :: App.Component Unit
+mkComponent = App.component "HomePage" { initialState, eval, render }
   where
   initialState =
-    { auth: Nothing
+    { access: Public
     , tags: NotAsked
     , articles: NotAsked
     , pagination: { offset: 0, limit: 10 }
@@ -86,20 +62,17 @@ mkHomePage = do
 
   handleAction = case _ of
     Initialize -> do
-      prevRoute <- _.prevRoute <$> readRouting
-      auth <- readAuth
-      when (isJust prevRoute || isJust auth) do
-        handleAction $ UpdateAuth auth
-      authEvent <- readAuthEvent
-      void $ Halo.subscribe $ map UpdateAuth authEvent
-      when (isJust prevRoute) do
-        handleAction LoadTags
-    UpdateAuth auth -> do
+      access <- readAccess
+      handleAction $ UpdateAccess access
+      accessEvent <- readAccessEvent
+      void $ Halo.subscribe $ map UpdateAccess accessEvent
+      handleAction LoadTags
+    UpdateAccess access -> do
       state <- Halo.get
-      Halo.modify_ _ { auth = auth }
-      case auth of
-        Nothing -> handleAction $ LoadArticles state.tab state.pagination
-        Just _ -> handleAction $ LoadArticles Feed state.pagination
+      Halo.modify_ _ { access = access }
+      case access of
+        Authorized _ -> handleAction $ LoadArticles Feed state.pagination
+        _ -> handleAction $ LoadArticles state.tab state.pagination
     Navigate route -> do
       navigate route
     LoadTags -> do
@@ -120,7 +93,7 @@ mkHomePage = do
       for_ (preview (_articles ix) state) (toggleFavorite >=> traverse_ (Halo.modify_ <<< set (_articles ix)))
 
   render { state, send } =
-    container (guard (isNothing state.auth) banner)
+    container (guard (not isAuthorized state.access) banner)
       [ mainView
       , R.div
           { className: "col-md-3 col-xs-12"
@@ -146,7 +119,7 @@ mkHomePage = do
                 , tabs:
                     [ { id: Feed
                       , label: R.text "Your Feed"
-                      , disabled: isNothing state.auth
+                      , disabled: not isAuthorized state.access
                       , content: tabContent
                       }
                     , { id: Global

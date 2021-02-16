@@ -14,7 +14,7 @@
     "bundle": "yarn bundle:clean && yarn bundle:build && yarn bundle:dce && yarn bundle:client && yarn bundle:server",
     "bundle:clean": "rm -Rf dist output dce-output",
     "bundle:build": "spago build --purs-args '--codegen corefn'",
-    "bundle:dce": "zephyr -f Main.main Entries.Serverless.handler",
+    "bundle:dce": "zephyr -f Main.main Serverless.Main.handler",
     "bundle:client": "parcel build index.js -d dist --no-source-maps",
     "bundle:server": "parcel build ssr.js -d dist --no-source-maps --target node --bundle-node-modules",
     "clean": "rm -Rf .cache dist serve output dce-output node_modules .spago *.lock",

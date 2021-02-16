@@ -5,7 +5,7 @@ import Apiary as Apiary
 import Conduit.Api.Endpoints as Endpoints
 import Conduit.Api.Utils (makeRequest, makeSecureRequest)
 import Conduit.AppM (AppM, runAppM)
-import Conduit.Capability.Auth (modifyAuth)
+import Conduit.Capability.Access (modifyAccess)
 import Conduit.Capability.Resource.Article (ArticleInstance)
 import Conduit.Capability.Resource.Comment (CommentInstance)
 import Conduit.Capability.Resource.Profile (ProfileInstance)
@@ -13,9 +13,11 @@ import Conduit.Capability.Resource.Tag (TagInstance)
 import Conduit.Capability.Resource.User (UserInstance)
 import Conduit.Capability.Routing (redirect)
 import Conduit.Capability.Serverless (mkStateBuilder)
-import Conduit.Component.Auth as Auth
-import Conduit.Component.Routing as Routing
+import Conduit.Component.Access (mkAccessManager)
+import Conduit.Component.Routing (mkRoutingManager)
 import Conduit.Config as Config
+import Conduit.Data.Access (Access(..))
+import Conduit.Data.Access as Access
 import Conduit.Data.Auth (toAuth)
 import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..))
@@ -42,15 +44,15 @@ main = do
   case container of
     Nothing -> Exception.throw "Conduit container element not found."
     Just c -> do
-      auth <- Auth.mkAuthManager
-      routing <- Routing.mkRoutingManager
+      access <- mkAccessManager
+      routing <- mkRoutingManager
       launchAff_ do
         root <-
           runAppM
-            { auth:
-                { readAuth: liftEffect auth.read
-                , readAuthEvent: liftEffect $ pure auth.event
-                , modifyAuth: liftEffect <<< auth.modify
+            { access:
+                { readAccess: liftEffect access.read
+                , readAccessEvent: liftEffect $ pure access.event
+                , modifyAccess: liftEffect <<< access.modify
                 }
             , routing:
                 { readRouting: liftEffect routing.read
@@ -67,10 +69,10 @@ main = do
             , profile: profileInstance
             , tag: tagInstance
             }
-            Root.mkRoot
+            Root.mkComponent
         liftEffect
           $ (if Config.nodeEnv == "production" then hydrate else render)
-              (React.fragment [ routing.component, auth.component, root unit ])
+              (React.fragment [ routing.component, access.component, root unit ])
               c
 
 userInstance :: UserInstance AppM
@@ -82,7 +84,7 @@ userInstance =
         ( match
             { ok:
                 \{ user: currentUser } -> do
-                  void $ modifyAuth $ const $ toAuth currentUser.token (Just $ Record.delete (SProxy :: _ "token") currentUser)
+                  void $ modifyAccess $ const $ Access.fromMaybe $ toAuth currentUser.token (Just $ Record.delete (SProxy :: _ "token") currentUser)
                   pure $ Right currentUser
             , unprocessableEntity: pure <<< Left <<< UnprocessableEntity <<< _.errors
             }
@@ -105,14 +107,14 @@ userInstance =
                 ( match
                     { ok:
                         \{ user: currentUser } -> do
-                          void $ modifyAuth $ map $ _ { user = Just $ Record.delete (SProxy :: _ "token") currentUser }
+                          void $ modifyAccess $ map $ _ { user = Just $ Record.delete (SProxy :: _ "token") currentUser }
                           pure $ Right currentUser
                     , unprocessableEntity: pure <<< Left <<< UnprocessableEntity <<< _.errors
                     }
                 )
     , logoutUser:
         do
-          void $ modifyAuth $ const Nothing
+          void $ modifyAccess $ const Public
           redirect Home
     }
 
