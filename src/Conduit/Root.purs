@@ -16,7 +16,7 @@ import Conduit.Page.Login as Login
 import Conduit.Page.Profile as Profile
 import Conduit.Page.Register as Register
 import Conduit.Page.Settings as Settings
-import Data.Maybe (Maybe(..), isNothing)
+import Data.Maybe (Maybe(..))
 import React.Basic.Hooks as React
 import React.Halo as Halo
 
@@ -65,33 +65,31 @@ mkComponent = do
         _, _ -> pure unit
     Navigate route -> navigate route
 
-  isInitialPage { routing } = isNothing routing.prevRoute
-
   mkInitialPage = do
     { route } <- readRouting
     case route of
       Login -> do
         component <- Login.mkComponent
-        pure $ component unit
+        pure $ Just $ component unit
       Register -> do
         component <- Register.mkComponent
-        pure $ component unit
+        pure $ Just $ component unit
       ViewArticle slug -> do
         let
           props = { slug }
         component <- Article.mkComponent <<< Just =<< Article.mkInitialState props
-        pure $ component props
+        pure $ Just $ component props
       Profile username -> do
         let
           props = { username, tab: Profile.Published }
         component <- Profile.mkComponent <<< Just =<< Profile.mkInitialState props
-        pure $ component props
+        pure $ Just $ component props
       Favorites username -> do
         let
           props = { username, tab: Profile.Favorited }
         component <- Profile.mkComponent <<< Just =<< Profile.mkInitialState props
-        pure $ component props
-      _ -> pure React.empty
+        pure $ Just $ component props
+      _ -> pure Nothing
 
   mkRender = do
     initialPage <- mkInitialPage
@@ -110,18 +108,18 @@ mkComponent = do
                 , currentRoute: state.routing.route
                 , onNavigate: send <<< Navigate
                 }
-            , if isInitialPage state then
-                initialPage
-              else case state.routing.route of
-                Home -> homePage unit
-                Login -> loginPage unit
-                Register -> registerPage unit
-                Settings -> settingsPage unit
-                CreateArticle -> editorPage { slug: Nothing }
-                UpdateArticle slug -> editorPage { slug: Just slug }
-                ViewArticle slug -> articlePage { slug }
-                Profile username -> profilePage { username, tab: Profile.Published }
-                Favorites username -> profilePage { username, tab: Profile.Favorited }
-                Error -> React.empty
+            , case initialPage, state.routing.prevRoute of
+                Just page, Nothing -> page
+                _, _ -> case state.routing.route of
+                  Home -> homePage unit
+                  Login -> loginPage unit
+                  Register -> registerPage unit
+                  Settings -> settingsPage unit
+                  CreateArticle -> editorPage { slug: Nothing }
+                  UpdateArticle slug -> editorPage { slug: Just slug }
+                  ViewArticle slug -> articlePage { slug }
+                  Profile username -> profilePage { username, tab: Profile.Published }
+                  Favorites username -> profilePage { username, tab: Profile.Favorited }
+                  Error -> React.empty
             , Footer.footer
             ]
