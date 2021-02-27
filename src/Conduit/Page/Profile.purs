@@ -1,11 +1,11 @@
 module Conduit.Page.Profile (Props, Tab(..), mkProfilePage) where
 
 import Prelude
-import Conduit.Capability.Auth (readAuth, readAuthEvent)
-import Conduit.Capability.Resource.Article (listArticles, toggleFavorite)
-import Conduit.Capability.Resource.Profile (getProfile, toggleFollow)
-import Conduit.Capability.Routing (navigate, redirect)
-import Conduit.Component.App as App
+import Conduit.Capability.Auth (class MonadAuth, readAuth, readAuthEvent)
+import Conduit.Capability.Halo (class MonadHalo, JSX, component)
+import Conduit.Capability.Resource.Article (class ArticleRepository, listArticles, toggleFavorite)
+import Conduit.Capability.Resource.Profile (class ProfileRepository, getProfile, toggleFollow)
+import Conduit.Capability.Routing (class MonadRouting, navigate, redirect)
 import Conduit.Component.ArticleList (articleList)
 import Conduit.Component.Buttons (followButton)
 import Conduit.Component.Pagination (pagination)
@@ -51,8 +51,15 @@ data Action
   | ToggleFavorite Int
   | ToggleFollow
 
-mkProfilePage :: App.Component Props
-mkProfilePage = App.component "ProfilePage" { initialState, eval, render }
+mkProfilePage ::
+  forall m.
+  MonadAuth m =>
+  MonadRouting m =>
+  ProfileRepository m =>
+  ArticleRepository m =>
+  MonadHalo m =>
+  m (Props -> JSX)
+mkProfilePage = component "ProfilePage" { initialState, eval, render }
   where
   initialState =
     { auth: Nothing

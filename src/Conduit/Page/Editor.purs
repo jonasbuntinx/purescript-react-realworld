@@ -1,9 +1,9 @@
 module Conduit.Page.Editor (Props, mkEditorPage) where
 
 import Prelude
-import Conduit.Capability.Resource.Article (getArticle, submitArticle)
-import Conduit.Capability.Routing (navigate, redirect)
-import Conduit.Component.App as App
+import Conduit.Capability.Halo (class MonadHalo, JSX, component)
+import Conduit.Capability.Resource.Article (class ArticleRepository, getArticle, submitArticle)
+import Conduit.Capability.Routing (class MonadRouting, navigate, redirect)
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Component.TagInput (tagInput)
 import Conduit.Data.Error (Error(..))
@@ -40,8 +40,13 @@ data Action
   | UpdateTagList (Set String)
   | Submit
 
-mkEditorPage :: App.Component Props
-mkEditorPage = App.component "SettingsPage" { initialState, eval, render }
+mkEditorPage ::
+  forall m.
+  ArticleRepository m =>
+  MonadRouting m =>
+  MonadHalo m =>
+  m (Props -> JSX)
+mkEditorPage = component "SettingsPage" { initialState, eval, render }
   where
   initialState =
     { article: RemoteData.NotAsked

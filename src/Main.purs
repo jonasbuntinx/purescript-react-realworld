@@ -63,7 +63,7 @@ main = do
             , tag: tagInstance
             }
             Root.mkRoot
-        liftEffect $ render (React.fragment [ routing.component, auth.component, root unit ]) c
+        liftEffect $ render (React.fragment [ routing.component, auth.component, root ]) c
 
 userInstance :: UserInstance AppM
 userInstance =

@@ -1,10 +1,10 @@
 module Conduit.Page.Settings (mkSettingsPage) where
 
 import Prelude
-import Conduit.Capability.Auth (readAuth, readAuthEvent)
-import Conduit.Capability.Resource.User (logoutUser, updateUser)
-import Conduit.Capability.Routing (navigate)
-import Conduit.Component.App as App
+import Conduit.Capability.Auth (class MonadAuth, readAuth, readAuthEvent)
+import Conduit.Capability.Halo (class MonadHalo, JSX, component_)
+import Conduit.Capability.Resource.User (class UserRepository, logoutUser, updateUser)
+import Conduit.Capability.Routing (class MonadRouting, navigate)
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Route (Route(..))
@@ -38,8 +38,14 @@ data Action
   | Submit
   | Logout
 
-mkSettingsPage :: App.Component Unit
-mkSettingsPage = App.component "SettingsPage" { initialState, eval, render }
+mkSettingsPage ::
+  forall m.
+  MonadAuth m =>
+  UserRepository m =>
+  MonadRouting m =>
+  MonadHalo m =>
+  m JSX
+mkSettingsPage = component_ "SettingsPage" { initialState, eval, render }
   where
   initialState =
     { user: Nothing
