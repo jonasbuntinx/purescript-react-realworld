@@ -1,7 +1,7 @@
 module Conduit.Page.Register (mkRegisterPage) where
 
 import Prelude
-import Conduit.Capability.Halo (class MonadHalo, JSX, component_)
+import Conduit.Capability.Halo (class MonadHalo, JSX, component)
 import Conduit.Capability.Resource.User (class UserRepository, registerUser)
 import Conduit.Capability.Routing (class MonadRouting, navigate, redirect)
 import Conduit.Component.Link as Link
@@ -35,8 +35,8 @@ mkRegisterPage ::
   MonadRouting m =>
   UserRepository m =>
   MonadHalo m =>
-  m JSX
-mkRegisterPage = component_ "RegisterPage" { initialState, eval, render }
+  m (Unit -> JSX)
+mkRegisterPage = component "RegisterPage" { initialState, eval, render }
   where
   initialState =
     { username: pure ""

@@ -2,7 +2,7 @@ module Conduit.Root where
 
 import Prelude
 import Conduit.Capability.Auth (class MonadAuth, readAuth, readAuthEvent)
-import Conduit.Capability.Halo (class MonadHalo, JSX, component_)
+import Conduit.Capability.Halo (class MonadHalo, JSX, component)
 import Conduit.Capability.Resource.Article (class ArticleRepository)
 import Conduit.Capability.Resource.Comment (class CommentRepository)
 import Conduit.Capability.Resource.Profile (class ProfileRepository)
@@ -40,10 +40,10 @@ mkRoot ::
   UserRepository m =>
   CommentRepository m =>
   ProfileRepository m =>
-  m JSX
+  m (Unit -> JSX)
 mkRoot = do
   render <- mkRender
-  component_ "Root" { initialState, eval, render }
+  component "Root" { initialState, eval, render }
   where
   initialState =
     { auth: Nothing
@@ -96,10 +96,10 @@ mkRoot = do
           React.fragment
             [ Header.header { auth: state.auth, currentRoute: state.route, onNavigate: send <<< Navigate }
             , case state.route of
-                Home -> homePage
-                Login -> loginPage
-                Register -> registerPage
-                Settings -> settingsPage
+                Home -> homePage unit
+                Login -> loginPage unit
+                Register -> registerPage unit
+                Settings -> settingsPage unit
                 CreateArticle -> editorPage { slug: Nothing }
                 UpdateArticle slug -> editorPage { slug: Just slug }
                 ViewArticle slug -> articlePage { slug }

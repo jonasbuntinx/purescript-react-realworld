@@ -1,7 +1,7 @@
 module Conduit.Page.Login (mkLoginPage) where
 
 import Prelude
-import Conduit.Capability.Halo (class MonadHalo, JSX, component_)
+import Conduit.Capability.Halo (class MonadHalo, JSX, component)
 import Conduit.Capability.Resource.User (class UserRepository, loginUser)
 import Conduit.Capability.Routing (class MonadRouting, navigate, redirect)
 import Conduit.Component.Link as Link
@@ -34,8 +34,8 @@ mkLoginPage ::
   MonadRouting m =>
   UserRepository m =>
   MonadHalo m =>
-  m JSX
-mkLoginPage = component_ "LoginPage" { initialState, eval, render }
+  m (Unit -> JSX)
+mkLoginPage = component "LoginPage" { initialState, eval, render }
   where
   initialState =
     { email: pure ""

@@ -2,7 +2,7 @@ module Conduit.Page.Home (mkHomePage) where
 
 import Prelude
 import Conduit.Capability.Auth (class MonadAuth, readAuth, readAuthEvent)
-import Conduit.Capability.Halo (class MonadHalo, JSX, component_)
+import Conduit.Capability.Halo (class MonadHalo, JSX, component)
 import Conduit.Capability.Resource.Article (class ArticleRepository, listArticles, listFeed, toggleFavorite)
 import Conduit.Capability.Resource.Tag (class TagRepository, listTags)
 import Conduit.Capability.Routing (class MonadRouting, navigate)
@@ -47,8 +47,8 @@ mkHomePage ::
   TagRepository m =>
   ArticleRepository m =>
   MonadHalo m =>
-  m JSX
-mkHomePage = component_ "HomePage" { initialState, eval, render }
+  m (Unit -> JSX)
+mkHomePage = component "HomePage" { initialState, eval, render }
   where
   initialState =
     { auth: Nothing

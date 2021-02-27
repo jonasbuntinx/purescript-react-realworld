@@ -2,7 +2,7 @@ module Conduit.Page.Settings (mkSettingsPage) where
 
 import Prelude
 import Conduit.Capability.Auth (class MonadAuth, readAuth, readAuthEvent)
-import Conduit.Capability.Halo (class MonadHalo, JSX, component_)
+import Conduit.Capability.Halo (class MonadHalo, JSX, component)
 import Conduit.Capability.Resource.User (class UserRepository, logoutUser, updateUser)
 import Conduit.Capability.Routing (class MonadRouting, navigate)
 import Conduit.Component.ResponseErrors (responseErrors)
@@ -44,8 +44,8 @@ mkSettingsPage ::
   UserRepository m =>
   MonadRouting m =>
   MonadHalo m =>
-  m JSX
-mkSettingsPage = component_ "SettingsPage" { initialState, eval, render }
+  m (Unit -> JSX)
+mkSettingsPage = component "SettingsPage" { initialState, eval, render }
   where
   initialState =
     { user: Nothing
