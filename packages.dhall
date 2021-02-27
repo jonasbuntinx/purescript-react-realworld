@@ -117,7 +117,7 @@ let additions =
 -------------------------------
 -}
 let upstream =
-      https://github.com/purescript/package-sets/releases/download/psc-0.13.8-20201021/packages.dhall sha256:55ebdbda1bd6ede4d5307fbc1ef19988c80271b4225d833c8d6fb9b6fb1aa6d8
+      https://github.com/purescript/package-sets/releases/download/psc-0.13.8-20210226/packages.dhall sha256:7e973070e323137f27e12af93bc2c2f600d53ce4ae73bb51f34eb7d7ce0a43ea
 
 let overrides =
       { simple-json =
@@ -133,14 +133,15 @@ let additions =
         , repo = "https://github.com/robertdp/purescript-apiary"
         , version = "v0.2.0"
         }
-      , react-halo =
-        { dependencies =
-          [ "aff", "event", "free", "freeap", "react-basic-hooks", "refs" ]
-        , repo = "https://github.com/robertdp/purescript-react-halo"
-        , version = "v1.2.0"
-        }
       , wire-react-router =
-        { dependencies =  [ "aff", "freet", "indexed-monad", "profunctor-lenses", "react-basic-hooks", "routing" ]
+        { dependencies =
+          [ "aff"
+          , "freet"
+          , "indexed-monad"
+          , "profunctor-lenses"
+          , "react-basic-hooks"
+          , "routing"
+          ]
         , repo = "https://github.com/robertdp/purescript-wire-react-router"
         , version = "v0.2.1"
         }
