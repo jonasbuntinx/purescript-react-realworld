@@ -38,10 +38,5 @@
     "preact": "^10.5.12",
     "react": "npm:@preact/compat@^0.0.4",
     "react-dom": "npm:@preact/compat@^0.0.4"
-  },
-  "alias": {
-    "react": "preact/compat",
-    "react-dom": "preact/compat",
-    "react-dom/test-utils": "preact/test-utils"
   }
 }
