@@ -1,9 +1,9 @@
 module Conduit.Page.Login (mkLoginPage) where
 
 import Prelude
-import Conduit.Capability.Resource.User (loginUser)
-import Conduit.Capability.Routing (navigate, redirect)
-import Conduit.Component.App as App
+import Conduit.Capability.Halo (class MonadHalo, JSX, component)
+import Conduit.Capability.Resource.User (class UserRepository, loginUser)
+import Conduit.Capability.Routing (class MonadRouting, navigate, redirect)
 import Conduit.Component.Link as Link
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Data.Route (Route(..))
@@ -29,8 +29,13 @@ data Action
   | UpdatePassword String
   | Submit
 
-mkLoginPage :: App.Component Unit
-mkLoginPage = App.component "LoginPage" { initialState, eval, render }
+mkLoginPage ::
+  forall m.
+  MonadRouting m =>
+  UserRepository m =>
+  MonadHalo m =>
+  m (Unit -> JSX)
+mkLoginPage = component "LoginPage" { initialState, eval, render }
   where
   initialState =
     { email: pure ""

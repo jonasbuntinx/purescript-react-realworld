@@ -27,19 +27,16 @@
     "parcel": "^1.12.4",
     "pscid": "^2.9.3",
     "purescript": "^0.13.8",
-    "purescript-psa": "^0.8.0",
-    "purty": "^6.3.0",
-    "spago": "^0.19.0",
+    "purescript-psa": "^0.8.2",
+    "purty": "^6.3.1",
+    "spago": "^0.19.1",
     "zephyr": "https://github.com/jonasbuntinx/zephyr.git"
   },
   "dependencies": {
-    "dayjs": "^1.10.3",
+    "dayjs": "^1.10.4",
     "nano-markdown": "^1.2.1",
-    "preact": "^10.5.10"
-  },
-  "alias": {
-    "react": "preact/compat",
-    "react-dom/test-utils": "preact/test-utils",
-    "react-dom": "preact/compat"
+    "preact": "^10.5.12",
+    "react": "npm:@preact/compat@^0.0.4",
+    "react-dom": "npm:@preact/compat@^0.0.4"
   }
 }

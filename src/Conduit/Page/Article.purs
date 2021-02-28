@@ -1,12 +1,12 @@
 module Conduit.Page.Article (Props, mkArticlePage) where
 
 import Prelude
-import Conduit.Capability.Auth (readAuth, readAuthEvent)
-import Conduit.Capability.Resource.Article (deleteArticle, getArticle, toggleFavorite)
-import Conduit.Capability.Resource.Comment (createComment, deleteComment, listComments)
-import Conduit.Capability.Resource.Profile (toggleFollow)
-import Conduit.Capability.Routing (navigate, redirect)
-import Conduit.Component.App as App
+import Conduit.Capability.Auth (class MonadAuth, readAuth, readAuthEvent)
+import Conduit.Capability.Halo (class MonadHalo, JSX, component)
+import Conduit.Capability.Resource.Article (class ArticleRepository, deleteArticle, getArticle, toggleFavorite)
+import Conduit.Capability.Resource.Comment (class CommentRepository, createComment, deleteComment, listComments)
+import Conduit.Capability.Resource.Profile (class ProfileRepository, toggleFollow)
+import Conduit.Capability.Routing (class MonadRouting, navigate, redirect)
 import Conduit.Component.Buttons (ButtonSize(..), favoriteButton, followButton)
 import Conduit.Component.Link as Link
 import Conduit.Data.Auth (Auth)
@@ -58,8 +58,16 @@ data Action
   | DeleteComment CommentId
   | SubmitComment
 
-mkArticlePage :: App.Component Props
-mkArticlePage = App.component "ArticlePage" { initialState, eval, render }
+mkArticlePage ::
+  forall m.
+  MonadAuth m =>
+  MonadRouting m =>
+  ArticleRepository m =>
+  CommentRepository m =>
+  ProfileRepository m =>
+  MonadHalo m =>
+  m (Props -> JSX)
+mkArticlePage = component "ArticlePage" { initialState, eval, render }
   where
   initialState =
     { auth: Nothing

@@ -1,11 +1,11 @@
 module Conduit.Page.Home (mkHomePage) where
 
 import Prelude
-import Conduit.Capability.Auth (readAuth, readAuthEvent)
-import Conduit.Capability.Resource.Article (listArticles, listFeed, toggleFavorite)
-import Conduit.Capability.Resource.Tag (listTags)
-import Conduit.Capability.Routing (navigate)
-import Conduit.Component.App as App
+import Conduit.Capability.Auth (class MonadAuth, readAuth, readAuthEvent)
+import Conduit.Capability.Halo (class MonadHalo, JSX, component)
+import Conduit.Capability.Resource.Article (class ArticleRepository, listArticles, listFeed, toggleFavorite)
+import Conduit.Capability.Resource.Tag (class TagRepository, listTags)
+import Conduit.Capability.Routing (class MonadRouting, navigate)
 import Conduit.Component.ArticleList (articleList)
 import Conduit.Component.Pagination (pagination)
 import Conduit.Component.Tabs as Tabs
@@ -40,8 +40,15 @@ data Action
   | LoadArticles Tab { offset :: Int, limit :: Int }
   | ToggleFavorite Int
 
-mkHomePage :: App.Component Unit
-mkHomePage = App.component "HomePage" { initialState, eval, render }
+mkHomePage ::
+  forall m.
+  MonadAuth m =>
+  MonadRouting m =>
+  TagRepository m =>
+  ArticleRepository m =>
+  MonadHalo m =>
+  m (Unit -> JSX)
+mkHomePage = component "HomePage" { initialState, eval, render }
   where
   initialState =
     { auth: Nothing

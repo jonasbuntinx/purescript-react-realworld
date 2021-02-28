@@ -2,6 +2,7 @@ module Conduit.AppM where
 
 import Prelude
 import Conduit.Capability.Auth (class MonadAuth, AuthInstance)
+import Conduit.Capability.Halo (class MonadHalo)
 import Conduit.Capability.Resource.Article (class ArticleRepository, ArticleInstance)
 import Conduit.Capability.Resource.Comment (class CommentRepository, CommentInstance)
 import Conduit.Capability.Resource.Profile (class ProfileRepository, ProfileInstance)
@@ -9,11 +10,12 @@ import Conduit.Capability.Resource.Tag (class TagRepository, TagInstance)
 import Conduit.Capability.Resource.User (class UserRepository, UserInstance)
 import Conduit.Capability.Routing (class MonadRouting, RoutingInstance)
 import Control.Monad.Error.Class (class MonadError, class MonadThrow)
-import Control.Monad.Reader (ReaderT, asks, runReaderT)
+import Control.Monad.Reader (ReaderT, ask, asks, runReaderT)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
-import Effect.Class (class MonadEffect)
+import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Exception as Exception
+import React.Halo as Halo
 
 type AppInstance m
   = { auth :: AuthInstance m
@@ -48,6 +50,15 @@ derive newtype instance monadAffAppM :: MonadAff AppM
 derive newtype instance monadThrowAppM :: MonadThrow Exception.Error AppM
 
 derive newtype instance monadErrorAppM :: MonadError Exception.Error AppM
+
+-- | Halo
+instance monadHaloAppM :: MonadHalo AppM where
+  component name spec =
+    AppM do
+      impl <- ask
+      liftEffect
+        $ Halo.component name
+            spec { eval = Halo.hoist (runAppM impl) <<< spec.eval }
 
 -- | Auth
 instance monadAuthAppM :: MonadAuth AppM where

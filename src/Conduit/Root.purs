@@ -1,9 +1,14 @@
 module Conduit.Root where
 
 import Prelude
-import Conduit.Capability.Auth (readAuth, readAuthEvent)
-import Conduit.Capability.Routing (navigate, readRoute, readRoutingEvent, redirect)
-import Conduit.Component.App as App
+import Conduit.Capability.Auth (class MonadAuth, readAuth, readAuthEvent)
+import Conduit.Capability.Halo (class MonadHalo, JSX, component)
+import Conduit.Capability.Resource.Article (class ArticleRepository)
+import Conduit.Capability.Resource.Comment (class CommentRepository)
+import Conduit.Capability.Resource.Profile (class ProfileRepository)
+import Conduit.Capability.Resource.Tag (class TagRepository)
+import Conduit.Capability.Resource.User (class UserRepository)
+import Conduit.Capability.Routing (class MonadRouting, navigate, readRoute, readRoutingEvent, redirect)
 import Conduit.Component.Footer as Footer
 import Conduit.Component.Header as Header
 import Conduit.Data.Auth (Auth)
@@ -25,10 +30,20 @@ data Action
   | UpdateRoute Route
   | Navigate Route
 
-mkRoot :: App.Component Unit
+mkRoot ::
+  forall m.
+  MonadAuth m =>
+  MonadRouting m =>
+  TagRepository m =>
+  ArticleRepository m =>
+  MonadHalo m =>
+  UserRepository m =>
+  CommentRepository m =>
+  ProfileRepository m =>
+  m (Unit -> JSX)
 mkRoot = do
   render <- mkRender
-  App.component "Root" { initialState, eval, render }
+  component "Root" { initialState, eval, render }
   where
   initialState =
     { auth: Nothing

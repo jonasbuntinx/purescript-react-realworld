@@ -1,9 +1,9 @@
 module Conduit.Page.Register (mkRegisterPage) where
 
 import Prelude
-import Conduit.Capability.Resource.User (registerUser)
-import Conduit.Capability.Routing (navigate, redirect)
-import Conduit.Component.App as App
+import Conduit.Capability.Halo (class MonadHalo, JSX, component)
+import Conduit.Capability.Resource.User (class UserRepository, registerUser)
+import Conduit.Capability.Routing (class MonadRouting, navigate, redirect)
 import Conduit.Component.Link as Link
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Data.Route (Route(..))
@@ -30,8 +30,13 @@ data Action
   | UpdatePassword String
   | Submit
 
-mkRegisterPage :: App.Component Unit
-mkRegisterPage = App.component "RegisterPage" { initialState, eval, render }
+mkRegisterPage ::
+  forall m.
+  MonadRouting m =>
+  UserRepository m =>
+  MonadHalo m =>
+  m (Unit -> JSX)
+mkRegisterPage = component "RegisterPage" { initialState, eval, render }
   where
   initialState =
     { username: pure ""
