@@ -32,10 +32,7 @@ useHydrate ::
 useHydrate context initial fn =
   React.coerceHook React.do
     { value, delete } <- React.useContext context
-    React.useEffectOnce do
-      delete
-      mempty
+    React.useEffectOnce (pure delete)
     case join $ read_ <$> value of
       Nothing -> pure initial
-      Just hydrated -> do
-        pure $ fn initial hydrated
+      Just hydrated -> pure $ fn initial hydrated

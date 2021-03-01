@@ -114,10 +114,12 @@ mkArticlePage ctx = App.component' "ArticlePage" ctx { initialState, hydrate, ev
       handleAction $ UpdateAuth auth
       authEvent <- readAuthEvent
       void $ Halo.subscribe $ map UpdateAuth authEvent
+      state <- Halo.get
       parTraverse_ handleAction
-        [ LoadArticle
-        , LoadComments
-        ]
+        $ join
+            [ guard (not RemoteData.isSuccess state.article) [ LoadArticle ]
+            , guard (not RemoteData.isSuccess state.comments) [ LoadComments ]
+            ]
     OnPropsUpdate prev next -> do
       when (prev.slug /= next.slug) do
         parTraverse_ handleAction
