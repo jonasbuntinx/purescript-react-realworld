@@ -6,6 +6,7 @@ import Conduit.Capability.Routing (navigate, readRouting, readRoutingEvent, redi
 import Conduit.Component.App as App
 import Conduit.Component.Footer as Footer
 import Conduit.Component.Header as Header
+import Conduit.Context.Hydrate (Context)
 import Conduit.Data.Access (Access(..))
 import Conduit.Data.Auth (Auth)
 import Conduit.Data.Route (Route(..))
@@ -26,8 +27,8 @@ data Action
   | UpdateRouting { route :: Route, prevRoute :: Maybe Route }
   | Navigate Route
 
-mkComponent :: App.Component Unit
-mkComponent = do
+mkComponent :: Context -> App.Component Unit
+mkComponent ctx = do
   routing <- readRouting
   render <- mkRender
   App.component "Root" { initialState: { access: Public, routing }, eval, render }
@@ -65,41 +66,14 @@ mkComponent = do
         _, _ -> pure unit
     Navigate route -> navigate route
 
-  mkInitialPage = do
-    { route } <- readRouting
-    case route of
-      Login -> do
-        component <- Login.mkComponent
-        pure $ Just $ component unit
-      Register -> do
-        component <- Register.mkComponent
-        pure $ Just $ component unit
-      ViewArticle slug -> do
-        let
-          props = { slug }
-        component <- Article.mkComponent <<< Just =<< Article.mkInitialState props
-        pure $ Just $ component props
-      Profile username -> do
-        let
-          props = { username, tab: Profile.Published }
-        component <- Profile.mkComponent <<< Just =<< Profile.mkInitialState props
-        pure $ Just $ component props
-      Favorites username -> do
-        let
-          props = { username, tab: Profile.Favorited }
-        component <- Profile.mkComponent <<< Just =<< Profile.mkInitialState props
-        pure $ Just $ component props
-      _ -> pure Nothing
-
   mkRender = do
-    initialPage <- mkInitialPage
     homePage <- Home.mkComponent
     loginPage <- Login.mkComponent
     registerPage <- Register.mkComponent
     settingsPage <- Settings.mkComponent
     editorPage <- Editor.mkComponent
-    articlePage <- Article.mkComponent Nothing
-    profilePage <- Profile.mkComponent Nothing
+    articlePage <- Article.mkComponent ctx
+    profilePage <- Profile.mkComponent
     pure
       $ \{ state, send } ->
           React.fragment
@@ -108,18 +82,16 @@ mkComponent = do
                 , currentRoute: state.routing.route
                 , onNavigate: send <<< Navigate
                 }
-            , case initialPage, state.routing.prevRoute of
-                Just page, Nothing -> page
-                _, _ -> case state.routing.route of
-                  Home -> homePage unit
-                  Login -> loginPage unit
-                  Register -> registerPage unit
-                  Settings -> settingsPage unit
-                  CreateArticle -> editorPage { slug: Nothing }
-                  UpdateArticle slug -> editorPage { slug: Just slug }
-                  ViewArticle slug -> articlePage { slug }
-                  Profile username -> profilePage { username, tab: Profile.Published }
-                  Favorites username -> profilePage { username, tab: Profile.Favorited }
-                  Error -> React.empty
+            , case state.routing.route of
+                Home -> homePage unit
+                Login -> loginPage unit
+                Register -> registerPage unit
+                Settings -> settingsPage unit
+                CreateArticle -> editorPage { slug: Nothing }
+                UpdateArticle slug -> editorPage { slug: Just slug }
+                ViewArticle slug -> articlePage { slug }
+                Profile username -> profilePage { username, tab: Profile.Published }
+                Favorites username -> profilePage { username, tab: Profile.Favorited }
+                Error -> React.empty
             , Footer.footer
             ]

@@ -1,4 +1,4 @@
-module Conduit.Page.Article (Props, mkInitialState, mkComponent) where
+module Conduit.Page.Article (Props, mkInitialPartialState, mkComponent) where
 
 import Prelude
 import Conduit.AppM (AppM)
@@ -10,6 +10,7 @@ import Conduit.Capability.Routing (navigate, redirect)
 import Conduit.Component.App as App
 import Conduit.Component.Buttons (ButtonSize(..), favoriteButton, followButton)
 import Conduit.Component.Link as Link
+import Conduit.Context.Hydrate (Context)
 import Conduit.Data.Access (Access(..))
 import Conduit.Data.Access as Access
 import Conduit.Data.Article (Article)
@@ -26,11 +27,11 @@ import Conduit.Form.Validator as F
 import Conduit.Page.Utils (_article, _author)
 import Control.Comonad (extract)
 import Control.Parallel (parTraverse_)
-import Data.Either (Either(..))
+import Data.Either (Either(..), hush)
 import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
 import Data.Lens.Record as LR
-import Data.Maybe (Maybe(..), fromMaybe, isNothing, maybe)
+import Data.Maybe (Maybe(..), maybe)
 import Data.Monoid (guard)
 import Data.Symbol (SProxy(..))
 import Data.Validation.Semigroup (V, toEither)
@@ -44,11 +45,6 @@ import React.Basic.Events (handler, handler_)
 import React.Basic.Hooks as React
 import React.Halo as Halo
 
--- | Props
-type Props
-  = { slug :: Slug
-    }
-
 -- | State
 type State
   = { access :: Access Auth
@@ -58,26 +54,29 @@ type State
     , submitResponse :: RemoteData.RemoteData Error Unit
     }
 
-emptyState :: State
-emptyState =
-  { access: Public
-  , article: RemoteData.NotAsked
-  , comments: RemoteData.NotAsked
-  , body: pure ""
-  , submitResponse: RemoteData.NotAsked
-  }
+type PartialState
+  = { article :: Maybe Article
+    , comments :: Maybe (Array Comment)
+    }
 
-mkInitialState :: Props -> AppM State
-mkInitialState { slug } = do
+mkInitialPartialState :: Slug -> AppM PartialState
+mkInitialPartialState slug = do
   article <- getArticle slug
   comments <- listComments slug
-  pure
-    $ emptyState
-        { article = RemoteData.fromEither article
-        , comments = RemoteData.fromEither comments
-        }
+  pure { article: hush article, comments: hush comments }
+
+hydrate :: State -> PartialState -> State
+hydrate state { article, comments } =
+  state
+    { article = RemoteData.fromMaybe article
+    , comments = RemoteData.fromMaybe comments
+    }
 
 -- | Component
+type Props
+  = { slug :: Slug
+    }
+
 data Action
   = Initialize
   | OnPropsUpdate Props Props
@@ -92,10 +91,16 @@ data Action
   | DeleteComment CommentId
   | SubmitComment
 
-mkComponent :: Maybe State -> App.Component Props
-mkComponent maybeInitialState = App.component "ArticlePage" { initialState, eval, render }
+mkComponent :: Context -> App.Component Props
+mkComponent ctx = App.component' "ArticlePage" ctx { initialState, hydrate, eval, render }
   where
-  initialState = fromMaybe emptyState maybeInitialState
+  initialState =
+    { access: Public
+    , article: RemoteData.NotAsked
+    , comments: RemoteData.NotAsked
+    , body: pure ""
+    , submitResponse: RemoteData.NotAsked
+    }
 
   eval =
     Halo.mkEval
@@ -111,11 +116,10 @@ mkComponent maybeInitialState = App.component "ArticlePage" { initialState, eval
       handleAction $ UpdateAccess access
       accessEvent <- readAccessEvent
       void $ Halo.subscribe $ map UpdateAccess accessEvent
-      guard (isNothing maybeInitialState) do
-        parTraverse_ handleAction
-          [ LoadArticle
-          , LoadComments
-          ]
+      parTraverse_ handleAction
+        [ LoadArticle
+        , LoadComments
+        ]
     OnPropsUpdate prev next -> do
       when (prev.slug /= next.slug) do
         parTraverse_ handleAction

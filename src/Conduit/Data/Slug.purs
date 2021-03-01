@@ -9,7 +9,7 @@ import Data.String.Regex as Regex
 import Data.String.Regex.Flags as Flags
 import Foreign (ForeignError(..))
 import Partial.Unsafe (unsafePartial)
-import Simple.JSON (class ReadForeign, readImpl)
+import Simple.JSON (class ReadForeign, class WriteForeign, readImpl, writeImpl)
 
 newtype Slug
   = Slug String
@@ -22,6 +22,9 @@ instance readForeignSlug :: ReadForeign Slug where
       >>> case _ of
           Just slug -> pure slug
           Nothing -> throwError $ pure $ ForeignError "Failed to decode slug"
+
+instance writeForeignSlug :: WriteForeign Slug where
+  writeImpl = writeImpl <<< toString
 
 derive newtype instance encodeParamSlug :: EncodeParam Slug
 

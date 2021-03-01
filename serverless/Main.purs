@@ -11,9 +11,11 @@ import Conduit.Capability.Resource.Profile (ProfileInstance)
 import Conduit.Capability.Resource.Tag (TagInstance)
 import Conduit.Capability.Routing (RoutingInstance)
 import Conduit.Capability.Serverless (mkStateBuilder)
+import Conduit.Component.Footer as Footer
+import Conduit.Component.Header as Header
+import Conduit.Data.Access (Access(..))
 import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..), routeCodec)
-import Conduit.Root as Root
 import Control.Promise (Promise, fromAff)
 import Data.Either (Either(..), either)
 import Data.Maybe (Maybe(..))
@@ -24,6 +26,7 @@ import Effect.Uncurried (EffectFn2, mkEffectFn2)
 import Foreign (Foreign)
 import Node.Encoding (Encoding(..))
 import Node.FS.Sync (readTextFile)
+import React.Basic as React
 import React.Basic.DOM.Server (renderToString)
 import Routing.Duplex (parse)
 import Serverless.Fixture (fixture)
@@ -33,35 +36,50 @@ handler =
   mkEffectFn2 \event context ->
     fromAff do
       document <- liftEffect $ readTextFile UTF8 "index.html"
-      root <-
-        runAppM
-          ( (fixture :: AppInstance AppM)
-              { routing =
-                (fixture :: RoutingInstance AppM)
-                  { readRouting =
-                    pure
-                      { route: either (const Error) identity $ parse routeCodec event.path
-                      , prevRoute: Nothing
-                      }
-                  }
-              , serverless =
-                { getStateBuilder: mkStateBuilder \_ f -> f event context
-                }
-              , article = articleInstance
-              , comment = commentInstance
-              , profile = profileInstance
-              , tag = tagInstance
-              }
-          )
-          Root.mkComponent
+      hydratable <- runAppM (appInstance event context) (pure Nothing)
       pure
         { statusCode: 200
         , body:
             replace
               (Pattern "<div id=\"conduit\"></div>")
-              (Replacement $ "<div id=\"conduit\">" <> (renderToString $ root unit) <> "</div>")
+              ( Replacement $ "<div id=\"conduit\">"
+                  <> ( renderToString case hydratable of
+                        Just content ->
+                          React.fragment
+                            [ Header.header
+                                { access: Public
+                                , currentRoute: either (const Error) identity $ parse routeCodec event.path
+                                , onNavigate: \_ -> pure unit
+                                }
+                            , content
+                            , Footer.footer
+                            ]
+                        Nothing -> React.empty
+                    )
+                  <> "</div>"
+              )
               document
         }
+
+appInstance :: { path :: String } -> Foreign -> AppInstance AppM
+appInstance event context =
+  (fixture :: AppInstance AppM)
+    { routing =
+      (fixture :: RoutingInstance AppM)
+        { readRouting =
+          pure
+            { route: either (const Error) identity $ parse routeCodec event.path
+            , prevRoute: Nothing
+            }
+        }
+    , serverless =
+      { getStateBuilder: mkStateBuilder \_ f -> f event context
+      }
+    , article = articleInstance
+    , comment = commentInstance
+    , profile = profileInstance
+    , tag = tagInstance
+    }
 
 articleInstance :: ArticleInstance AppM
 articleInstance =

@@ -4,7 +4,7 @@ import Prelude
 import Apiary as Apiary
 import Conduit.Api.Endpoints as Endpoints
 import Conduit.Api.Utils (makeRequest, makeSecureRequest)
-import Conduit.AppM (AppM, runAppM)
+import Conduit.AppM (AppM, AppInstance, runAppM)
 import Conduit.Capability.Access (modifyAccess)
 import Conduit.Capability.Resource.Article (ArticleInstance)
 import Conduit.Capability.Resource.Comment (CommentInstance)
@@ -15,23 +15,25 @@ import Conduit.Capability.Routing (redirect)
 import Conduit.Capability.Serverless (mkStateBuilder)
 import Conduit.Component.Access (mkAccessManager)
 import Conduit.Component.Routing (mkRoutingManager)
-import Conduit.Config as Config
+import Conduit.Context.Hydrate (mkHydrateProvider)
 import Conduit.Data.Access (Access(..))
 import Conduit.Data.Access as Access
-import Conduit.Data.Auth (toAuth)
+import Conduit.Data.Auth (Auth, toAuth)
 import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..))
 import Conduit.Root as Root
 import Data.Either (Either(..), either)
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
+import Data.Tuple.Nested ((/\))
 import Data.Variant (expand, match)
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Exception as Exception
+import FRP.Event as Event
 import React.Basic as React
-import React.Basic.DOM (hydrate, render)
+import React.Basic.DOM (hydrate)
 import Record as Record
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)
@@ -46,34 +48,47 @@ main = do
     Just c -> do
       access <- mkAccessManager
       routing <- mkRoutingManager
-      launchAff_ do
-        root <-
-          runAppM
-            { access:
-                { readAccess: liftEffect access.read
-                , readAccessEvent: liftEffect $ pure access.event
-                , modifyAccess: liftEffect <<< access.modify
-                }
-            , routing:
-                { readRouting: liftEffect routing.read
-                , readRoutingEvent: liftEffect $ pure routing.event
-                , navigate: liftEffect <<< routing.navigate
-                , redirect: liftEffect <<< routing.redirect
-                }
-            , serverless:
-                { getStateBuilder: mkStateBuilder \s _ -> s
-                }
-            , user: userInstance
-            , article: articleInstance
-            , comment: commentInstance
-            , profile: profileInstance
-            , tag: tagInstance
-            }
-            Root.mkComponent
-        liftEffect
-          $ (if Config.nodeEnv == "production" then hydrate else render)
-              (React.fragment [ routing.component, access.component, root unit ])
-              c
+      launchAff_
+        $ runAppM (appInstance access routing) do
+            context /\ hydrateProvider <- mkHydrateProvider
+            root <- Root.mkComponent context
+            liftEffect $ hydrate (React.fragment [ routing.component, access.component, hydrateProvider $ root unit ]) c
+
+appInstance ::
+  forall r s.
+  { read :: Effect (Access Auth)
+  , event :: Event.Event (Access Auth)
+  , modify :: (Access Auth -> Access Auth) -> Effect (Access Auth)
+  | r
+  } ->
+  { read :: Effect { route :: Route, prevRoute :: Maybe Route }
+  , event :: Event.Event { route :: Route, prevRoute :: Maybe Route }
+  , navigate :: Route -> Effect Unit
+  , redirect :: Route -> Effect Unit
+  | s
+  } ->
+  AppInstance AppM
+appInstance access routing =
+  { access:
+      { readAccess: liftEffect access.read
+      , readAccessEvent: liftEffect $ pure access.event
+      , modifyAccess: liftEffect <<< access.modify
+      }
+  , routing:
+      { readRouting: liftEffect routing.read
+      , readRoutingEvent: liftEffect $ pure routing.event
+      , navigate: liftEffect <<< routing.navigate
+      , redirect: liftEffect <<< routing.redirect
+      }
+  , serverless:
+      { getStateBuilder: mkStateBuilder \s _ -> s
+      }
+  , user: userInstance
+  , article: articleInstance
+  , comment: commentInstance
+  , profile: profileInstance
+  , tag: tagInstance
+  }
 
 userInstance :: UserInstance AppM
 userInstance =

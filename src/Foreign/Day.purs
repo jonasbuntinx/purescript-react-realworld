@@ -7,7 +7,7 @@ import Data.Maybe (Maybe(..))
 import Data.Time.Duration (Milliseconds)
 import Effect (Effect)
 import Foreign.Generic (ForeignError(..))
-import Simple.JSON (class ReadForeign, readImpl)
+import Simple.JSON (class ReadForeign, class WriteForeign, readImpl, writeImpl)
 
 foreign import data DateTime :: Type
 
@@ -15,6 +15,8 @@ foreign import _fromUTCString :: forall a. Fn3 a (DateTime -> a) String a
 
 fromUTCString :: String -> Maybe DateTime
 fromUTCString = runFn3 _fromUTCString Nothing Just
+
+foreign import toUTCString :: DateTime -> String
 
 foreign import fromMilliseconds :: Milliseconds -> DateTime
 
@@ -27,18 +29,21 @@ foreign import format :: Format -> DateTime -> String
 newtype Format
   = Format String
 
-instance eqMoment :: Eq DateTime where
+instance eqDateTime :: Eq DateTime where
   eq a b = eq (toMilliseconds a) (toMilliseconds b)
 
-instance ordMoment :: Ord DateTime where
+instance ordDateTime :: Ord DateTime where
   compare a b = compare (toMilliseconds a) (toMilliseconds b)
 
-instance readForeignMoment :: ReadForeign DateTime where
+instance readForeignDateTime :: ReadForeign DateTime where
   readImpl =
     readImpl >=> fromUTCString
       >>> case _ of
           Nothing -> throwError $ pure $ ForeignError "Invalid datetime format (expecting UTC)"
-          Just moment -> pure moment
+          Just dateTime -> pure dateTime
+
+instance writeForeignDateTime :: WriteForeign DateTime where
+  writeImpl = writeImpl <<< toUTCString
 
 toDisplay :: DateTime -> String
 toDisplay = format (Format "MMMM Do, YYYY")

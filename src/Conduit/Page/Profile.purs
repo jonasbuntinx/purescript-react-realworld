@@ -1,7 +1,6 @@
-module Conduit.Page.Profile (Props, Tab(..), mkInitialState, mkComponent) where
+module Conduit.Page.Profile (Props, Tab(..), mkComponent) where
 
 import Prelude
-import Conduit.AppM (AppM)
 import Conduit.Capability.Access (readAccess, readAccessEvent)
 import Conduit.Capability.Resource.Article (listArticles, toggleFavorite)
 import Conduit.Capability.Resource.Profile (getProfile, toggleFollow)
@@ -13,11 +12,10 @@ import Conduit.Component.Pagination (pagination)
 import Conduit.Component.Tabs as Tabs
 import Conduit.Data.Access (Access(..))
 import Conduit.Data.Access as Access
-import Conduit.Data.Article (Article, defaultArticlesQuery)
+import Conduit.Data.Article (defaultArticlesQuery)
 import Conduit.Data.Auth (Auth)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Error (Error(..))
-import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
@@ -26,7 +24,7 @@ import Control.Parallel (parTraverse_)
 import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
-import Data.Maybe (Maybe(..), fromMaybe, isNothing, maybe)
+import Data.Maybe (Maybe(..), maybe)
 import Data.Monoid (guard)
 import Network.RemoteData as RemoteData
 import React.Basic.DOM as R
@@ -34,7 +32,6 @@ import React.Basic.Events (handler_)
 import React.Basic.Hooks as React
 import React.Halo as Halo
 
--- | Props
 type Props
   = { username :: Username
     , tab :: Tab
@@ -46,38 +43,6 @@ data Tab
 
 derive instance eqTab :: Eq Tab
 
--- | State
-type State
-  = { access :: Access Auth
-    , selectedTab :: Maybe Tab
-    , profile :: RemoteData.RemoteData Error Profile
-    , articles :: RemoteData.RemoteData Error { articles :: Array Article, articlesCount :: Int }
-    , pagination :: { offset :: Int, limit :: Int }
-    }
-
-emptyState :: State
-emptyState =
-  { access: Public
-  , selectedTab: Nothing
-  , profile: RemoteData.NotAsked
-  , articles: RemoteData.NotAsked
-  , pagination: { offset: 0, limit: 5 }
-  }
-
-mkInitialState :: Props -> AppM State
-mkInitialState { username, tab } = do
-  profile <- getProfile username
-  articles <-
-    listArticles case tab of
-      Published -> defaultArticlesQuery { author = Just username }
-      Favorited -> defaultArticlesQuery { favorited = Just username }
-  pure
-    $ emptyState
-        { profile = RemoteData.fromEither profile
-        , articles = RemoteData.fromEither articles
-        }
-
--- | Component
 data Action
   = Initialize
   | OnPropsUpdate Props Props
@@ -88,10 +53,15 @@ data Action
   | ToggleFavorite Int
   | ToggleFollow
 
-mkComponent :: Maybe State -> App.Component Props
-mkComponent maybeInitialState = App.component "ProfilePage" { initialState, eval, render }
+mkComponent :: App.Component Props
+mkComponent = App.component "ProfilePage" { initialState, eval, render }
   where
-  initialState = fromMaybe emptyState maybeInitialState
+  initialState =
+    { access: Public
+    , profile: RemoteData.NotAsked
+    , articles: RemoteData.NotAsked
+    , pagination: { offset: 0, limit: 5 }
+    }
 
   eval =
     Halo.mkEval
@@ -107,11 +77,10 @@ mkComponent maybeInitialState = App.component "ProfilePage" { initialState, eval
       handleAction $ UpdateAccess access
       accessEvent <- readAccessEvent
       void $ Halo.subscribe $ map UpdateAccess accessEvent
-      guard (isNothing maybeInitialState) do
-        parTraverse_ handleAction
-          [ LoadProfile
-          , LoadArticles initialState.pagination
-          ]
+      parTraverse_ handleAction
+        [ LoadProfile
+        , LoadArticles initialState.pagination
+        ]
     OnPropsUpdate prev next -> do
       let
         reloadProfile = prev.username /= next.username
