@@ -26,8 +26,8 @@ data Action
   | UpdateRoute Route
   | Navigate Route
 
-mkComponent :: Context -> App.Component Unit
-mkComponent ctx = do
+mkRoot :: Context -> App.Component Unit
+mkRoot ctx = do
   route <- readRoute
   render <- mkRender
   App.component "Root" { initialState: { auth: Nothing, route }, eval, render }
@@ -46,11 +46,11 @@ mkComponent ctx = do
       handleAction $ UpdateAuth auth
       authEvent <- readAuthEvent
       void $ Halo.subscribe $ map UpdateAuth authEvent
-      -- route
+      -- routing
       route <- readRoute
       handleAction $ UpdateRoute route
-      routeEvent <- readRoutingEvent
-      void $ Halo.subscribe $ map UpdateRoute routeEvent
+      routingEvent <- readRoutingEvent
+      void $ Halo.subscribe $ map UpdateRoute routingEvent
     UpdateAuth auth -> Halo.modify_ _ { auth = auth }
     UpdateRoute route -> do
       Halo.modify_ _ { route = route }
@@ -76,11 +76,7 @@ mkComponent ctx = do
     pure
       $ \{ state, send } ->
           React.fragment
-            [ Header.header
-                { auth: state.auth
-                , currentRoute: state.route
-                , onNavigate: send <<< Navigate
-                }
+            [ Header.header { auth: state.auth, currentRoute: state.route, onNavigate: send <<< Navigate }
             , case state.route of
                 Home -> homePage unit
                 Login -> loginPage unit

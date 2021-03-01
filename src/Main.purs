@@ -19,7 +19,7 @@ import Conduit.Context.Hydrate (mkHydrateProvider)
 import Conduit.Data.Auth (Auth, toAuth)
 import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..))
-import Conduit.Root as Root
+import Conduit.Root (mkRoot)
 import Data.Either (Either(..), either)
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
@@ -49,7 +49,7 @@ main = do
       launchAff_
         $ runAppM (appInstance auth routing) do
             context /\ hydrateProvider <- mkHydrateProvider
-            root <- Root.mkComponent context
+            root <- mkRoot context
             liftEffect $ hydrate (React.fragment [ routing.component, auth.component, hydrateProvider $ root unit ]) c
 
 appInstance ::
