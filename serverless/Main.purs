@@ -65,11 +65,7 @@ appInstance event context =
   (fixture :: AppInstance AppM)
     { routing =
       (fixture :: RoutingInstance AppM)
-        { readRouting =
-          pure
-            { route: either (const Error) identity $ parse routeCodec event.path
-            , prevRoute: Nothing
-            }
+        { readRoute = pure $ either (const Error) identity $ parse routeCodec event.path
         }
     , serverless =
       { getStateBuilder: mkStateBuilder \_ f -> f event context

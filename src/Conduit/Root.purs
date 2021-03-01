@@ -2,7 +2,7 @@ module Conduit.Root where
 
 import Prelude
 import Conduit.Capability.Auth (readAuth, readAuthEvent)
-import Conduit.Capability.Routing (navigate, readRouting, readRoutingEvent, redirect)
+import Conduit.Capability.Routing (navigate, readRoute, readRoutingEvent, redirect)
 import Conduit.Component.App as App
 import Conduit.Component.Footer as Footer
 import Conduit.Component.Header as Header
@@ -23,14 +23,14 @@ import React.Halo as Halo
 data Action
   = Initialize
   | UpdateAuth (Maybe Auth)
-  | UpdateRouting { route :: Route, prevRoute :: Maybe Route }
+  | UpdateRoute Route
   | Navigate Route
 
 mkComponent :: Context -> App.Component Unit
 mkComponent ctx = do
-  routing <- readRouting
+  route <- readRoute
   render <- mkRender
-  App.component "Root" { initialState: { auth: Nothing, routing }, eval, render }
+  App.component "Root" { initialState: { auth: Nothing, route }, eval, render }
   where
   eval =
     Halo.mkEval
@@ -46,16 +46,16 @@ mkComponent ctx = do
       handleAction $ UpdateAuth auth
       authEvent <- readAuthEvent
       void $ Halo.subscribe $ map UpdateAuth authEvent
-      -- routing
-      routing <- readRouting
-      handleAction $ UpdateRouting routing
-      routingEvent <- readRoutingEvent
-      void $ Halo.subscribe $ map UpdateRouting routingEvent
+      -- route
+      route <- readRoute
+      handleAction $ UpdateRoute route
+      routeEvent <- readRoutingEvent
+      void $ Halo.subscribe $ map UpdateRoute routeEvent
     UpdateAuth auth -> Halo.modify_ _ { auth = auth }
-    UpdateRouting routing -> do
-      Halo.modify_ _ { routing = routing }
+    UpdateRoute route -> do
+      Halo.modify_ _ { route = route }
       auth <- readAuth
-      case routing.route, auth of
+      case route, auth of
         Login, Just _ -> redirect Home
         Register, Just _ -> redirect Home
         Settings, Nothing -> redirect Home
@@ -78,10 +78,10 @@ mkComponent ctx = do
           React.fragment
             [ Header.header
                 { auth: state.auth
-                , currentRoute: state.routing.route
+                , currentRoute: state.route
                 , onNavigate: send <<< Navigate
                 }
-            , case state.routing.route of
+            , case state.route of
                 Home -> homePage unit
                 Login -> loginPage unit
                 Register -> registerPage unit

@@ -3,7 +3,6 @@ module Conduit.Component.Routing where
 import Prelude
 import Conduit.Data.Route (Route(..), routeCodec)
 import Data.Either (either)
-import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Ref as Ref
 import FRP.Event as Event
@@ -14,8 +13,8 @@ import Wire.React.Router as Router
 
 mkRoutingManager ::
   Effect
-    { read :: Effect { route :: Route, prevRoute :: Maybe Route }
-    , event :: Event.Event { route :: Route, prevRoute :: Maybe Route }
+    { read :: Effect Route
+    , event :: Event.Event Route
     , navigate :: Route -> Effect Unit
     , redirect :: Route -> Effect Unit
     , component :: React.JSX
@@ -23,11 +22,7 @@ mkRoutingManager ::
 mkRoutingManager = do
   interface <- PushState.makeInterface
   { path } <- interface.locationState
-  value <-
-    Ref.new
-      { route: either (const Error) identity $ parse routeCodec path
-      , prevRoute: Nothing
-      }
+  value <- Ref.new $ either (const Error) identity $ parse routeCodec path
   { event, push } <- Event.create
   router <-
     Router.makeRouter interface
@@ -36,9 +31,9 @@ mkRoutingManager = do
       , onRoute: const $ Router.continue
       , onTransition:
           case _ of
-            Router.Resolved prevRoute route -> do
-              newValue <- Ref.modify (const $ { route, prevRoute }) value
-              push newValue
+            Router.Resolved _ route -> do
+              newRoute <- Ref.modify (const route) value
+              push newRoute
             _ -> pure unit
       }
   pure

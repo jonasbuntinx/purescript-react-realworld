@@ -5,7 +5,7 @@ import Conduit.AppM (AppM)
 import Conduit.Capability.Resource.Article (getArticle, listArticles)
 import Conduit.Capability.Resource.Comment (listComments)
 import Conduit.Capability.Resource.Profile (getProfile)
-import Conduit.Capability.Routing (readRouting)
+import Conduit.Capability.Routing (readRoute)
 import Conduit.Data.Article (defaultArticlesQuery)
 import Conduit.Data.Route (Route(..))
 import Data.Either (hush)
@@ -42,7 +42,7 @@ mkHydrateProvider = do
 -- TODO: replace with using JSON provided by the server
 mkMockup :: AppM (Maybe Foreign)
 mkMockup = do
-  { route } <- readRouting
+  route <- readRoute
   case route of
     ViewArticle slug -> do
       initialState <- do

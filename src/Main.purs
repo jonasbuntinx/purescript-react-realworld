@@ -59,8 +59,8 @@ appInstance ::
   , modify :: (Maybe Auth -> Maybe Auth) -> Effect (Maybe Auth)
   | r
   } ->
-  { read :: Effect { route :: Route, prevRoute :: Maybe Route }
-  , event :: Event.Event { route :: Route, prevRoute :: Maybe Route }
+  { read :: Effect Route
+  , event :: Event.Event Route
   , navigate :: Route -> Effect Unit
   , redirect :: Route -> Effect Unit
   | s
@@ -73,7 +73,7 @@ appInstance auth routing =
       , modifyAuth: liftEffect <<< auth.modify
       }
   , routing:
-      { readRouting: liftEffect routing.read
+      { readRoute: liftEffect routing.read
       , readRoutingEvent: liftEffect $ pure routing.event
       , navigate: liftEffect <<< routing.navigate
       , redirect: liftEffect <<< routing.redirect

@@ -61,7 +61,7 @@ instance monadAuthAppM :: MonadAuth AppM where
 
 -- | Routing
 instance monadRoutingAppM :: MonadRouting AppM where
-  readRouting = join $ AppM $ asks _.routing.readRouting
+  readRoute = join $ AppM $ asks _.routing.readRoute
   readRoutingEvent = join $ AppM $ asks _.routing.readRoutingEvent
   navigate route = do
     f <- AppM $ asks _.routing.navigate
