@@ -5,7 +5,7 @@ import Apiary as Apiary
 import Conduit.Api.Endpoints as Endpoints
 import Conduit.Api.Utils (makeRequest, makeSecureRequest)
 import Conduit.AppM (AppM, AppInstance, runAppM)
-import Conduit.Capability.Access (modifyAccess)
+import Conduit.Capability.Auth (modifyAccess)
 import Conduit.Capability.Resource.Article (ArticleInstance)
 import Conduit.Capability.Resource.Comment (CommentInstance)
 import Conduit.Capability.Resource.Profile (ProfileInstance)
@@ -13,11 +13,9 @@ import Conduit.Capability.Resource.Tag (TagInstance)
 import Conduit.Capability.Resource.User (UserInstance)
 import Conduit.Capability.Routing (redirect)
 import Conduit.Capability.Serverless (mkStateBuilder)
-import Conduit.Component.Access (mkAccessManager)
+import Conduit.Component.Auth (mkAuthManager)
 import Conduit.Component.Routing (mkRoutingManager)
 import Conduit.Context.Hydrate (mkHydrateProvider)
-import Conduit.Data.Access (Access(..))
-import Conduit.Data.Access as Access
 import Conduit.Data.Auth (Auth, toAuth)
 import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..))
@@ -46,19 +44,19 @@ main = do
   case container of
     Nothing -> Exception.throw "Conduit container element not found."
     Just c -> do
-      access <- mkAccessManager
+      auth <- mkAuthManager
       routing <- mkRoutingManager
       launchAff_
-        $ runAppM (appInstance access routing) do
+        $ runAppM (appInstance auth routing) do
             context /\ hydrateProvider <- mkHydrateProvider
             root <- Root.mkComponent context
-            liftEffect $ hydrate (React.fragment [ routing.component, access.component, hydrateProvider $ root unit ]) c
+            liftEffect $ hydrate (React.fragment [ routing.component, auth.component, hydrateProvider $ root unit ]) c
 
 appInstance ::
   forall r s.
-  { read :: Effect (Access Auth)
-  , event :: Event.Event (Access Auth)
-  , modify :: (Access Auth -> Access Auth) -> Effect (Access Auth)
+  { read :: Effect (Maybe Auth)
+  , event :: Event.Event (Maybe Auth)
+  , modify :: (Maybe Auth -> Maybe Auth) -> Effect (Maybe Auth)
   | r
   } ->
   { read :: Effect { route :: Route, prevRoute :: Maybe Route }
@@ -68,11 +66,11 @@ appInstance ::
   | s
   } ->
   AppInstance AppM
-appInstance access routing =
-  { access:
-      { readAccess: liftEffect access.read
-      , readAccessEvent: liftEffect $ pure access.event
-      , modifyAccess: liftEffect <<< access.modify
+appInstance auth routing =
+  { auth:
+      { readAccess: liftEffect auth.read
+      , readAccessEvent: liftEffect $ pure auth.event
+      , modifyAccess: liftEffect <<< auth.modify
       }
   , routing:
       { readRouting: liftEffect routing.read
@@ -99,7 +97,7 @@ userInstance =
         ( match
             { ok:
                 \{ user: currentUser } -> do
-                  void $ modifyAccess $ const $ Access.fromMaybe $ toAuth currentUser.token (Just $ Record.delete (SProxy :: _ "token") currentUser)
+                  void $ modifyAuth $ const $ toAuth currentUser.token (Just $ Record.delete (SProxy :: _ "token") currentUser)
                   pure $ Right currentUser
             , unprocessableEntity: pure <<< Left <<< UnprocessableEntity <<< _.errors
             }

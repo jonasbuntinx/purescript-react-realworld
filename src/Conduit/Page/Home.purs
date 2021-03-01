@@ -1,7 +1,7 @@
 module Conduit.Page.Home (mkComponent) where
 
 import Prelude
-import Conduit.Capability.Access (readAccess, readAccessEvent)
+import Conduit.Capability.Auth (readAuth, readAuthEvent)
 import Conduit.Capability.Resource.Article (listArticles, listFeed, toggleFavorite)
 import Conduit.Capability.Resource.Tag (listTags)
 import Conduit.Capability.Routing (navigate)
@@ -9,14 +9,13 @@ import Conduit.Component.App as App
 import Conduit.Component.ArticleList (articleList)
 import Conduit.Component.Pagination (pagination)
 import Conduit.Component.Tabs as Tabs
-import Conduit.Data.Access (Access(..), isAuthorized)
 import Conduit.Data.Article (defaultArticlesQuery)
 import Conduit.Data.Auth (Auth)
 import Conduit.Data.Route (Route)
 import Conduit.Page.Utils (_articles)
 import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), isNothing)
 import Data.Monoid (guard)
 import Network.RemoteData (RemoteData(..))
 import Network.RemoteData as RemoteData
@@ -29,7 +28,7 @@ import React.Halo as Halo
 -- | Component
 data Action
   = Initialize
-  | UpdateAccess (Access Auth)
+  | UpdateAuth (Maybe Auth)
   | Navigate Route
   | LoadTags
   | LoadArticles Tab { offset :: Int, limit :: Int }
@@ -46,7 +45,7 @@ mkComponent :: App.Component Unit
 mkComponent = App.component "HomePage" { initialState, eval, render }
   where
   initialState =
-    { access: Public
+    { auth: Nothing
     , tags: NotAsked
     , articles: NotAsked
     , pagination: { offset: 0, limit: 10 }
@@ -62,16 +61,16 @@ mkComponent = App.component "HomePage" { initialState, eval, render }
 
   handleAction = case _ of
     Initialize -> do
-      access <- readAccess
-      handleAction $ UpdateAccess access
-      accessEvent <- readAccessEvent
-      void $ Halo.subscribe $ map UpdateAccess accessEvent
+      auth <- readAuth
+      handleAction $ UpdateAuth auth
+      authEvent <- readAuthEvent
+      void $ Halo.subscribe $ map UpdateAuth authEvent
       handleAction LoadTags
-    UpdateAccess access -> do
+    UpdateAuth auth -> do
       state <- Halo.get
-      Halo.modify_ _ { access = access }
-      case access of
-        Authorized _ -> handleAction $ LoadArticles Feed state.pagination
+      Halo.modify_ _ { auth = auth }
+      case auth of
+        Just _ -> handleAction $ LoadArticles Feed state.pagination
         _ -> handleAction $ LoadArticles state.tab state.pagination
     Navigate route -> do
       navigate route
@@ -93,7 +92,7 @@ mkComponent = App.component "HomePage" { initialState, eval, render }
       for_ (preview (_articles ix) state) (toggleFavorite >=> traverse_ (Halo.modify_ <<< set (_articles ix)))
 
   render { state, send } =
-    container (guard (not isAuthorized state.access) banner)
+    container (guard (isNothing state.auth) banner)
       [ mainView
       , R.div
           { className: "col-md-3 col-xs-12"
@@ -119,7 +118,7 @@ mkComponent = App.component "HomePage" { initialState, eval, render }
                 , tabs:
                     [ { id: Feed
                       , label: R.text "Your Feed"
-                      , disabled: not isAuthorized state.access
+                      , disabled: isNothing state.auth
                       , content: tabContent
                       }
                     , { id: Global

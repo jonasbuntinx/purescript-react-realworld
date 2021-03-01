@@ -13,7 +13,6 @@ import Conduit.Capability.Routing (RoutingInstance)
 import Conduit.Capability.Serverless (mkStateBuilder)
 import Conduit.Component.Footer as Footer
 import Conduit.Component.Header as Header
-import Conduit.Data.Access (Access(..))
 import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..), routeCodec)
 import Control.Promise (Promise, fromAff)
@@ -47,7 +46,7 @@ handler =
                         Just content ->
                           React.fragment
                             [ Header.header
-                                { access: Public
+                                { auth: Nothing
                                 , currentRoute: either (const Error) identity $ parse routeCodec event.path
                                 , onNavigate: \_ -> pure unit
                                 }

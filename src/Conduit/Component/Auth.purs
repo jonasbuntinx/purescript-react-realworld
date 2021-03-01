@@ -1,11 +1,9 @@
-module Conduit.Component.Access where
+module Conduit.Component.Auth where
 
 import Prelude
 import Apiary as Apiary
 import Conduit.Api.Endpoints (GetUser)
 import Conduit.Api.Utils (makeSecureRequest')
-import Conduit.Data.Access (Access(..))
-import Conduit.Data.Access as Access
 import Conduit.Data.Auth (Auth, toAuth)
 import Control.Monad.Except (runExcept)
 import Data.Either (hush)
@@ -28,14 +26,14 @@ import Web.HTML (window)
 import Web.HTML.Window as Window
 import Web.Storage.Storage as Storage
 
-mkAccessManager ::
+mkAuthManager ::
   Effect
-    { read :: Effect (Access Auth)
-    , event :: Event.Event (Access Auth)
-    , modify :: (Access Auth -> Access Auth) -> Effect (Access Auth)
+    { read :: Effect (Maybe Auth)
+    , event :: Event.Event (Maybe Auth)
+    , modify :: (Maybe Auth -> Maybe Auth) -> Effect (Maybe Auth)
     , component :: React.JSX
     }
-mkAccessManager = do
+mkAuthManager = do
   { event, read, modify } <- create
   component <-
     React.component "AuthManager" \_ -> React.do
@@ -71,27 +69,25 @@ mkAccessManager = do
   load = do
     localStorage <- Window.localStorage =<< window
     item <- Storage.getItem "token" localStorage
-    pure case (hush <<< runExcept <<< decodeJSON) =<< item of
-      Nothing -> Public
-      Just token -> Access.fromMaybe $ toAuth token Nothing
+    pure $ flip toAuth Nothing =<< (hush <<< runExcept <<< decodeJSON) =<< item
 
   save = case _ of
-    Authorized { token } -> do
-      localStorage <- Window.localStorage =<< window
-      Storage.setItem "token" (encodeJSON token) localStorage
-    _ -> do
+    Nothing -> do
       localStorage <- Window.localStorage =<< window
       Storage.removeItem "token" localStorage
+    Just { token } -> do
+      localStorage <- Window.localStorage =<< window
+      Storage.setItem "token" (encodeJSON token) localStorage
 
   refresh { read, modify } = do
-    access <- read
-    for_ access \{ expirationTime, token } -> do
+    auth <- read
+    for_ auth \{ expirationTime, token } -> do
       now <- now
       if now > expirationTime then
-        void $ modify $ const Public
+        void $ modify $ const Nothing
       else
         launchAff_ do
           res <- makeSecureRequest' token (Apiary.Route :: GetUser) Apiary.none Apiary.none Apiary.none
           liftEffect case hush $ Variant.match { ok: _.user } <$> res of
-            Nothing -> void $ modify $ const Public
-            Just user -> void $ modify $ const $ Access.fromMaybe $ toAuth user.token (Just $ Record.delete (SProxy :: _ "token") user)
+            Nothing -> void $ modify $ const Nothing
+            Just user -> void $ modify $ const $ toAuth user.token (Just $ Record.delete (SProxy :: _ "token") user)

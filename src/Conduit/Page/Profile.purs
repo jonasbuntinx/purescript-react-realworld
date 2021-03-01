@@ -1,7 +1,7 @@
 module Conduit.Page.Profile (Props, Tab(..), mkComponent) where
 
 import Prelude
-import Conduit.Capability.Access (readAccess, readAccessEvent)
+import Conduit.Capability.Auth (readAuth, readAuthEvent)
 import Conduit.Capability.Resource.Article (listArticles, toggleFavorite)
 import Conduit.Capability.Resource.Profile (getProfile, toggleFollow)
 import Conduit.Capability.Routing (navigate, redirect)
@@ -10,8 +10,6 @@ import Conduit.Component.ArticleList (articleList)
 import Conduit.Component.Buttons (followButton)
 import Conduit.Component.Pagination (pagination)
 import Conduit.Component.Tabs as Tabs
-import Conduit.Data.Access (Access(..))
-import Conduit.Data.Access as Access
 import Conduit.Data.Article (defaultArticlesQuery)
 import Conduit.Data.Auth (Auth)
 import Conduit.Data.Avatar as Avatar
@@ -46,7 +44,7 @@ derive instance eqTab :: Eq Tab
 data Action
   = Initialize
   | OnPropsUpdate Props Props
-  | UpdateAccess (Access Auth)
+  | UpdateAuth (Maybe Auth)
   | Navigate Route
   | LoadProfile
   | LoadArticles { offset :: Int, limit :: Int }
@@ -57,7 +55,7 @@ mkComponent :: App.Component Props
 mkComponent = App.component "ProfilePage" { initialState, eval, render }
   where
   initialState =
-    { access: Public
+    { auth: Nothing
     , profile: RemoteData.NotAsked
     , articles: RemoteData.NotAsked
     , pagination: { offset: 0, limit: 5 }
@@ -73,10 +71,10 @@ mkComponent = App.component "ProfilePage" { initialState, eval, render }
 
   handleAction = case _ of
     Initialize -> do
-      access <- readAccess
-      handleAction $ UpdateAccess access
-      accessEvent <- readAccessEvent
-      void $ Halo.subscribe $ map UpdateAccess accessEvent
+      auth <- readAuth
+      handleAction $ UpdateAuth auth
+      authEvent <- readAuthEvent
+      void $ Halo.subscribe $ map UpdateAuth authEvent
       parTraverse_ handleAction
         [ LoadProfile
         , LoadArticles initialState.pagination
@@ -93,7 +91,7 @@ mkComponent = App.component "ProfilePage" { initialState, eval, render }
             , guard reloadArticles [ LoadArticles initialState.pagination ]
             ]
       parTraverse_ handleAction actions
-    UpdateAccess access -> Halo.modify_ _ { access = access }
+    UpdateAuth auth -> Halo.modify_ _ { auth = auth }
     Navigate route -> navigate route
     LoadProfile -> do
       props <- Halo.props
@@ -182,7 +180,7 @@ mkComponent = App.component "ProfilePage" { initialState, eval, render }
                                         }
                                     , R.h4_ [ R.text $ Username.toString props.username ]
                                     , maybe React.empty (\bio -> R.p_ [ R.text bio ]) (RemoteData.toMaybe state.profile >>= _.bio)
-                                    , if (Just props.username == map _.username (Access.toMaybe state.access)) then
+                                    , if (Just props.username == map _.username state.auth) then
                                         R.button
                                           { className: "btn btn-sm action-btn btn-outline-secondary"
                                           , onClick: handler_ $ send $ Navigate Settings

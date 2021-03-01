@@ -1,13 +1,12 @@
 module Conduit.Root where
 
 import Prelude
-import Conduit.Capability.Access (readAccess, readAccessEvent)
+import Conduit.Capability.Auth (readAccess, readAccessEvent)
 import Conduit.Capability.Routing (navigate, readRouting, readRoutingEvent, redirect)
 import Conduit.Component.App as App
 import Conduit.Component.Footer as Footer
 import Conduit.Component.Header as Header
 import Conduit.Context.Hydrate (Context)
-import Conduit.Data.Access (Access(..))
 import Conduit.Data.Auth (Auth)
 import Conduit.Data.Route (Route(..))
 import Conduit.Page.Article as Article
@@ -23,7 +22,7 @@ import React.Halo as Halo
 
 data Action
   = Initialize
-  | UpdateAccess (Access Auth)
+  | UpdateAccess (Maybe Auth)
   | UpdateRouting { route :: Route, prevRoute :: Maybe Route }
   | Navigate Route
 

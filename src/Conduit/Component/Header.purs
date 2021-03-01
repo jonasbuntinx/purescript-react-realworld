@@ -2,26 +2,24 @@ module Conduit.Component.Header where
 
 import Prelude
 import Conduit.Component.Link as Link
-import Conduit.Data.Access (Access, isAuthorized)
-import Conduit.Data.Access as Access
 import Conduit.Data.Auth (Auth)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username as Username
-import Data.Maybe (maybe)
+import Data.Maybe (Maybe, isJust, isNothing, maybe)
 import Data.Monoid (guard)
 import Effect (Effect)
 import React.Basic.DOM as R
 import React.Basic.Hooks as React
 
 type Props
-  = { access :: Access Auth
+  = { auth :: Maybe Auth
     , currentRoute :: Route
     , onNavigate :: Route -> Effect Unit
     }
 
 header :: Props -> React.JSX
-header { access, currentRoute, onNavigate } =
+header { auth, currentRoute, onNavigate } =
   R.nav
     { className: "navbar navbar-light"
     , children:
@@ -38,18 +36,18 @@ header { access, currentRoute, onNavigate } =
                     { className: "nav navbar-nav pull-xs-right"
                     , children:
                         [ navItem Home [ R.text "Home" ]
-                        , guard (not isAuthorized access) navItem Login [ R.text "Sign in" ]
-                        , guard (not isAuthorized access) navItem Register [ R.text "Sign up" ]
-                        , guard (isAuthorized access) navItem CreateArticle
+                        , guard (isNothing auth) navItem Login [ R.text "Sign in" ]
+                        , guard (isNothing auth) navItem Register [ R.text "Sign up" ]
+                        , guard (isJust auth) navItem CreateArticle
                             [ R.i { className: "ion-compose", children: [] }
                             , R.text " New Article"
                             ]
-                        , guard (isAuthorized access) navItem Settings
+                        , guard (isJust auth) navItem Settings
                             [ R.i { className: "ion-gear-a", children: [] }
                             , R.text " Settings"
                             ]
-                        , access
-                            # Access.maybe React.empty \{ username, user } ->
+                        , auth
+                            # maybe React.empty \{ username, user } ->
                                 navItem (Profile $ maybe username _.username user)
                                   [ R.img
                                       { className: "user-pic"

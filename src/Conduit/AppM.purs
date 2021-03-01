@@ -1,7 +1,7 @@
 module Conduit.AppM where
 
 import Prelude
-import Conduit.Capability.Access (class MonadAccess, AccessInstance)
+import Conduit.Capability.Auth (class MonadAuth, AuthInstance)
 import Conduit.Capability.Resource.Article (class ArticleRepository, ArticleInstance)
 import Conduit.Capability.Resource.Comment (class CommentRepository, CommentInstance)
 import Conduit.Capability.Resource.Profile (class ProfileRepository, ProfileInstance)
@@ -17,7 +17,7 @@ import Effect.Class (class MonadEffect)
 import Effect.Exception as Exception
 
 type AppInstance m
-  = { access :: AccessInstance m
+  = { auth :: AuthInstance m
     , routing :: RoutingInstance m
     , serverless :: ServerlessInstance m
     , user :: UserInstance m
@@ -51,12 +51,12 @@ derive newtype instance monadThrowAppM :: MonadThrow Exception.Error AppM
 
 derive newtype instance monadErrorAppM :: MonadError Exception.Error AppM
 
--- | Access
-instance monadAccessAppM :: MonadAccess AppM where
-  readAccess = join $ AppM $ asks _.access.readAccess
-  readAccessEvent = join $ AppM $ asks _.access.readAccessEvent
-  modifyAccess k = do
-    f <- AppM $ asks _.access.modifyAccess
+-- | Auth
+instance monadAuthAppM :: MonadAuth AppM where
+  readAuth = join $ AppM $ asks _.auth.readAuth
+  readAuthEvent = join $ AppM $ asks _.auth.readAuthEvent
+  modifyAuth k = do
+    f <- AppM $ asks _.auth.modifyAuth
     f k
 
 -- | Routing
