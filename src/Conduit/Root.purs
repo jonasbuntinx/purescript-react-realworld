@@ -1,7 +1,7 @@
 module Conduit.Root where
 
 import Prelude
-import Conduit.Capability.Auth (readAccess, readAccessEvent)
+import Conduit.Capability.Auth (readAuth, readAuthEvent)
 import Conduit.Capability.Routing (navigate, readRouting, readRoutingEvent, redirect)
 import Conduit.Component.App as App
 import Conduit.Component.Footer as Footer
@@ -9,20 +9,20 @@ import Conduit.Component.Header as Header
 import Conduit.Context.Hydrate (Context)
 import Conduit.Data.Auth (Auth)
 import Conduit.Data.Route (Route(..))
-import Conduit.Page.Article as Article
-import Conduit.Page.Editor as Editor
-import Conduit.Page.Home as Home
-import Conduit.Page.Login as Login
-import Conduit.Page.Profile as Profile
-import Conduit.Page.Register as Register
-import Conduit.Page.Settings as Settings
+import Conduit.Page.Article (mkArticlePage)
+import Conduit.Page.Editor (mkEditorPage)
+import Conduit.Page.Home (mkHomePage)
+import Conduit.Page.Login (mkLoginPage)
+import Conduit.Page.Profile (Tab(..), mkProfilePage)
+import Conduit.Page.Register (mkRegisterPage)
+import Conduit.Page.Settings (mkSettingsPage)
 import Data.Maybe (Maybe(..))
 import React.Basic.Hooks as React
 import React.Halo as Halo
 
 data Action
   = Initialize
-  | UpdateAccess (Maybe Auth)
+  | UpdateAuth (Maybe Auth)
   | UpdateRouting { route :: Route, prevRoute :: Maybe Route }
   | Navigate Route
 
@@ -30,7 +30,7 @@ mkComponent :: Context -> App.Component Unit
 mkComponent ctx = do
   routing <- readRouting
   render <- mkRender
-  App.component "Root" { initialState: { access: Public, routing }, eval, render }
+  App.component "Root" { initialState: { auth: Nothing, routing }, eval, render }
   where
   eval =
     Halo.mkEval
@@ -41,43 +41,43 @@ mkComponent ctx = do
 
   handleAction = case _ of
     Initialize -> do
-      -- access
-      access <- readAccess
-      handleAction $ UpdateAccess access
-      accessEvent <- readAccessEvent
-      void $ Halo.subscribe $ map UpdateAccess accessEvent
+      -- auth
+      auth <- readAuth
+      handleAction $ UpdateAuth auth
+      authEvent <- readAuthEvent
+      void $ Halo.subscribe $ map UpdateAuth authEvent
       -- routing
       routing <- readRouting
       handleAction $ UpdateRouting routing
       routingEvent <- readRoutingEvent
       void $ Halo.subscribe $ map UpdateRouting routingEvent
-    UpdateAccess access -> Halo.modify_ _ { access = access }
+    UpdateAuth auth -> Halo.modify_ _ { auth = auth }
     UpdateRouting routing -> do
       Halo.modify_ _ { routing = routing }
-      access <- readAccess
-      case routing.route, access of
-        Login, Authorized _ -> redirect Home
-        Register, Authorized _ -> redirect Home
-        Settings, Public -> redirect Home
-        CreateArticle, Public -> redirect Home
-        UpdateArticle _, Public -> redirect Home
+      auth <- readAuth
+      case routing.route, auth of
+        Login, Just _ -> redirect Home
+        Register, Just _ -> redirect Home
+        Settings, Nothing -> redirect Home
+        CreateArticle, Nothing -> redirect Home
+        UpdateArticle _, Nothing -> redirect Home
         Error, _ -> redirect Home
         _, _ -> pure unit
     Navigate route -> navigate route
 
   mkRender = do
-    homePage <- Home.mkComponent
-    loginPage <- Login.mkComponent
-    registerPage <- Register.mkComponent
-    settingsPage <- Settings.mkComponent
-    editorPage <- Editor.mkComponent
-    articlePage <- Article.mkComponent ctx
-    profilePage <- Profile.mkComponent
+    homePage <- mkHomePage
+    loginPage <- mkLoginPage
+    registerPage <- mkRegisterPage
+    settingsPage <- mkSettingsPage
+    editorPage <- mkEditorPage
+    articlePage <- mkArticlePage ctx
+    profilePage <- mkProfilePage
     pure
       $ \{ state, send } ->
           React.fragment
             [ Header.header
-                { access: state.access
+                { auth: state.auth
                 , currentRoute: state.routing.route
                 , onNavigate: send <<< Navigate
                 }
@@ -89,8 +89,8 @@ mkComponent ctx = do
                 CreateArticle -> editorPage { slug: Nothing }
                 UpdateArticle slug -> editorPage { slug: Just slug }
                 ViewArticle slug -> articlePage { slug }
-                Profile username -> profilePage { username, tab: Profile.Published }
-                Favorites username -> profilePage { username, tab: Profile.Favorited }
+                Profile username -> profilePage { username, tab: Published }
+                Favorites username -> profilePage { username, tab: Favorited }
                 Error -> React.empty
             , Footer.footer
             ]

@@ -1,4 +1,4 @@
-module Conduit.Page.Login (mkComponent) where
+module Conduit.Page.Login (mkLoginPage) where
 
 import Prelude
 import Conduit.Capability.Resource.User (loginUser)
@@ -23,15 +23,14 @@ import React.Basic.DOM.Events (targetValue)
 import React.Basic.Events (handler, handler_)
 import React.Halo as Halo
 
--- | Component
 data Action
   = Navigate Route
   | UpdateEmail String
   | UpdatePassword String
   | Submit
 
-mkComponent :: App.Component Unit
-mkComponent = App.component "LoginPage" { initialState, eval, render }
+mkLoginPage :: App.Component Unit
+mkLoginPage = App.component "LoginPage" { initialState, eval, render }
   where
   initialState =
     { email: pure ""

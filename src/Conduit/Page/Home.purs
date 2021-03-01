@@ -1,4 +1,4 @@
-module Conduit.Page.Home (mkComponent) where
+module Conduit.Page.Home (mkHomePage) where
 
 import Prelude
 import Conduit.Capability.Auth (readAuth, readAuthEvent)
@@ -25,7 +25,13 @@ import React.Basic.Events (handler)
 import React.Basic.Hooks as React
 import React.Halo as Halo
 
--- | Component
+data Tab
+  = Feed
+  | Global
+  | Tag String
+
+derive instance eqTab :: Eq Tab
+
 data Action
   = Initialize
   | UpdateAuth (Maybe Auth)
@@ -34,15 +40,8 @@ data Action
   | LoadArticles Tab { offset :: Int, limit :: Int }
   | ToggleFavorite Int
 
-data Tab
-  = Feed
-  | Global
-  | Tag String
-
-derive instance eqTab :: Eq Tab
-
-mkComponent :: App.Component Unit
-mkComponent = App.component "HomePage" { initialState, eval, render }
+mkHomePage :: App.Component Unit
+mkHomePage = App.component "HomePage" { initialState, eval, render }
   where
   initialState =
     { auth: Nothing
@@ -70,8 +69,8 @@ mkComponent = App.component "HomePage" { initialState, eval, render }
       state <- Halo.get
       Halo.modify_ _ { auth = auth }
       case auth of
+        Nothing -> handleAction $ LoadArticles state.tab state.pagination
         Just _ -> handleAction $ LoadArticles Feed state.pagination
-        _ -> handleAction $ LoadArticles state.tab state.pagination
     Navigate route -> do
       navigate route
     LoadTags -> do

@@ -1,4 +1,4 @@
-module Conduit.Page.Profile (Props, Tab(..), mkComponent) where
+module Conduit.Page.Profile (Props, Tab(..), mkProfilePage) where
 
 import Prelude
 import Conduit.Capability.Auth (readAuth, readAuthEvent)
@@ -51,8 +51,8 @@ data Action
   | ToggleFavorite Int
   | ToggleFollow
 
-mkComponent :: App.Component Props
-mkComponent = App.component "ProfilePage" { initialState, eval, render }
+mkProfilePage :: App.Component Props
+mkProfilePage = App.component "ProfilePage" { initialState, eval, render }
   where
   initialState =
     { auth: Nothing

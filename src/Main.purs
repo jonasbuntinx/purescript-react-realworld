@@ -5,7 +5,7 @@ import Apiary as Apiary
 import Conduit.Api.Endpoints as Endpoints
 import Conduit.Api.Utils (makeRequest, makeSecureRequest)
 import Conduit.AppM (AppM, AppInstance, runAppM)
-import Conduit.Capability.Auth (modifyAccess)
+import Conduit.Capability.Auth (modifyAuth)
 import Conduit.Capability.Resource.Article (ArticleInstance)
 import Conduit.Capability.Resource.Comment (CommentInstance)
 import Conduit.Capability.Resource.Profile (ProfileInstance)
@@ -68,9 +68,9 @@ appInstance ::
   AppInstance AppM
 appInstance auth routing =
   { auth:
-      { readAccess: liftEffect auth.read
-      , readAccessEvent: liftEffect $ pure auth.event
-      , modifyAccess: liftEffect <<< auth.modify
+      { readAuth: liftEffect auth.read
+      , readAuthEvent: liftEffect $ pure auth.event
+      , modifyAuth: liftEffect <<< auth.modify
       }
   , routing:
       { readRouting: liftEffect routing.read
@@ -120,14 +120,14 @@ userInstance =
                 ( match
                     { ok:
                         \{ user: currentUser } -> do
-                          void $ modifyAccess $ map $ _ { user = Just $ Record.delete (SProxy :: _ "token") currentUser }
+                          void $ modifyAuth $ map $ _ { user = Just $ Record.delete (SProxy :: _ "token") currentUser }
                           pure $ Right currentUser
                     , unprocessableEntity: pure <<< Left <<< UnprocessableEntity <<< _.errors
                     }
                 )
     , logoutUser:
         do
-          void $ modifyAccess $ const Public
+          void $ modifyAuth $ const Nothing
           redirect Home
     }
 

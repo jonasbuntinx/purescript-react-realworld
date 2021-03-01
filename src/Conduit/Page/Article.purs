@@ -1,4 +1,4 @@
-module Conduit.Page.Article (Props, mkInitialPartialState, mkComponent) where
+module Conduit.Page.Article (Props, mkInitialPartialState, mkArticlePage) where
 
 import Prelude
 import Conduit.AppM (AppM)
@@ -89,8 +89,8 @@ data Action
   | DeleteComment CommentId
   | SubmitComment
 
-mkComponent :: Context -> App.Component Props
-mkComponent ctx = App.component' "ArticlePage" ctx { initialState, hydrate, eval, render }
+mkArticlePage :: Context -> App.Component Props
+mkArticlePage ctx = App.component' "ArticlePage" ctx { initialState, hydrate, eval, render }
   where
   initialState =
     { auth: Nothing
@@ -251,7 +251,7 @@ mkComponent ctx = App.component' "ArticlePage" ctx { initialState, hydrate, eval
                                                 }
                                             ]
                                         }
-                                    _ ->
+                                    Nothing ->
                                       R.p_
                                         [ Link.link
                                             { className: ""
