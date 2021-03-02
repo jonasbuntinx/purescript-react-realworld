@@ -9,16 +9,18 @@ import Conduit.Capability.Resource.Article (ArticleInstance)
 import Conduit.Capability.Resource.Comment (CommentInstance)
 import Conduit.Capability.Resource.Profile (ProfileInstance)
 import Conduit.Capability.Resource.Tag (TagInstance)
-import Conduit.Capability.Routing (RoutingInstance)
+import Conduit.Capability.Routing (RoutingInstance, readRoute)
 import Conduit.Capability.Serverless (mkStateBuilder)
-import Conduit.Component.Footer as Footer
-import Conduit.Component.Header as Header
+import Conduit.Context.Hydrate (mkHydrateProvider)
 import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..), routeCodec)
+import Conduit.Page.Article as Article
+import Conduit.Root (mkRoot)
 import Control.Promise (Promise, fromAff)
 import Data.Either (Either(..), either)
 import Data.Maybe (Maybe(..))
 import Data.String (Pattern(..), Replacement(..), replace)
+import Data.Tuple.Nested ((/\))
 import Data.Variant (match)
 import Effect.Class (liftEffect)
 import Effect.Uncurried (EffectFn2, mkEffectFn2)
@@ -26,39 +28,46 @@ import Foreign (Foreign)
 import Node.Encoding (Encoding(..))
 import Node.FS.Sync (readTextFile)
 import React.Basic as React
+import React.Basic.DOM as R
 import React.Basic.DOM.Server (renderToString)
 import Routing.Duplex (parse)
 import Serverless.Fixture (fixture)
+import Simple.JSON (write, writeJSON)
 
 handler :: EffectFn2 { path :: String } Foreign (Promise { body :: String, statusCode :: Int })
 handler =
   mkEffectFn2 \event context ->
     fromAff do
       document <- liftEffect $ readTextFile UTF8 "index.html"
-      hydratable <- runAppM (appInstance event context) (pure Nothing)
-      pure
-        { statusCode: 200
-        , body:
-            replace
-              (Pattern "<div id=\"conduit\"></div>")
-              ( Replacement $ "<div id=\"conduit\">"
-                  <> ( renderToString case hydratable of
-                        Just content ->
-                          React.fragment
-                            [ Header.header
-                                { auth: Nothing
-                                , currentRoute: either (const Error) identity $ parse routeCodec event.path
-                                , onNavigate: \_ -> pure unit
-                                }
-                            , content
-                            , Footer.footer
+      runAppM (appInstance event context) do
+        dehydrated <- loadDehydrated
+        hydrateContext /\ hydrateProvider <- liftEffect $ mkHydrateProvider dehydrated
+        root <- mkRoot hydrateContext
+        pure
+          { statusCode: 200
+          , body:
+              case dehydrated of
+                Just value ->
+                  replace
+                    (Pattern "<div id=\"conduit\"></div>")
+                    ( Replacement
+                        $ renderToString
+                        $ React.fragment
+                            [ R.div { id: "conduit", children: [ hydrateProvider $ root unit ] }
+                            , R.script { dangerouslySetInnerHTML: { __html: "var dehydrated = " <> (writeJSON value) <> ";" } }
                             ]
-                        Nothing -> React.empty
                     )
-                  <> "</div>"
-              )
-              document
-        }
+                    document
+                Nothing -> document
+          }
+  where
+  loadDehydrated = do
+    route <- readRoute
+    case route of
+      ViewArticle slug -> do
+        initialState <- Article.mkInitialPartialState slug
+        pure $ Just $ write initialState
+      _ -> pure Nothing
 
 appInstance :: { path :: String } -> Foreign -> AppInstance AppM
 appInstance event context =

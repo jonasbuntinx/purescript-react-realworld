@@ -31,7 +31,7 @@ import Effect.Class (liftEffect)
 import Effect.Exception as Exception
 import FRP.Event as Event
 import React.Basic as React
-import React.Basic.DOM (hydrate)
+import React.Basic.DOM (hydrate, render)
 import Record as Record
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)
@@ -40,6 +40,8 @@ import Web.HTML.Window (document)
 
 main :: Effect Unit
 main = do
+  let
+    dehydrated = Nothing
   container <- getElementById "conduit" =<< (map toNonElementParentNode $ document =<< window)
   case container of
     Nothing -> Exception.throw "Conduit container element not found."
@@ -48,9 +50,15 @@ main = do
       routing <- mkRoutingManager
       launchAff_
         $ runAppM (appInstance auth routing) do
-            context /\ hydrateProvider <- mkHydrateProvider
-            root <- mkRoot context
-            liftEffect $ hydrate (React.fragment [ routing.component, auth.component, hydrateProvider $ root unit ]) c
+            hydrateContext /\ hydrateProvider <- liftEffect $ mkHydrateProvider dehydrated
+            root <- mkRoot hydrateContext
+            let
+              app = React.fragment [ routing.component, auth.component, hydrateProvider $ root unit ]
+            liftEffect
+              ( case dehydrated of
+                  Just _ -> hydrate app c
+                  Nothing -> render app c
+              )
 
 appInstance ::
   forall r s.
