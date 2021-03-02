@@ -7,7 +7,15 @@
     "React",
     "RealWorld"
   ],
-  "author": "Jonas Buntinx",
+  "contributors": [
+    {
+      "name": "Jonas Buntinx"
+    },
+    {
+      "name": "Robert Porter",
+      "url": "https://github.com/robertdp"
+    }
+  ],
   "license": "MIT",
   "scripts": {
     "build": "spago build",
