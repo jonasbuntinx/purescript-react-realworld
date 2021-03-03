@@ -1,5 +1,5 @@
 if (process.env.NODE_ENV == "production") {
-  require("/dce-output/Main").main(window.dehydrated);
+  window.renderWithState = require("/dce-output/Main").renderWithState;
 } else {
-  require("/output/Main").main();
+  require("/output/Main").renderWithState();
 }

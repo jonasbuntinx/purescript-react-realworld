@@ -41,8 +41,8 @@ import Web.HTML (window)
 import Web.HTML.HTMLDocument (toNonElementParentNode)
 import Web.HTML.Window (document)
 
-main :: EffectFn1 (Nullable Foreign) Unit
-main =
+renderWithState :: EffectFn1 (Nullable Foreign) Unit
+renderWithState =
   mkEffectFn1 \dehydrated -> do
     container <- getElementById "conduit" =<< (map toNonElementParentNode $ document =<< window)
     case container of

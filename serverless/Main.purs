@@ -18,7 +18,7 @@ import Conduit.Page.Article as Article
 import Conduit.Root (mkRoot)
 import Control.Promise (Promise, fromAff)
 import Data.Either (Either(..), either)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String (Pattern(..), Replacement(..), replace)
 import Data.Tuple.Nested ((/\))
 import Data.Variant (match)
@@ -27,7 +27,6 @@ import Effect.Uncurried (EffectFn2, mkEffectFn2)
 import Foreign (Foreign)
 import Node.Encoding (Encoding(..))
 import Node.FS.Sync (readTextFile)
-import React.Basic as React
 import React.Basic.DOM as R
 import React.Basic.DOM.Server (renderToString)
 import Routing.Duplex (parse)
@@ -46,18 +45,20 @@ handler =
         pure
           { statusCode: 200
           , body:
-              replace
-                (Pattern "<div id=\"conduit\"></div>")
+              replace (Pattern "</body>")
                 ( Replacement
-                    $ renderToString
-                    $ React.fragment
-                        [ R.div { id: "conduit", children: [ hydrateProvider $ root unit ] }
-                        , case dehydrated of
-                            Just value -> R.script { dangerouslySetInnerHTML: { __html: "var dehydrated = " <> (writeJSON value) <> ";" } }
-                            Nothing -> React.empty
-                        ]
+                    $ "<script>window.renderWithState("
+                    <> (fromMaybe "" (writeJSON <$> dehydrated))
+                    <> ")</script></body>"
                 )
-                document
+                ( replace
+                    (Pattern "<div id=\"conduit\"></div>")
+                    ( Replacement
+                        $ renderToString
+                        $ R.div { id: "conduit", children: [ hydrateProvider $ root unit ] }
+                    )
+                    document
+                )
           }
   where
   loadDehydrated = do
