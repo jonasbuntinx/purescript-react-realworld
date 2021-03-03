@@ -22,6 +22,7 @@ import Conduit.Data.Route (Route(..))
 import Conduit.Root (mkRoot)
 import Data.Either (Either(..), either)
 import Data.Maybe (Maybe(..))
+import Data.Nullable (Nullable, toMaybe)
 import Data.Symbol (SProxy(..))
 import Data.Tuple.Nested ((/\))
 import Data.Variant (expand, match)
@@ -29,36 +30,33 @@ import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Exception as Exception
+import Effect.Uncurried (EffectFn1, mkEffectFn1)
 import FRP.Event as Event
+import Foreign (Foreign)
 import React.Basic as React
-import React.Basic.DOM (hydrate, render)
+import React.Basic.DOM (hydrate)
 import Record as Record
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)
 import Web.HTML.HTMLDocument (toNonElementParentNode)
 import Web.HTML.Window (document)
 
-main :: Effect Unit
-main = do
-  let
-    dehydrated = Nothing
-  container <- getElementById "conduit" =<< (map toNonElementParentNode $ document =<< window)
-  case container of
-    Nothing -> Exception.throw "Conduit container element not found."
-    Just c -> do
-      auth <- mkAuthManager
-      routing <- mkRoutingManager
-      launchAff_
-        $ runAppM (appInstance auth routing) do
-            hydrateContext /\ hydrateProvider <- liftEffect $ mkHydrateProvider dehydrated
-            root <- mkRoot hydrateContext
-            let
-              app = React.fragment [ routing.component, auth.component, hydrateProvider $ root unit ]
-            liftEffect
-              ( case dehydrated of
-                  Just _ -> hydrate app c
-                  Nothing -> render app c
-              )
+main :: EffectFn1 (Nullable Foreign) Unit
+main =
+  mkEffectFn1 \dehydrated -> do
+    container <- getElementById "conduit" =<< (map toNonElementParentNode $ document =<< window)
+    case container of
+      Nothing -> Exception.throw "Conduit container element not found."
+      Just c -> do
+        auth <- mkAuthManager
+        routing <- mkRoutingManager
+        launchAff_
+          $ runAppM (appInstance auth routing) do
+              hydrateContext /\ hydrateProvider <- liftEffect $ mkHydrateProvider $ toMaybe dehydrated
+              root <- mkRoot hydrateContext
+              let
+                app = React.fragment [ routing.component, auth.component, hydrateProvider $ root unit ]
+              liftEffect $ hydrate app c
 
 appInstance ::
   forall r s.

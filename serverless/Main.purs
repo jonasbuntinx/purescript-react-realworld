@@ -46,19 +46,18 @@ handler =
         pure
           { statusCode: 200
           , body:
-              case dehydrated of
-                Just value ->
-                  replace
-                    (Pattern "<div id=\"conduit\"></div>")
-                    ( Replacement
-                        $ renderToString
-                        $ React.fragment
-                            [ R.div { id: "conduit", children: [ hydrateProvider $ root unit ] }
-                            , R.script { dangerouslySetInnerHTML: { __html: "var dehydrated = " <> (writeJSON value) <> ";" } }
-                            ]
-                    )
-                    document
-                Nothing -> document
+              replace
+                (Pattern "<div id=\"conduit\"></div>")
+                ( Replacement
+                    $ renderToString
+                    $ React.fragment
+                        [ R.div { id: "conduit", children: [ hydrateProvider $ root unit ] }
+                        , case dehydrated of
+                            Just value -> R.script { dangerouslySetInnerHTML: { __html: "var dehydrated = " <> (writeJSON value) <> ";" } }
+                            Nothing -> React.empty
+                        ]
+                )
+                document
           }
   where
   loadDehydrated = do
