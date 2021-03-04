@@ -42,14 +42,10 @@ mkRoot ::
   ProfileRepository m =>
   m (Unit -> JSX)
 mkRoot = do
+  route <- readRoute
   render <- mkRender
-  component "Root" { initialState, eval, render }
+  component "Root" { initialState: { auth: Nothing, route }, eval, render }
   where
-  initialState =
-    { auth: Nothing
-    , route: Error
-    }
-
   eval =
     Halo.mkEval
       _

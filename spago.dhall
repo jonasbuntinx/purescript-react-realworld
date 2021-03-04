@@ -7,6 +7,7 @@
     , "foreign-generic"
     , "heterogeneous"
     , "js-timers"
+    , "node-fs"
     , "profunctor-lenses"
     , "react-basic-dom"
     , "react-basic-hooks"
@@ -19,5 +20,5 @@
     , "wire-react-router"
     ]
 , packages = ./packages.dhall
-, sources = [ "src/**/*.purs", "test/**/*.purs" ]
+, sources = [ "src/**/*.purs", "serverless/**/*.purs", "test/**/*.purs" ]
 }

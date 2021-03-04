@@ -1,4 +1,4 @@
-module Conduit.Page.Article (Props, mkArticlePage) where
+module Conduit.Page.Article (Props, mkPartialState, mkArticlePage) where
 
 import Prelude
 import Conduit.Capability.Auth (class MonadAuth, readAuth, readAuthEvent)
@@ -9,9 +9,10 @@ import Conduit.Capability.Resource.Profile (class ProfileRepository, toggleFollo
 import Conduit.Capability.Routing (class MonadRouting, navigate, redirect)
 import Conduit.Component.Buttons (ButtonSize(..), favoriteButton, followButton)
 import Conduit.Component.Link as Link
+import Conduit.Data.Article (Article)
 import Conduit.Data.Auth (Auth)
 import Conduit.Data.Avatar as Avatar
-import Conduit.Data.Comment (CommentId)
+import Conduit.Data.Comment (CommentId, Comment)
 import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Slug (Slug)
@@ -22,7 +23,7 @@ import Conduit.Form.Validator as F
 import Conduit.Page.Utils (_article, _author)
 import Control.Comonad (extract)
 import Control.Parallel (parTraverse_)
-import Data.Either (Either(..))
+import Data.Either (Either(..), hush)
 import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
 import Data.Lens.Record as LR
@@ -40,6 +41,38 @@ import React.Basic.Events (handler, handler_)
 import React.Basic.Hooks as React
 import React.Halo as Halo
 
+-- | State
+type State
+  = { auth :: Maybe Auth
+    , article :: RemoteData.RemoteData Error Article
+    , comments :: RemoteData.RemoteData Error (Array Comment)
+    , body :: Validated String
+    , submitResponse :: RemoteData.RemoteData Error Unit
+    }
+
+type PartialState
+  = { article :: Maybe Article
+    , comments :: Maybe (Array Comment)
+    }
+
+mkPartialState ::
+  forall m.
+  ArticleRepository m =>
+  CommentRepository m =>
+  Slug -> m PartialState
+mkPartialState slug = do
+  article <- getArticle slug
+  comments <- listComments slug
+  pure { article: hush article, comments: hush comments }
+
+hydrateState :: State -> PartialState -> State
+hydrateState state { article, comments } =
+  state
+    { article = RemoteData.fromMaybe article
+    , comments = RemoteData.fromMaybe comments
+    }
+
+-- | Component
 type Props
   = { slug :: Slug
     }
@@ -91,10 +124,12 @@ mkArticlePage = component "ArticlePage" { initialState, eval, render }
       handleAction $ UpdateAuth auth
       authEvent <- readAuthEvent
       void $ Halo.subscribe $ map UpdateAuth authEvent
+      state <- Halo.get
       parTraverse_ handleAction
-        [ LoadArticle
-        , LoadComments
-        ]
+        $ join
+            [ guard (not RemoteData.isSuccess state.article) [ LoadArticle ]
+            , guard (not RemoteData.isSuccess state.comments) [ LoadComments ]
+            ]
     OnPropsUpdate prev next -> do
       when (prev.slug /= next.slug) do
         parTraverse_ handleAction

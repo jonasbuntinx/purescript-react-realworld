@@ -61,11 +61,17 @@ jobs:
       - name: Create out_publish
         run: mkdir demo/out_publish
 
+      - name: Create out_functions
+        run: mkdir demo/out_functions
+
       - name: Copy toml
         run: cp netlify.toml demo/netlify.toml
 
       - name: Copy dist files
         run: cp -r dist/* demo/out_publish
+
+      - name: Move functions
+        run: mv demo/out_publish/ssr.js demo/out_functions
 
       # PUBLISH
       - name: Publish to demo branch

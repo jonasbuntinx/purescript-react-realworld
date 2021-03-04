@@ -14,56 +14,62 @@ import Conduit.Capability.Resource.User (UserInstance)
 import Conduit.Capability.Routing (redirect)
 import Conduit.Component.Auth as Auth
 import Conduit.Component.Routing as Routing
+import Conduit.Context.Hydrate as Hydrate
 import Conduit.Data.Auth (toAuth)
 import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..))
 import Conduit.Root as Root
 import Data.Either (Either(..), either)
 import Data.Maybe (Maybe(..))
+import Data.Nullable (Nullable, toMaybe)
 import Data.Symbol (SProxy(..))
+import Data.Tuple.Nested ((/\))
 import Data.Variant (expand, match)
-import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Exception as Exception
+import Effect.Uncurried (EffectFn1, mkEffectFn1)
+import Foreign (Foreign)
 import React.Basic as React
-import React.Basic.DOM (render)
+import React.Basic.DOM (hydrate)
 import Record as Record
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)
 import Web.HTML.HTMLDocument (toNonElementParentNode)
 import Web.HTML.Window (document)
 
-main :: Effect Unit
-main = do
-  container <- getElementById "conduit" =<< (map toNonElementParentNode $ document =<< window)
-  case container of
-    Nothing -> Exception.throw "Conduit container element not found."
-    Just c -> do
-      auth <- Auth.mkAuthManager
-      routing <- Routing.mkRoutingManager
-      launchAff_ do
-        root <-
-          runAppM
-            { auth:
-                { readAuth: liftEffect auth.read
-                , readAuthEvent: liftEffect $ pure auth.event
-                , modifyAuth: liftEffect <<< auth.modify
-                }
-            , routing:
-                { readRoute: liftEffect routing.read
-                , readRoutingEvent: liftEffect $ pure routing.event
-                , navigate: liftEffect <<< routing.navigate
-                , redirect: liftEffect <<< routing.redirect
-                }
-            , user: userInstance
-            , article: articleInstance
-            , comment: commentInstance
-            , profile: profileInstance
-            , tag: tagInstance
-            }
-            Root.mkRoot
-        liftEffect $ render (React.fragment [ routing.component, auth.component, root unit ]) c
+renderWithState :: EffectFn1 (Nullable Foreign) Unit
+renderWithState =
+  mkEffectFn1 \dehydrated -> do
+    container <- getElementById "conduit" =<< (map toNonElementParentNode $ document =<< window)
+    case container of
+      Nothing -> Exception.throw "Conduit container element not found."
+      Just c -> do
+        auth <- Auth.mkAuthManager
+        routing <- Routing.mkRoutingManager
+        hydrateContext /\ hydrateProvider <- Hydrate.mkHydrateProvider $ toMaybe dehydrated
+        launchAff_ do
+          root <-
+            runAppM
+              { auth:
+                  { readAuth: liftEffect auth.read
+                  , readAuthEvent: liftEffect $ pure auth.event
+                  , modifyAuth: liftEffect <<< auth.modify
+                  }
+              , routing:
+                  { readRoute: liftEffect routing.read
+                  , readRoutingEvent: liftEffect $ pure routing.event
+                  , navigate: liftEffect <<< routing.navigate
+                  , redirect: liftEffect <<< routing.redirect
+                  }
+              , user: userInstance
+              , article: articleInstance
+              , comment: commentInstance
+              , profile: profileInstance
+              , tag: tagInstance
+              }
+              Root.mkRoot
+          liftEffect $ hydrate (React.fragment [ routing.component, auth.component, hydrateProvider $ root unit ]) c
 
 userInstance :: UserInstance AppM
 userInstance =

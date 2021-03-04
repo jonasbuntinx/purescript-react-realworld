@@ -1,10 +1,15 @@
 var dayjs = require("dayjs");
 
 dayjs.extend(require("dayjs/plugin/advancedFormat"));
+dayjs.extend(require('dayjs/plugin/utc'));
 
 exports._fromUTCString = function (nothing, just, str) {
   var d = dayjs(str);
   return d.isValid() ? just(d) : nothing;
+};
+
+exports.toUTCString = function (d) {
+  return d.clone().utc().format();
 };
 
 exports.fromMilliseconds = function (ms) {
