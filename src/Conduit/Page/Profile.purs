@@ -63,7 +63,6 @@ mkProfilePage = component "ProfilePage" { initialState, eval, render }
   where
   initialState =
     { auth: Nothing
-    , selectedTab: Nothing
     , profile: RemoteData.NotAsked
     , articles: RemoteData.NotAsked
     , pagination: { offset: 0, limit: 5 }

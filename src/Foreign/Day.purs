@@ -27,18 +27,18 @@ foreign import format :: Format -> DateTime -> String
 newtype Format
   = Format String
 
-instance eqMoment :: Eq DateTime where
+instance eqDateTime :: Eq DateTime where
   eq a b = eq (toMilliseconds a) (toMilliseconds b)
 
-instance ordMoment :: Ord DateTime where
+instance ordDateTime :: Ord DateTime where
   compare a b = compare (toMilliseconds a) (toMilliseconds b)
 
-instance readForeignMoment :: ReadForeign DateTime where
+instance readForeignDateTime :: ReadForeign DateTime where
   readImpl =
     readImpl >=> fromUTCString
       >>> case _ of
-          Nothing -> throwError $ pure $ ForeignError "Invalid datetime format (expecting UTC)"
-          Just moment -> pure moment
+          Nothing -> throwError $ pure $ ForeignError "Invalid format (expecting UTC)"
+          Just d -> pure d
 
 toDisplay :: DateTime -> String
 toDisplay = format (Format "MMMM Do, YYYY")
