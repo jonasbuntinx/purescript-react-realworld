@@ -47,12 +47,12 @@ main = do
           runAppM
             { auth:
                 { readAuth: liftEffect auth.read
-                , readAuthEvent: liftEffect $ pure auth.event
+                , readAuthEvent: pure auth.event
                 , modifyAuth: liftEffect <<< auth.modify
                 }
             , routing:
                 { readRoute: liftEffect routing.read
-                , readRoutingEvent: liftEffect $ pure routing.event
+                , readRoutingEvent: pure routing.event
                 , navigate: liftEffect <<< routing.navigate
                 , redirect: liftEffect <<< routing.redirect
                 }
