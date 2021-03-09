@@ -6,7 +6,7 @@ module Conduit.Capability.Halo
   ) where
 
 import Prelude
-import Conduit.Context.Hydrate (Context)
+import Conduit.Context.HydratedState (Context)
 import Effect (Effect)
 import React.Halo (JSX, ComponentSpec, HaloM, Lifecycle) as Halo
 import Simple.JSON (class ReadForeign)

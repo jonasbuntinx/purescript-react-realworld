@@ -1,4 +1,4 @@
-module Conduit.Page.Article (Props, mkPartialState, mkArticlePage) where
+module Conduit.Page.Article (PartialState, Props, mkPartialState, mkArticlePage) where
 
 import Prelude
 import Conduit.Capability.Auth (class MonadAuth, readAuth, readAuthEvent)
@@ -23,7 +23,7 @@ import Conduit.Form.Validator as F
 import Conduit.Page.Utils (_article, _author)
 import Control.Comonad (extract)
 import Control.Parallel (parTraverse_)
-import Data.Either (Either(..), hush)
+import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
 import Data.Lens.Record as LR
@@ -40,20 +40,34 @@ import React.Basic.DOM.Events (preventDefault, targetValue)
 import React.Basic.Events (handler, handler_)
 import React.Basic.Hooks as React
 import React.Halo as Halo
+import Record as Record
+import Simple.JSON (class ReadForeign, class WriteForeign, readImpl, writeImpl)
 
--- | State
-type State
-  = { auth :: Maybe Auth
-    , article :: RemoteData.RemoteData Error Article
-    , comments :: RemoteData.RemoteData Error (Array Comment)
-    , body :: Validated String
-    , submitResponse :: RemoteData.RemoteData Error Unit
-    }
+-- | Partial State
+newtype PartialState
+  = PartialState
+  { article :: RemoteData.RemoteData Error Article
+  , comments :: RemoteData.RemoteData Error (Array Comment)
+  }
 
-type PartialState
-  = { article :: Maybe Article
-    , comments :: Maybe (Array Comment)
-    }
+instance readForeignPartialState :: ReadForeign PartialState where
+  readImpl =
+    readImpl
+      >>> map
+          ( \({ article, comments } :: { article :: Maybe Article, comments :: Maybe (Array Comment) }) ->
+              PartialState
+                { article: RemoteData.fromMaybe article
+                , comments: RemoteData.fromMaybe comments
+                }
+          )
+
+instance writeForeignPartialState :: WriteForeign PartialState where
+  writeImpl =
+    writeImpl
+      <<< \(PartialState { article, comments }) ->
+          { article: RemoteData.toMaybe article
+          , comments: RemoteData.toMaybe comments
+          }
 
 mkPartialState ::
   forall m.
@@ -63,18 +77,22 @@ mkPartialState ::
 mkPartialState slug = do
   article <- getArticle slug
   comments <- listComments slug
-  pure { article: hush article, comments: hush comments }
+  pure $ PartialState { article: RemoteData.fromEither article, comments: RemoteData.fromEither comments }
 
-hydrateState :: State -> PartialState -> State
-hydrateState state { article, comments } =
-  state
-    { article = RemoteData.fromMaybe article
-    , comments = RemoteData.fromMaybe comments
-    }
+mergePartialState :: State -> PartialState -> State
+mergePartialState state (PartialState partial) = Record.merge state partial
 
 -- | Component
 type Props
   = { slug :: Slug
+    }
+
+type State
+  = { auth :: Maybe Auth
+    , article :: RemoteData.RemoteData Error Article
+    , comments :: RemoteData.RemoteData Error (Array Comment)
+    , body :: Validated String
+    , submitResponse :: RemoteData.RemoteData Error Unit
     }
 
 data Action

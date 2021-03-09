@@ -14,7 +14,7 @@ import Conduit.Capability.Resource.User (UserInstance)
 import Conduit.Capability.Routing (redirect)
 import Conduit.Component.Auth as Auth
 import Conduit.Component.Routing as Routing
-import Conduit.Context.Hydrate as Hydrate
+import Conduit.Context.HydratedState as HydratedState
 import Conduit.Data.Auth (toAuth)
 import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..))
@@ -47,7 +47,7 @@ renderWithState =
       Just c -> do
         auth <- Auth.mkAuthManager
         routing <- Routing.mkRoutingManager
-        hydrateContext /\ hydrateProvider <- Hydrate.mkHydrateProvider $ toMaybe dehydrated
+        hydratedStateContext /\ hydratedStateProvider <- HydratedState.mkHydratedStateProvider $ toMaybe dehydrated
         launchAff_ do
           root <-
             runAppM
@@ -69,7 +69,7 @@ renderWithState =
               , tag: tagInstance
               }
               Root.mkRoot
-          liftEffect $ hydrate (React.fragment [ routing.component, auth.component, hydrateProvider $ root unit ]) c
+          liftEffect $ hydrate (React.fragment [ routing.component, auth.component, hydratedStateProvider $ root unit ]) c
 
 userInstance :: UserInstance AppM
 userInstance =

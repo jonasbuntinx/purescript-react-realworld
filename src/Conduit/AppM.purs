@@ -9,7 +9,7 @@ import Conduit.Capability.Resource.Profile (class ProfileRepository, ProfileInst
 import Conduit.Capability.Resource.Tag (class TagRepository, TagInstance)
 import Conduit.Capability.Resource.User (class UserRepository, UserInstance)
 import Conduit.Capability.Routing (class MonadRouting, RoutingInstance)
-import Conduit.Context.Hydrate as Hydrate
+import Conduit.Context.HydratedState as HydratedState
 import Control.Monad.Error.Class (class MonadError, class MonadThrow)
 import Control.Monad.Reader (ReaderT, ask, asks, runReaderT)
 import Data.Tuple.Nested ((/\))
@@ -67,7 +67,7 @@ instance monadHaloAppM :: MonadHalo AppM where
       impl <- ask
       liftEffect
         $ React.component name \props -> React.do
-            initialState <- Hydrate.useHydrate context spec.initialState spec.hydrateState
+            initialState <- HydratedState.useHydratedState context spec.initialState spec.hydrateState
             state /\ send <- Halo.useHalo { props, initialState, eval: Halo.hoist (runAppM impl) <<< spec.eval }
             pure (spec.render { props, state, send })
 

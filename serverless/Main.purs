@@ -10,7 +10,7 @@ import Conduit.Capability.Resource.Comment (CommentInstance)
 import Conduit.Capability.Resource.Profile (ProfileInstance)
 import Conduit.Capability.Resource.Tag (TagInstance)
 import Conduit.Capability.Routing (RoutingInstance, readRoute)
-import Conduit.Context.Hydrate as Hydrate
+import Conduit.Context.HydratedState as HydratedState
 import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..), routeCodec)
 import Conduit.Page.Article as Article
@@ -38,8 +38,8 @@ handler =
     fromAff do
       document <- liftEffect $ readTextFile UTF8 "index.html"
       runAppM (appInstance event context) do
-        dehydrated <- mkDehydrated
-        hydrateContext /\ hydrateProvider <- liftEffect $ Hydrate.mkHydrateProvider dehydrated
+        dehydratedState <- mkDehydratedState
+        hydratedStateContext /\ hydratedStateProvider <- liftEffect $ HydratedState.mkHydratedStateProvider dehydratedState
         root <- Root.mkRoot
         pure
           { statusCode: 200
@@ -47,20 +47,20 @@ handler =
               replace (Pattern "</body>")
                 ( Replacement
                     $ "<script>window.renderWithState("
-                    <> (fromMaybe "" (writeJSON <$> dehydrated))
+                    <> (fromMaybe "" (writeJSON <$> dehydratedState))
                     <> ")</script></body>"
                 )
                 ( replace
                     (Pattern "<div id=\"conduit\"></div>")
                     ( Replacement
                         $ renderToString
-                        $ R.div { id: "conduit", children: [ hydrateProvider $ root unit ] }
+                        $ R.div { id: "conduit", children: [ hydratedStateProvider $ root unit ] }
                     )
                     document
                 )
           }
   where
-  mkDehydrated = do
+  mkDehydratedState = do
     route <- readRoute
     case route of
       ViewArticle slug -> do
