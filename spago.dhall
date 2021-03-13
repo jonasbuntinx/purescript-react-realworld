@@ -16,8 +16,8 @@
     , "routing"
     , "routing-duplex"
     , "unicode"
+    , "web-router"
     , "web-uievents"
-    , "wire-react-router"
     ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]

@@ -9,7 +9,9 @@ import Halogen.Subscription as Subscription
 import React.Basic.Hooks as React
 import Routing.Duplex (parse, print)
 import Routing.PushState as PushState
-import Wire.React.Router as Router
+import Web.Router as Router
+import Web.Router.Driver.PushState as Driver
+import Web.Router.Types (Event(..))
 
 mkRoutingManager ::
   Effect
@@ -24,22 +26,27 @@ mkRoutingManager = do
   { path } <- interface.locationState
   value <- Ref.new $ either (const Error) identity $ parse routeCodec path
   { emitter, listener } <- Subscription.create
+  let
+    driver = Driver.makeDriver_ (parse routeCodec) (print routeCodec) interface
   router <-
-    Router.makeRouter interface
-      { parse: parse routeCodec
-      , print: print routeCodec
-      , onRoute: const $ Router.continue
-      , onTransition:
-          case _ of
-            Router.Resolved _ route -> do
-              newRoute <- Ref.modify (const route) value
-              Subscription.notify listener newRoute
-            _ -> pure unit
-      }
+    Router.makeRouter
+      (\_ _ -> Router.continue)
+      ( case _ of
+          Resolved _ route -> do
+            newRoute <- Ref.modify (const route) value
+            Subscription.notify listener newRoute
+          _ -> pure unit
+      )
+      driver
+  component <-
+    React.component "Router" \_ -> React.do
+      React.useEffectOnce do
+        router.initialize
+      pure React.empty
   pure
     { read: Ref.read value
     , event: emitter
     , navigate: router.navigate
     , redirect: router.redirect
-    , component: router.component
+    , component: component unit
     }
