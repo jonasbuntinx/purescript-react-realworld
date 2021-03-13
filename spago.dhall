@@ -1,6 +1,8 @@
 { name = "purescript-react-realword"
 , dependencies =
-    [ "apiary"
+    [ "affjax"
+    , "argonaut-codecs"
+    , "argonaut-core"
     , "console"
     , "effect"
     , "event"

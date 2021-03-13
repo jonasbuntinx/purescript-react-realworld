@@ -2,14 +2,14 @@ module Conduit.Data.Jwt where
 
 import Prelude
 import Conduit.Data.Username (Username)
+import Data.Argonaut.Decode (JsonDecodeError, decodeJson)
+import Data.Argonaut.Parser (jsonParser)
 import Data.Array as Array
 import Data.Either (Either, note)
 import Data.Lens (_Left, over)
 import Data.String as String
 import Effect.Exception as Exception
-import Foreign (MultipleErrors)
 import Foreign.Base64 (atob)
-import Simple.JSON (readJSON)
 
 type Jwt
   = { username :: Username
@@ -19,7 +19,8 @@ type Jwt
 data Error
   = MalformedToken
   | Base64DecodeError Exception.Error
-  | JSONDecodeError MultipleErrors
+  | JSONParseError String
+  | JSONDecodeError JsonDecodeError
 
 decode :: String -> Either Error Jwt
 decode =
@@ -28,6 +29,8 @@ decode =
 
     decodeBase64 = map (over _Left Base64DecodeError) atob
 
-    decodeJSON = map (over _Left JSONDecodeError) readJSON
+    parseJSON = map (over _Left JSONParseError) jsonParser
+
+    decodeJSON = map (over _Left JSONDecodeError) decodeJson
   in
-    payload >=> decodeBase64 >=> decodeJSON
+    payload >=> decodeBase64 >=> parseJSON >=> decodeJSON

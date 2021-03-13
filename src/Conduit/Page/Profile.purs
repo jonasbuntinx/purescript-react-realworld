@@ -1,6 +1,7 @@
 module Conduit.Page.Profile (Props, Tab(..), mkProfilePage) where
 
 import Prelude
+import Conduit.Api.Client (isNotFound)
 import Conduit.Capability.Auth (class MonadAuth, readAuth, readAuthEvent)
 import Conduit.Capability.Halo (class MonadHalo, JSX, component)
 import Conduit.Capability.Resource.Article (class ArticleRepository, listArticles, toggleFavorite)
@@ -13,13 +14,11 @@ import Conduit.Component.Tabs as Tabs
 import Conduit.Data.Article (defaultArticlesQuery)
 import Conduit.Data.Auth (Auth)
 import Conduit.Data.Avatar as Avatar
-import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
 import Conduit.Page.Utils (_articles, _profile)
 import Control.Parallel (parTraverse_)
-import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
 import Data.Maybe (Maybe(..), maybe)
@@ -105,9 +104,8 @@ mkProfilePage = component "ProfilePage" { initialState, eval, render }
       Halo.modify_ _ { profile = RemoteData.Loading }
       response <- getProfile props.username
       Halo.modify_ _ { profile = RemoteData.fromEither response }
-      case response of
-        Left (NotFound _) -> redirect Home
-        _ -> pure unit
+      when (isNotFound response) do
+        redirect Home
     LoadArticles pagination -> do
       props <- Halo.props
       let

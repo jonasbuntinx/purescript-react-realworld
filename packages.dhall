@@ -119,21 +119,8 @@ let additions =
 let upstream =
       https://github.com/purescript/package-sets/releases/download/psc-0.13.8-20210226/packages.dhall sha256:7e973070e323137f27e12af93bc2c2f600d53ce4ae73bb51f34eb7d7ce0a43ea
 
-let overrides =
-      { simple-json =
-              upstream.simple-json
-          //  { repo = "https://github.com/robertdp/purescript-simple-json.git"
-              , version = "v7.0.1"
-              }
-      }
-
 let additions =
-      { apiary =
-        { dependencies = [ "affjax", "media-types", "simple-json" ]
-        , repo = "https://github.com/robertdp/purescript-apiary"
-        , version = "v0.2.0"
-        }
-      , wire-react-router =
+      { wire-react-router =
         { dependencies =
           [ "aff"
           , "freet"
@@ -147,4 +134,4 @@ let additions =
         }
       }
 
-in  upstream // overrides // additions
+in  upstream // additions

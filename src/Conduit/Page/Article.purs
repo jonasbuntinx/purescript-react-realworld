@@ -1,6 +1,7 @@
 module Conduit.Page.Article (Props, mkArticlePage) where
 
 import Prelude
+import Conduit.Api.Client (isNotFound)
 import Conduit.Capability.Auth (class MonadAuth, readAuth, readAuthEvent)
 import Conduit.Capability.Halo (class MonadHalo, JSX, component)
 import Conduit.Capability.Resource.Article (class ArticleRepository, deleteArticle, getArticle, toggleFavorite)
@@ -12,7 +13,6 @@ import Conduit.Component.Link as Link
 import Conduit.Data.Auth (Auth)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Comment (CommentId)
-import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Slug (Slug)
 import Conduit.Data.Username as Username
@@ -109,9 +109,10 @@ mkArticlePage = component "ArticlePage" { initialState, eval, render }
       { slug } <- Halo.props
       Halo.modify_ _ { article = RemoteData.Loading }
       response <- getArticle slug
-      case response of
-        Left (NotFound _) -> redirect Home
-        _ -> Halo.modify_ _ { article = RemoteData.fromEither response }
+      if (isNotFound response) then
+        redirect Home
+      else
+        Halo.modify_ _ { article = RemoteData.fromEither response }
     LoadComments -> do
       props <- Halo.props
       Halo.modify_ _ { comments = RemoteData.Loading }

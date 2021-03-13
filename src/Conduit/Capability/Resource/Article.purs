@@ -1,8 +1,8 @@
 module Conduit.Capability.Resource.Article where
 
 import Prelude
+import Conduit.Api.Client (Error)
 import Conduit.Data.Article (Article, ArticlesQuery, ArticleRep)
-import Conduit.Data.Error (Error)
 import Conduit.Data.Slug (Slug)
 import Data.Either (Either)
 import Data.Maybe (Maybe)

@@ -1,7 +1,7 @@
 module Conduit.Capability.Resource.Profile where
 
 import Prelude
-import Conduit.Data.Error (Error)
+import Conduit.Api.Client (Error)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Username (Username)
 import Data.Either (Either)

@@ -1,8 +1,8 @@
 module Conduit.Capability.Resource.Comment where
 
 import Prelude
+import Conduit.Api.Client (Error)
 import Conduit.Data.Comment (Comment, CommentId)
-import Conduit.Data.Error (Error)
 import Conduit.Data.Slug (Slug)
 import Data.Either (Either)
 import React.Halo (HaloM, lift)

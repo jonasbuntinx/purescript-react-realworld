@@ -2,18 +2,19 @@ module Conduit.Data.Avatar where
 
 import Prelude
 import Conduit.Assets as Assets
+import Data.Argonaut.Decode (class DecodeJson)
+import Data.Argonaut.Encode (class EncodeJson)
 import Data.Maybe (Maybe(..))
 import Data.String as String
-import Simple.JSON (class ReadForeign, class WriteForeign)
 
 newtype Avatar
   = Avatar String
 
 derive instance eqAvatar :: Eq Avatar
 
-derive newtype instance writeForeignAvatar :: WriteForeign Avatar
+derive newtype instance encodeJsonAvatar :: EncodeJson Avatar
 
-derive newtype instance readForeignAvatar :: ReadForeign Avatar
+derive newtype instance decodeJsonAvatar :: DecodeJson Avatar
 
 fromString :: String -> Avatar
 fromString str = Avatar str

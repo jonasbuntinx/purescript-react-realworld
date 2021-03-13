@@ -1,12 +1,12 @@
 module Conduit.Page.Editor (Props, mkEditorPage) where
 
 import Prelude
+import Conduit.Api.Client (isNotFound)
 import Conduit.Capability.Halo (class MonadHalo, JSX, component)
 import Conduit.Capability.Resource.Article (class ArticleRepository, getArticle, submitArticle)
 import Conduit.Capability.Routing (class MonadRouting, navigate, redirect)
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Component.TagInput (tagInput)
-import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Slug (Slug)
 import Conduit.Form.Validated as V
@@ -75,8 +75,7 @@ mkEditorPage = component "SettingsPage" { initialState, eval, render }
           response <- getArticle slug
           Halo.modify_ _ { article = RemoteData.fromEither response }
           case response of
-            Left (NotFound _) -> redirect Home
-            Left _ -> pure unit
+            Left _ -> when (isNotFound response) do redirect Home
             Right article -> do
               Halo.modify_
                 _

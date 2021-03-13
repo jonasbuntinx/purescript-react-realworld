@@ -1,11 +1,11 @@
 module Conduit.Data.Comment where
 
 import Prelude
-import Apiary (class EncodeParam, encodeParam)
 import Conduit.Data.Profile (Profile)
+import Data.Argonaut.Decode (class DecodeJson, decodeJson)
+import Data.Argonaut.Encode (class EncodeJson, encodeJson)
 import Data.Newtype (class Newtype, unwrap, wrap)
 import Foreign.Day (DateTime)
-import Simple.JSON (class ReadForeign, class WriteForeign, readImpl, writeImpl)
 
 type Comment
   = { id :: CommentId
@@ -22,11 +22,8 @@ derive instance newtypeCommentId :: Newtype CommentId _
 
 derive newtype instance eqCommentId :: Eq CommentId
 
-instance readForeignCommentId :: ReadForeign CommentId where
-  readImpl = readImpl >>> map wrap
+instance decodeJsonCommentId :: DecodeJson CommentId where
+  decodeJson = decodeJson >>> map wrap
 
-instance writeForeignCommentId :: WriteForeign CommentId where
-  writeImpl = writeImpl <<< unwrap
-
-instance encodeParamCommentId :: EncodeParam CommentId where
-  encodeParam = encodeParam <<< unwrap
+instance encodeJsonCommentId :: EncodeJson CommentId where
+  encodeJson = encodeJson <<< unwrap

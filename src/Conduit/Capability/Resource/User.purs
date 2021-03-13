@@ -1,7 +1,7 @@
 module Conduit.Capability.Resource.User where
 
 import Prelude
-import Conduit.Data.Error (Error)
+import Conduit.Api.Client (Error)
 import Conduit.Data.User (CurrentUser, User)
 import Conduit.Data.Username (Username)
 import Data.Either (Either)

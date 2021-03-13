@@ -1,17 +1,18 @@
 module Conduit.Component.Auth where
 
 import Prelude
-import Apiary as Apiary
-import Conduit.Api.Endpoints (GetUser)
-import Conduit.Api.Utils (makeSecureRequest')
+import Affjax.StatusCode (StatusCode(..))
+import Conduit.Api.Client (Error, makeSecureRequest')
+import Conduit.Api.Endpoint as Endpoint
 import Conduit.Data.Auth (Auth, toAuth)
+import Conduit.Data.User (CurrentUser)
 import Control.Monad.Except (runExcept)
-import Data.Either (hush)
+import Data.Either (Either, hush)
 import Data.Foldable (for_, traverse_)
+import Data.HTTP.Method (Method(..))
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
 import Data.Tuple.Nested ((/\))
-import Data.Variant as Variant
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
@@ -87,7 +88,7 @@ mkAuthManager = do
         void $ modify $ const Nothing
       else
         launchAff_ do
-          res <- makeSecureRequest' token (Apiary.Route :: GetUser) Apiary.none Apiary.none Apiary.none
-          liftEffect case hush $ Variant.match { ok: _.user } <$> res of
+          (res :: Either Error { user :: CurrentUser }) <- makeSecureRequest' token GET (StatusCode 200) Endpoint.User unit
+          liftEffect case hush $ _.user <$> res of
             Nothing -> void $ modify $ const Nothing
             Just user -> void $ modify $ const $ toAuth user.token (Just $ Record.delete (SProxy :: _ "token") user)

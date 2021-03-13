@@ -1,7 +1,7 @@
 module Conduit.Capability.Resource.Tag where
 
 import Prelude
-import Conduit.Data.Error (Error)
+import Conduit.Api.Client (Error)
 import Data.Either (Either)
 import React.Halo (HaloM, lift)
 

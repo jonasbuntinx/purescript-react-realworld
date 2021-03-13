@@ -1,9 +1,9 @@
 module Main where
 
 import Prelude
-import Apiary as Apiary
-import Conduit.Api.Endpoints as Endpoints
-import Conduit.Api.Utils (makeRequest, makeSecureRequest)
+import Affjax.StatusCode (StatusCode(..))
+import Conduit.Api.Client (Error, makeRequest, makeSecureRequest)
+import Conduit.Api.Endpoint as Endpoint
 import Conduit.AppM (AppM, runAppM)
 import Conduit.Capability.Auth (modifyAuth)
 import Conduit.Capability.Resource.Article (ArticleInstance)
@@ -14,14 +14,18 @@ import Conduit.Capability.Resource.User (UserInstance)
 import Conduit.Capability.Routing (redirect)
 import Conduit.Component.Auth as Auth
 import Conduit.Component.Routing as Routing
+import Conduit.Data.Article (Article, defaultArticlesQuery)
 import Conduit.Data.Auth (toAuth)
-import Conduit.Data.Error (Error(..))
+import Conduit.Data.Comment (Comment)
+import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
+import Conduit.Data.User (CurrentUser)
 import Conduit.Root as Root
-import Data.Either (Either(..), either)
+import Data.Either (Either)
+import Data.HTTP.Method (Method(..))
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
-import Data.Variant (expand, match)
+import Data.Traversable (for_)
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
@@ -67,117 +71,98 @@ main = do
 
 userInstance :: UserInstance AppM
 userInstance =
-  let
-    handleAuthRes =
-      either
-        (pure <<< Left)
-        ( match
-            { ok:
-                \{ user: currentUser } -> do
-                  void $ modifyAuth $ const $ toAuth currentUser.token (Just $ Record.delete (SProxy :: _ "token") currentUser)
-                  pure $ Right currentUser
-            , unprocessableEntity: pure <<< Left <<< UnprocessableEntity <<< _.errors
-            }
-        )
-  in
-    { loginUser:
-        \credentials -> do
-          res <- makeRequest (Apiary.Route :: Endpoints.LoginUser) Apiary.none Apiary.none { user: credentials }
-          res # handleAuthRes
-    , registerUser:
-        \user -> do
-          res <- makeRequest (Apiary.Route :: Endpoints.RegisterUser) Apiary.none Apiary.none { user }
-          res # handleAuthRes
-    , updateUser:
-        \user -> do
-          res <- makeSecureRequest (Apiary.Route :: Endpoints.UpdateUser) Apiary.none Apiary.none { user }
-          res
-            # either
-                (pure <<< Left)
-                ( match
-                    { ok:
-                        \{ user: currentUser } -> do
-                          void $ modifyAuth $ map $ _ { user = Just $ Record.delete (SProxy :: _ "token") currentUser }
-                          pure $ Right currentUser
-                    , unprocessableEntity: pure <<< Left <<< UnprocessableEntity <<< _.errors
-                    }
-                )
-    , logoutUser:
-        do
-          void $ modifyAuth $ const Nothing
-          redirect Home
-    }
+  { loginUser:
+      \credentials -> do
+        (res :: Either Error { user :: CurrentUser }) <- makeRequest POST (StatusCode 200) Endpoint.Login { user: credentials }
+        for_ res \{ user: currentUser } -> do
+          modifyAuth $ const $ toAuth currentUser.token (Just $ Record.delete (SProxy :: _ "token") currentUser)
+        pure $ res <#> _.user
+  , registerUser:
+      \user -> do
+        (res :: Either Error { user :: CurrentUser }) <- makeRequest POST (StatusCode 200) Endpoint.Users { user }
+        for_ res \{ user: currentUser } -> do
+          modifyAuth $ const $ toAuth currentUser.token (Just $ Record.delete (SProxy :: _ "token") currentUser)
+        pure $ res <#> _.user
+  , updateUser:
+      \user -> do
+        (res :: Either Error { user :: CurrentUser }) <- makeSecureRequest PUT (StatusCode 200) Endpoint.User { user }
+        for_ res \{ user: currentUser } -> do
+          modifyAuth $ map $ _ { user = Just $ Record.delete (SProxy :: _ "token") currentUser }
+        pure $ res <#> _.user
+  , logoutUser:
+      do
+        void $ modifyAuth $ const Nothing
+        redirect Home
+  }
 
 articleInstance :: ArticleInstance AppM
 articleInstance =
   { listArticles:
       \query -> do
-        res <- makeRequest (Apiary.Route :: Endpoints.ListArticles) Apiary.none query Apiary.none
-        pure $ res >>= match { ok: Right }
+        makeRequest GET (StatusCode 200) (Endpoint.Articles query) unit
   , listFeed:
       \query -> do
-        res <- makeSecureRequest (Apiary.Route :: Endpoints.ListFeed) Apiary.none query Apiary.none
-        pure $ res >>= match { ok: Right }
+        makeSecureRequest GET (StatusCode 200) (Endpoint.Feed query) unit
   , getArticle:
       \slug -> do
-        res <- makeRequest (Apiary.Route :: Endpoints.GetArticle) { slug } Apiary.none Apiary.none
-        pure $ res >>= (match { ok: Right <<< _.article, notFound: Left <<< NotFound })
+        (res :: Either Error { article :: Article }) <- makeRequest GET (StatusCode 200) (Endpoint.Article slug) unit
+        pure $ res <#> _.article
   , submitArticle:
       \slug article -> do
-        res <- case slug of
-          Nothing -> map expand <$> makeSecureRequest (Apiary.Route :: Endpoints.CreateArticle) Apiary.none Apiary.none { article }
-          Just slug' -> map expand <$> makeSecureRequest (Apiary.Route :: Endpoints.UpdateArticle) { slug: slug' } Apiary.none { article }
-        pure $ res >>= (match { ok: Right <<< _.article, unprocessableEntity: Left <<< UnprocessableEntity <<< _.errors })
+        (res :: Either Error { article :: Article }) <- case slug of
+          Nothing -> makeSecureRequest POST (StatusCode 200) (Endpoint.Articles defaultArticlesQuery) { article }
+          Just slug' -> makeSecureRequest PUT (StatusCode 200) (Endpoint.Article slug') { article }
+        pure $ res <#> _.article
   , deleteArticle:
       \slug -> do
-        res <- makeSecureRequest (Apiary.Route :: Endpoints.DeleteArticle) { slug } Apiary.none Apiary.none
-        pure $ res >>= (match { ok: const $ Right unit })
+        (res :: Either Error {}) <- makeSecureRequest DELETE (StatusCode 200) (Endpoint.Article slug) unit
+        pure $ res <#> const unit
   , toggleFavorite:
       \{ slug, favorited } -> do
-        res <-
+        (res :: Either Error { article :: Article }) <-
           if favorited then
-            makeSecureRequest (Apiary.Route :: Endpoints.UnfavoriteArticle) { slug } Apiary.none Apiary.none
+            makeSecureRequest DELETE (StatusCode 200) (Endpoint.Favorite slug) unit
           else
-            makeSecureRequest (Apiary.Route :: Endpoints.FavoriteArticle) { slug } Apiary.none Apiary.none
-        pure $ res >>= match { ok: Right <<< _.article }
+            makeSecureRequest POST (StatusCode 200) (Endpoint.Favorite slug) unit
+        pure $ res <#> _.article
   }
 
 commentInstance :: CommentInstance AppM
 commentInstance =
   { listComments:
       \slug -> do
-        res <- makeRequest (Apiary.Route :: Endpoints.ListComments) { slug } Apiary.none Apiary.none
-        pure $ res >>= match { ok: Right <<< _.comments }
+        (res :: Either Error { comments :: Array Comment }) <- makeRequest GET (StatusCode 200) (Endpoint.Comments slug) unit
+        pure $ res <#> _.comments
   , createComment:
       \slug comment -> do
-        res <- makeSecureRequest (Apiary.Route :: Endpoints.CreateComment) { slug } Apiary.none { comment }
-        pure $ res >>= (match { ok: Right <<< _.comment })
+        (res :: Either Error { comment :: Comment }) <- makeSecureRequest POST (StatusCode 200) (Endpoint.Comments slug) { comment }
+        pure $ res <#> _.comment
   , deleteComment:
       \slug id -> do
-        res <- makeSecureRequest (Apiary.Route :: Endpoints.DeleteComment) { slug, id } Apiary.none Apiary.none
-        pure $ res >>= (match { ok: const $ Right unit })
+        (res :: Either Error {}) <- makeSecureRequest DELETE (StatusCode 200) (Endpoint.Comment slug id) unit
+        pure $ res <#> const unit
   }
 
 profileInstance :: ProfileInstance AppM
 profileInstance =
   { getProfile:
       \username -> do
-        res <- makeRequest (Apiary.Route :: Endpoints.GetProfile) { username } Apiary.none Apiary.none
-        pure $ res >>= (match { ok: Right <<< _.profile, notFound: Left <<< NotFound })
+        (res :: Either Error { profile :: Profile }) <- makeRequest GET (StatusCode 200) (Endpoint.Profiles username) unit
+        pure $ res <#> _.profile
   , toggleFollow:
       \{ username, following } -> do
-        res <-
+        (res :: Either Error { profile :: Profile }) <-
           if following then
-            makeSecureRequest (Apiary.Route :: Endpoints.UnfollowProfile) { username } Apiary.none Apiary.none
+            makeSecureRequest DELETE (StatusCode 200) (Endpoint.Follow username) unit
           else
-            makeSecureRequest (Apiary.Route :: Endpoints.FollowProfile) { username } Apiary.none Apiary.none
-        pure $ res >>= match { ok: Right <<< _.profile }
+            makeSecureRequest POST (StatusCode 200) (Endpoint.Follow username) unit
+        pure $ res <#> _.profile
   }
 
 tagInstance :: TagInstance AppM
 tagInstance =
   { listTags:
       do
-        res <- makeRequest (Apiary.Route :: Endpoints.ListTags) Apiary.none Apiary.none Apiary.none
-        pure $ res >>= match { ok: Right <<< _.tags }
+        (res :: Either Error { tags :: Array String }) <- makeRequest GET (StatusCode 200) Endpoint.Tags unit
+        pure $ res <#> _.tags
   }

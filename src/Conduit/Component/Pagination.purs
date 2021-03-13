@@ -10,7 +10,6 @@ import React.Basic (JSX, fragment)
 import React.Basic.DOM as R
 import React.Basic.DOM.Events (preventDefault)
 import React.Basic.Events (handler)
-import Simple.JSON (writeJSON)
 
 type Props
   = { offset :: Int
@@ -72,7 +71,7 @@ pagination props =
                     { className: "page-link"
                     , href: "#"
                     , onClick: handler preventDefault $ const $ onPageChange i
-                    , children: [ R.text $ writeJSON (i + 1) ]
+                    , children: [ R.text $ show (i + 1) ]
                     }
                 ]
             }
