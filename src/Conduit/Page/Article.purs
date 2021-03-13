@@ -3,7 +3,7 @@ module Conduit.Page.Article (Props, mkArticlePage) where
 import Prelude
 import Conduit.Api.Client (isNotFound)
 import Conduit.Capability.Auth (class MonadAuth, readAuth, readAuthEvent)
-import Conduit.Capability.Halo (class MonadHalo, JSX, component)
+import Conduit.Capability.Halo (class MonadHalo, component)
 import Conduit.Capability.Resource.Article (class ArticleRepository, deleteArticle, getArticle, toggleFavorite)
 import Conduit.Capability.Resource.Comment (class CommentRepository, createComment, deleteComment, listComments)
 import Conduit.Capability.Resource.Profile (class ProfileRepository, toggleFollow)
@@ -21,6 +21,7 @@ import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Conduit.Page.Utils (_article, _author)
 import Control.Comonad (extract)
+import Control.Monad.State (modify_, get)
 import Control.Parallel (parTraverse_)
 import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
@@ -66,10 +67,12 @@ mkArticlePage ::
   CommentRepository m =>
   ProfileRepository m =>
   MonadHalo m =>
-  m (Props -> JSX)
-mkArticlePage = component "ArticlePage" { initialState, eval, render }
+  m (Props -> React.JSX)
+mkArticlePage = component "ArticlePage" { context, initialState, eval, render }
   where
-  initialState =
+  context _ = pure unit
+
+  initialState _ _ =
     { auth: Nothing
     , article: RemoteData.NotAsked
     , comments: RemoteData.NotAsked
@@ -81,7 +84,7 @@ mkArticlePage = component "ArticlePage" { initialState, eval, render }
     Halo.mkEval
       _
         { onInitialize = \_ -> Just Initialize
-        , onUpdate = \prev next -> Just $ OnPropsUpdate prev next
+        , onUpdate = \prev next -> Just $ OnPropsUpdate prev.props next.props
         , onAction = handleAction
         }
 
@@ -102,56 +105,56 @@ mkArticlePage = component "ArticlePage" { initialState, eval, render }
           , LoadComments
           ]
     UpdateAuth auth -> do
-      Halo.modify_ _ { auth = auth }
+      modify_ _ { auth = auth }
     Navigate route -> do
       navigate route
     LoadArticle -> do
       { slug } <- Halo.props
-      Halo.modify_ _ { article = RemoteData.Loading }
+      modify_ _ { article = RemoteData.Loading }
       response <- getArticle slug
       if (isNotFound response) then
         redirect Home
       else
-        Halo.modify_ _ { article = RemoteData.fromEither response }
+        modify_ _ { article = RemoteData.fromEither response }
     LoadComments -> do
       props <- Halo.props
-      Halo.modify_ _ { comments = RemoteData.Loading }
+      modify_ _ { comments = RemoteData.Loading }
       response <- listComments props.slug
-      Halo.modify_ _ { comments = RemoteData.fromEither response }
+      modify_ _ { comments = RemoteData.fromEither response }
     DeleteArticle -> do
       props <- Halo.props
-      Halo.modify_ _ { submitResponse = RemoteData.Loading }
+      modify_ _ { submitResponse = RemoteData.Loading }
       response <- deleteArticle props.slug
-      Halo.modify_ _ { submitResponse = RemoteData.fromEither response }
+      modify_ _ { submitResponse = RemoteData.fromEither response }
       for_ response \_ -> navigate Home
     ToggleFollow -> do
-      state <- Halo.get
-      for_ (preview _author state) (toggleFollow >=> traverse_ (Halo.modify_ <<< set _author))
+      state <- get
+      for_ (preview _author state) (toggleFollow >=> traverse_ (modify_ <<< set _author))
     ToggleFavorite -> do
-      state <- Halo.get
-      for_ (preview _article state) (toggleFavorite >=> traverse_ (Halo.modify_ <<< set _article))
-    UpdateBody body -> Halo.modify_ _ { body = V.Modified body }
+      state <- get
+      for_ (preview _article state) (toggleFavorite >=> traverse_ (modify_ <<< set _article))
+    UpdateBody body -> modify_ _ { body = V.Modified body }
     DeleteComment id -> do
       props <- Halo.props
-      Halo.modify_ _ { submitResponse = RemoteData.Loading }
+      modify_ _ { submitResponse = RemoteData.Loading }
       response <- deleteComment props.slug id
-      Halo.modify_ _ { submitResponse = RemoteData.fromEither response }
+      modify_ _ { submitResponse = RemoteData.fromEither response }
       for_ response \_ -> do
         response' <- listComments props.slug
-        Halo.modify_ _ { comments = RemoteData.fromEither response' }
+        modify_ _ { comments = RemoteData.fromEither response' }
     SubmitComment -> do
       props <- Halo.props
-      state <- V.setModified <$> Halo.get
+      state <- V.setModified <$> get
       case toEither (validate state) of
-        Left _ -> Halo.modify_ (const state)
+        Left _ -> modify_ (const state)
         Right validated -> do
-          Halo.modify_ _ { submitResponse = RemoteData.Loading }
+          modify_ _ { submitResponse = RemoteData.Loading }
           response <- createComment props.slug validated
-          Halo.modify_ _ { submitResponse = RemoteData.fromEither (void response) }
+          modify_ _ { submitResponse = RemoteData.fromEither (void response) }
           for_ response \_ -> do
-            Halo.modify_ _ { body = pure "" }
+            modify_ _ { body = pure "" }
             response' <- listComments props.slug
-            Halo.modify_ _ { comments = RemoteData.fromEither response' }
+            modify_ _ { comments = RemoteData.fromEither response' }
 
   validate :: forall r. { body :: Validated String | r } -> V { body :: Array String } { body :: String }
   validate values = ado

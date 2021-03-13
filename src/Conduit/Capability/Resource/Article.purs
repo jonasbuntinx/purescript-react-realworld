@@ -4,9 +4,10 @@ import Prelude
 import Conduit.Api.Client (Error)
 import Conduit.Data.Article (Article, ArticlesQuery, ArticleRep)
 import Conduit.Data.Slug (Slug)
+import Control.Monad.Trans.Class (lift)
 import Data.Either (Either)
 import Data.Maybe (Maybe)
-import React.Halo (HaloM, lift)
+import React.Halo (HaloM)
 
 type ArticleInstance m
   = { listArticles :: ArticlesQuery -> m (Either Error { articles :: Array Article, articlesCount :: Int })
@@ -26,7 +27,7 @@ class
   deleteArticle :: Slug -> m (Either Error Unit)
   toggleFavorite :: Article -> m (Either Error Article)
 
-instance articleRepositoryHaloM :: ArticleRepository m => ArticleRepository (HaloM props state action m) where
+instance articleRepositoryHaloM :: ArticleRepository m => ArticleRepository (HaloM props ctx state action m) where
   listArticles = lift <<< listArticles
   listFeed = lift <<< listFeed
   getArticle = lift <<< getArticle

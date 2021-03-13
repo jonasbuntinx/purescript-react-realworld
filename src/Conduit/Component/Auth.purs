@@ -20,8 +20,8 @@ import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Ref as Ref
 import Effect.Timer as Timer
-import FRP.Event as Event
 import Foreign.Day (now)
+import Halogen.Subscription as Subscription
 import React.Basic.Hooks as React
 import Record as Record
 import Web.HTML (window)
@@ -31,7 +31,7 @@ import Web.Storage.Storage as Storage
 mkAuthManager ::
   Effect
     { read :: Effect (Maybe Auth)
-    , event :: Event.Event (Maybe Auth)
+    , event :: Subscription.Emitter (Maybe Auth)
     , modify :: (Maybe Auth -> Maybe Auth) -> Effect (Maybe Auth)
     , component :: React.JSX
     }
@@ -56,15 +56,15 @@ mkAuthManager = do
   create = do
     initial <- load
     value <- Ref.new initial
-    { event, push } <- Event.create
+    { emitter, listener } <- Subscription.create
     pure
-      { event: event
+      { event: emitter
       , read: Ref.read value
       , modify:
           \f -> do
             newValue <- Ref.modify f value
             save newValue
-            push newValue
+            Subscription.notify listener newValue
             pure newValue
       }
 

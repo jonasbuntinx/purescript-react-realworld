@@ -6,10 +6,10 @@ import Data.Int as Int
 import Data.Int as Number
 import Data.Monoid (guard)
 import Effect (Effect)
-import React.Basic (JSX, fragment)
 import React.Basic.DOM as R
 import React.Basic.DOM.Events (preventDefault)
 import React.Basic.Events (handler)
+import React.Basic.Hooks (JSX, fragment)
 
 type Props
   = { offset :: Int

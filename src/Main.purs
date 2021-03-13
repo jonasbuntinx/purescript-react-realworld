@@ -30,8 +30,8 @@ import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Exception as Exception
-import React.Basic as React
 import React.Basic.DOM (render)
+import React.Basic.Hooks as React
 import Record as Record
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)

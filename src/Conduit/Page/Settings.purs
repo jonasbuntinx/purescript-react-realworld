@@ -2,7 +2,7 @@ module Conduit.Page.Settings (mkSettingsPage) where
 
 import Prelude
 import Conduit.Capability.Auth (class MonadAuth, readAuth, readAuthEvent)
-import Conduit.Capability.Halo (class MonadHalo, JSX, component)
+import Conduit.Capability.Halo (class MonadHalo, component)
 import Conduit.Capability.Resource.User (class UserRepository, logoutUser, updateUser)
 import Conduit.Capability.Routing (class MonadRouting, navigate)
 import Conduit.Component.ResponseErrors (responseErrors)
@@ -13,6 +13,7 @@ import Conduit.Data.Username as Username
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Control.Comonad (extract)
+import Control.Monad.State (modify_, get)
 import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
@@ -20,11 +21,12 @@ import Data.Lens.Record as LR
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Monoid (guard)
 import Data.Symbol (SProxy(..))
-import Data.Validation.Semigroup (andThen, toEither, unV)
+import Data.Validation.Semigroup (andThen, toEither, validation)
 import Network.RemoteData as RemoteData
 import React.Basic.DOM as R
 import React.Basic.DOM.Events (targetValue)
 import React.Basic.Events (handler, handler_)
+import React.Basic.Hooks as React
 import React.Halo as Halo
 
 data Action
@@ -44,10 +46,12 @@ mkSettingsPage ::
   UserRepository m =>
   MonadRouting m =>
   MonadHalo m =>
-  m (Unit -> JSX)
-mkSettingsPage = component "SettingsPage" { initialState, eval, render }
+  m (Unit -> React.JSX)
+mkSettingsPage = component "SettingsPage" { context, initialState, eval, render }
   where
-  initialState =
+  context _ = pure unit
+
+  initialState _ _ =
     { user: Nothing
     , image: Nothing
     , username: pure ""
@@ -72,7 +76,7 @@ mkSettingsPage = component "SettingsPage" { initialState, eval, render }
       void $ Halo.subscribe $ map (UpdateUser <<< (_.user =<< _)) authEvent
     UpdateUser maybeUser ->
       for_ maybeUser \user@{ image, username, bio, email } -> do
-        Halo.modify_
+        modify_
           _
             { user = Just user
             , image = Avatar.toString <$> image
@@ -80,19 +84,19 @@ mkSettingsPage = component "SettingsPage" { initialState, eval, render }
             , bio = bio
             , email = pure email
             }
-    UpdateImage image -> Halo.modify_ _ { image = Just image }
-    UpdateUsername username -> Halo.modify_ _ { username = V.Modified username }
-    UpdateBio bio -> Halo.modify_ _ { bio = Just bio }
-    UpdateEmail email -> Halo.modify_ _ { email = V.Modified email }
-    UpdatePassword password -> Halo.modify_ _ { password = V.Modified password }
+    UpdateImage image -> modify_ _ { image = Just image }
+    UpdateUsername username -> modify_ _ { username = V.Modified username }
+    UpdateBio bio -> modify_ _ { bio = Just bio }
+    UpdateEmail email -> modify_ _ { email = V.Modified email }
+    UpdatePassword password -> modify_ _ { password = V.Modified password }
     Submit -> do
-      state <- V.setModified <$> Halo.get
+      state <- V.setModified <$> get
       case toEither (validate state) of
-        Left _ -> Halo.modify_ (const state)
+        Left _ -> modify_ (const state)
         Right validated -> do
-          Halo.modify_ _ { submitResponse = RemoteData.Loading }
+          modify_ _ { submitResponse = RemoteData.Loading }
           response <- updateUser validated
-          Halo.modify_ _ { submitResponse = RemoteData.fromEither response }
+          modify_ _ { submitResponse = RemoteData.fromEither response }
           for_ response \_ -> navigate Home
     Logout -> logoutUser
 
@@ -104,7 +108,7 @@ mkSettingsPage = component "SettingsPage" { initialState, eval, render }
 
   render { state, send } =
     let
-      errors = validate state # unV identity (const mempty) :: { username :: _, email :: _, password :: _ }
+      errors = validate state # validation identity (const mempty) :: { username :: _, email :: _, password :: _ }
     in
       guard (isJust state.user) container
         [ R.h1

@@ -2,7 +2,7 @@ module Conduit.Root where
 
 import Prelude
 import Conduit.Capability.Auth (class MonadAuth, readAuth, readAuthEvent)
-import Conduit.Capability.Halo (class MonadHalo, JSX, component)
+import Conduit.Capability.Halo (class MonadHalo, component)
 import Conduit.Capability.Resource.Article (class ArticleRepository)
 import Conduit.Capability.Resource.Comment (class CommentRepository)
 import Conduit.Capability.Resource.Profile (class ProfileRepository)
@@ -20,6 +20,7 @@ import Conduit.Page.Login (mkLoginPage)
 import Conduit.Page.Profile (Tab(..), mkProfilePage)
 import Conduit.Page.Register (mkRegisterPage)
 import Conduit.Page.Settings (mkSettingsPage)
+import Control.Monad.State (modify_)
 import Data.Maybe (Maybe(..))
 import React.Basic.Hooks as React
 import React.Halo as Halo
@@ -40,12 +41,14 @@ mkRoot ::
   UserRepository m =>
   CommentRepository m =>
   ProfileRepository m =>
-  m (Unit -> JSX)
+  m (Unit -> React.JSX)
 mkRoot = do
   render <- mkRender
-  component "Root" { initialState, eval, render }
+  component "Root" { context, initialState, eval, render }
   where
-  initialState =
+  context _ = pure unit
+
+  initialState _ _ =
     { auth: Nothing
     , route: Error
     }
@@ -69,9 +72,9 @@ mkRoot = do
       handleAction $ UpdateRoute route
       routingEvent <- readRoutingEvent
       void $ Halo.subscribe $ map UpdateRoute routingEvent
-    UpdateAuth auth -> Halo.modify_ _ { auth = auth }
+    UpdateAuth auth -> modify_ _ { auth = auth }
     UpdateRoute route -> do
-      Halo.modify_ _ { route = route }
+      modify_ _ { route = route }
       auth <- readAuth
       case route, auth of
         Login, Just _ -> redirect Home

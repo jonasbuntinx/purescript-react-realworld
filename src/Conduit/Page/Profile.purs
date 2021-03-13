@@ -3,7 +3,7 @@ module Conduit.Page.Profile (Props, Tab(..), mkProfilePage) where
 import Prelude
 import Conduit.Api.Client (isNotFound)
 import Conduit.Capability.Auth (class MonadAuth, readAuth, readAuthEvent)
-import Conduit.Capability.Halo (class MonadHalo, JSX, component)
+import Conduit.Capability.Halo (class MonadHalo, component)
 import Conduit.Capability.Resource.Article (class ArticleRepository, listArticles, toggleFavorite)
 import Conduit.Capability.Resource.Profile (class ProfileRepository, getProfile, toggleFollow)
 import Conduit.Capability.Routing (class MonadRouting, navigate, redirect)
@@ -18,6 +18,7 @@ import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
 import Conduit.Page.Utils (_articles, _profile)
+import Control.Monad.State (modify_, get)
 import Control.Parallel (parTraverse_)
 import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
@@ -57,21 +58,28 @@ mkProfilePage ::
   ProfileRepository m =>
   ArticleRepository m =>
   MonadHalo m =>
-  m (Props -> JSX)
-mkProfilePage = component "ProfilePage" { initialState, eval, render }
+  m (Props -> React.JSX)
+mkProfilePage = component "ProfilePage" { context, initialState, eval, render }
   where
-  initialState =
+  context _ = pure unit
+
+  initialState _ _ =
     { auth: Nothing
     , profile: RemoteData.NotAsked
     , articles: RemoteData.NotAsked
-    , pagination: { offset: 0, limit: 5 }
+    , pagination: initialPagination
+    }
+
+  initialPagination =
+    { offset: 0
+    , limit: 5
     }
 
   eval =
     Halo.mkEval
       _
         { onInitialize = \_ -> Just Initialize
-        , onUpdate = \prev next -> Just $ OnPropsUpdate prev next
+        , onUpdate = \prev next -> Just $ OnPropsUpdate prev.props next.props
         , onAction = handleAction
         }
 
@@ -83,7 +91,7 @@ mkProfilePage = component "ProfilePage" { initialState, eval, render }
       void $ Halo.subscribe $ map UpdateAuth authEvent
       parTraverse_ handleAction
         [ LoadProfile
-        , LoadArticles initialState.pagination
+        , LoadArticles initialPagination
         ]
     OnPropsUpdate prev next -> do
       let
@@ -94,34 +102,34 @@ mkProfilePage = component "ProfilePage" { initialState, eval, render }
         actions =
           join
             [ guard reloadProfile [ LoadProfile ]
-            , guard reloadArticles [ LoadArticles initialState.pagination ]
+            , guard reloadArticles [ LoadArticles initialPagination ]
             ]
       parTraverse_ handleAction actions
-    UpdateAuth auth -> Halo.modify_ _ { auth = auth }
+    UpdateAuth auth -> modify_ _ { auth = auth }
     Navigate route -> navigate route
     LoadProfile -> do
       props <- Halo.props
-      Halo.modify_ _ { profile = RemoteData.Loading }
+      modify_ _ { profile = RemoteData.Loading }
       response <- getProfile props.username
-      Halo.modify_ _ { profile = RemoteData.fromEither response }
+      modify_ _ { profile = RemoteData.fromEither response }
       when (isNotFound response) do
         redirect Home
     LoadArticles pagination -> do
       props <- Halo.props
       let
         query = defaultArticlesQuery { offset = Just pagination.offset, limit = Just pagination.limit }
-      Halo.modify_ _ { articles = RemoteData.Loading, pagination = pagination }
+      modify_ _ { articles = RemoteData.Loading, pagination = pagination }
       response <-
         listArticles case props.tab of
           Published -> query { author = Just props.username }
           Favorited -> query { favorited = Just props.username }
-      Halo.modify_ _ { articles = RemoteData.fromEither response }
+      modify_ _ { articles = RemoteData.fromEither response }
     ToggleFavorite ix -> do
-      state <- Halo.get
-      for_ (preview (_articles ix) state) (toggleFavorite >=> traverse_ (Halo.modify_ <<< set (_articles ix)))
+      state <- get
+      for_ (preview (_articles ix) state) (toggleFavorite >=> traverse_ (modify_ <<< set (_articles ix)))
     ToggleFollow -> do
-      state <- Halo.get
-      for_ (preview _profile state) (toggleFollow >=> traverse_ (Halo.modify_ <<< set _profile))
+      state <- get
+      for_ (preview _profile state) (toggleFollow >=> traverse_ (modify_ <<< set _profile))
 
   render { props, state, send } =
     guard (RemoteData.isSuccess state.profile) container userInfo

@@ -5,7 +5,7 @@
     , "argonaut-core"
     , "console"
     , "effect"
-    , "event"
+    , "halogen-subscriptions"
     , "heterogeneous"
     , "js-timers"
     , "profunctor-lenses"

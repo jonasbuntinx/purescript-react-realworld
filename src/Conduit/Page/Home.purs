@@ -2,7 +2,7 @@ module Conduit.Page.Home (mkHomePage) where
 
 import Prelude
 import Conduit.Capability.Auth (class MonadAuth, readAuth, readAuthEvent)
-import Conduit.Capability.Halo (class MonadHalo, JSX, component)
+import Conduit.Capability.Halo (class MonadHalo, component)
 import Conduit.Capability.Resource.Article (class ArticleRepository, listArticles, listFeed, toggleFavorite)
 import Conduit.Capability.Resource.Tag (class TagRepository, listTags)
 import Conduit.Capability.Routing (class MonadRouting, navigate)
@@ -13,6 +13,7 @@ import Conduit.Data.Article (defaultArticlesQuery)
 import Conduit.Data.Auth (Auth)
 import Conduit.Data.Route (Route)
 import Conduit.Page.Utils (_articles)
+import Control.Monad.State (modify_, get)
 import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
 import Data.Maybe (Maybe(..), isNothing)
@@ -47,15 +48,22 @@ mkHomePage ::
   TagRepository m =>
   ArticleRepository m =>
   MonadHalo m =>
-  m (Unit -> JSX)
-mkHomePage = component "HomePage" { initialState, eval, render }
+  m (Unit -> React.JSX)
+mkHomePage = component "HomePage" { context, initialState, eval, render }
   where
-  initialState =
+  context _ = pure unit
+
+  initialState _ _ =
     { auth: Nothing
     , tags: NotAsked
     , articles: NotAsked
-    , pagination: { offset: 0, limit: 10 }
+    , pagination: initialPagination
     , tab: Global
+    }
+
+  initialPagination =
+    { offset: 0
+    , limit: 10
     }
 
   eval =
@@ -73,29 +81,29 @@ mkHomePage = component "HomePage" { initialState, eval, render }
       void $ Halo.subscribe $ map UpdateAuth authEvent
       handleAction LoadTags
     UpdateAuth auth -> do
-      state <- Halo.get
-      Halo.modify_ _ { auth = auth }
+      state <- get
+      modify_ _ { auth = auth }
       case auth of
         Nothing -> handleAction $ LoadArticles state.tab state.pagination
         Just _ -> handleAction $ LoadArticles Feed state.pagination
     Navigate route -> do
       navigate route
     LoadTags -> do
-      Halo.modify_ _ { tags = RemoteData.Loading }
+      modify_ _ { tags = RemoteData.Loading }
       response <- listTags
-      Halo.modify_ _ { tags = RemoteData.fromEither response }
+      modify_ _ { tags = RemoteData.fromEither response }
     LoadArticles tab pagination -> do
-      Halo.modify_ _ { articles = RemoteData.Loading, tab = tab, pagination = pagination }
+      modify_ _ { articles = RemoteData.Loading, tab = tab, pagination = pagination }
       let
         query = defaultArticlesQuery { offset = Just pagination.offset, limit = Just pagination.limit }
       response <- case tab of
         Feed -> listFeed query
         Global -> listArticles query
         Tag tag -> listArticles (query { tag = Just tag })
-      Halo.modify_ _ { articles = RemoteData.fromEither response }
+      modify_ _ { articles = RemoteData.fromEither response }
     ToggleFavorite ix -> do
-      state <- Halo.get
-      for_ (preview (_articles ix) state) (toggleFavorite >=> traverse_ (Halo.modify_ <<< set (_articles ix)))
+      state <- get
+      for_ (preview (_articles ix) state) (toggleFavorite >=> traverse_ (modify_ <<< set (_articles ix)))
 
   render { state, send } =
     container (guard (isNothing state.auth) banner)
@@ -149,7 +157,7 @@ mkHomePage = component "HomePage" { initialState, eval, render }
                               }
                             ]
                           _ -> []
-                , onChange: \tab -> send $ LoadArticles tab initialState.pagination
+                , onChange: \tab -> send $ LoadArticles tab initialPagination
                 }
             ]
         }

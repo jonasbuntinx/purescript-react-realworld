@@ -4,7 +4,7 @@ import Prelude
 import Control.Monad.Error.Class (throwError)
 import Data.Argonaut.Core as AC
 import Data.Argonaut.Decode (class DecodeJson, JsonDecodeError(..), decodeJson)
-import Data.Either (fromRight)
+import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.String.Regex as Regex
 import Data.String.Regex.Flags as Flags
@@ -25,7 +25,7 @@ instance decodeJsonSlug :: DecodeJson Slug where
 fromString :: String -> Maybe Slug
 fromString str = if Regex.test slugRegex str then Just $ Slug str else Nothing
   where
-  slugRegex = unsafePartial $ fromRight $ Regex.regex """^[_a-z0-9]*(?:-[_a-z0-9]+)*$""" Flags.global
+  slugRegex = unsafePartial $ (\(Right a) -> a) $ Regex.regex """^[_a-z0-9]*(?:-[_a-z0-9]+)*$""" Flags.global
 
 toString :: Slug -> String
 toString (Slug s) = s

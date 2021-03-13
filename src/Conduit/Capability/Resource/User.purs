@@ -4,8 +4,9 @@ import Prelude
 import Conduit.Api.Client (Error)
 import Conduit.Data.User (CurrentUser, User)
 import Conduit.Data.Username (Username)
+import Control.Monad.Trans.Class (lift)
 import Data.Either (Either)
-import React.Halo (HaloM, lift)
+import React.Halo (HaloM)
 
 type UserInstance m
   = { loginUser :: { email :: String, password :: String } -> m (Either Error CurrentUser)
@@ -21,7 +22,7 @@ class
   updateUser :: { | User ( password :: String ) } -> m (Either Error CurrentUser)
   logoutUser :: m Unit
 
-instance userRepositoryHaloM :: UserRepository m => UserRepository (HaloM props state action m) where
+instance userRepositoryHaloM :: UserRepository m => UserRepository (HaloM props ctx state action m) where
   loginUser = lift <<< loginUser
   registerUser = lift <<< registerUser
   updateUser = lift <<< updateUser
