@@ -5,7 +5,7 @@ import Conduit.Data.Route (Route(..), routeCodec)
 import Data.Either (either)
 import Effect (Effect)
 import Effect.Ref as Ref
-import Halogen.Subscription as Subscription
+import Halogen.Subscription as HS
 import React.Basic.Hooks as React
 import Routing.Duplex (parse, print)
 import Routing.PushState as PushState
@@ -16,7 +16,7 @@ import Web.Router.Types (Event(..))
 mkRoutingManager ::
   Effect
     { read :: Effect Route
-    , event :: Subscription.Emitter Route
+    , event :: HS.Emitter Route
     , navigate :: Route -> Effect Unit
     , redirect :: Route -> Effect Unit
     , component :: React.JSX
@@ -25,7 +25,7 @@ mkRoutingManager = do
   interface <- PushState.makeInterface
   { path } <- interface.locationState
   value <- Ref.new $ either (const Error) identity $ parse routeCodec path
-  { emitter, listener } <- Subscription.create
+  { emitter, listener } <- HS.create
   let
     driver = Driver.makeDriver_ (parse routeCodec) (print routeCodec) interface
   router <-
@@ -34,7 +34,7 @@ mkRoutingManager = do
       ( case _ of
           Resolved _ route -> do
             newRoute <- Ref.modify (const route) value
-            Subscription.notify listener newRoute
+            HS.notify listener newRoute
           _ -> pure unit
       )
       driver
