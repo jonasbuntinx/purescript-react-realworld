@@ -25,7 +25,7 @@ main = do
     Nothing -> Exception.throw "Conduit container element not found."
     Just c -> do
       auth /\ authManager <- Auth.mkAuthManager
-      routing /\ routingManaget <- Routing.mkRoutingManager
+      routing /\ routingManager <- Routing.mkRoutingManager
       launchAff_ do
         root <- runAppM { auth, routing } Root.mkRoot
-        liftEffect $ render (React.fragment [ routingManaget, authManager, root unit ]) c
+        liftEffect $ render (React.fragment [ routingManager, authManager, root unit ]) c
