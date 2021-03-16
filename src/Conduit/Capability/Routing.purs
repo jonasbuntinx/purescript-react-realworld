@@ -3,25 +3,24 @@ module Conduit.Capability.Routing where
 import Prelude
 import Conduit.Data.Route (Route)
 import Control.Monad.Trans.Class (lift)
-import Halogen.Subscription (Emitter)
+import Halogen.Subscription as HS
 import React.Halo (HaloM)
-
-type RoutingInstance m
-  = { readRoute :: m Route
-    , readRoutingEvent :: m (Emitter Route)
-    , navigate :: Route -> m Unit
-    , redirect :: Route -> m Unit
-    }
+import React.Halo as Halo
 
 class
   Monad m <= MonadRouting m where
-  readRoute :: m Route
-  readRoutingEvent :: m (Emitter Route)
+  read :: m Route
+  getEmitter :: m (HS.Emitter Route)
   navigate :: Route -> m Unit
   redirect :: Route -> m Unit
 
 instance monadRoutingHaloM :: MonadRouting m => MonadRouting (HaloM props ctx state action m) where
-  readRoute = lift readRoute
-  readRoutingEvent = lift readRoutingEvent
+  read = lift read
+  getEmitter = lift getEmitter
   navigate = lift <<< navigate
   redirect = lift <<< redirect
+
+subscribe :: forall m props ctx state action. MonadRouting m => (Route -> action) -> HaloM props ctx state action m Unit
+subscribe f = do
+  emitter <- lift getEmitter
+  void $ Halo.subscribe $ f <$> emitter

@@ -2,12 +2,14 @@ module Conduit.Page.Article (Props, mkArticlePage) where
 
 import Prelude
 import Conduit.Api.Client (isNotFound)
-import Conduit.Capability.Auth (class MonadAuth, readAuth, readAuthEvent)
+import Conduit.Capability.Auth (class MonadAuth)
+import Conduit.Capability.Auth as Auth
 import Conduit.Capability.Halo (class MonadHalo, component)
 import Conduit.Capability.Resource.Article (class ArticleRepository, deleteArticle, getArticle, toggleFavorite)
 import Conduit.Capability.Resource.Comment (class CommentRepository, createComment, deleteComment, listComments)
 import Conduit.Capability.Resource.Profile (class ProfileRepository, toggleFollow)
-import Conduit.Capability.Routing (class MonadRouting, navigate, redirect)
+import Conduit.Capability.Routing (class MonadRouting)
+import Conduit.Capability.Routing as Routing
 import Conduit.Component.Buttons (ButtonSize(..), favoriteButton, followButton)
 import Conduit.Component.Link as Link
 import Conduit.Data.Auth (Auth)
@@ -90,10 +92,8 @@ mkArticlePage = component "ArticlePage" { context, initialState, eval, render }
 
   handleAction = case _ of
     Initialize -> do
-      auth <- readAuth
-      handleAction $ UpdateAuth auth
-      authEvent <- readAuthEvent
-      void $ Halo.subscribe $ map UpdateAuth authEvent
+      handleAction <<< UpdateAuth =<< Auth.read
+      Auth.subscribe UpdateAuth
       parTraverse_ handleAction
         [ LoadArticle
         , LoadComments
@@ -107,13 +107,13 @@ mkArticlePage = component "ArticlePage" { context, initialState, eval, render }
     UpdateAuth auth -> do
       modify_ _ { auth = auth }
     Navigate route -> do
-      navigate route
+      Routing.navigate route
     LoadArticle -> do
       { slug } <- Halo.props
       modify_ _ { article = RemoteData.Loading }
       response <- getArticle slug
       if (isNotFound response) then
-        redirect Home
+        Routing.redirect Home
       else
         modify_ _ { article = RemoteData.fromEither response }
     LoadComments -> do
@@ -126,7 +126,7 @@ mkArticlePage = component "ArticlePage" { context, initialState, eval, render }
       modify_ _ { submitResponse = RemoteData.Loading }
       response <- deleteArticle props.slug
       modify_ _ { submitResponse = RemoteData.fromEither response }
-      for_ response \_ -> navigate Home
+      for_ response \_ -> Routing.navigate Home
     ToggleFollow -> do
       state <- get
       for_ (preview _author state) (toggleFollow >=> traverse_ (modify_ <<< set _author))

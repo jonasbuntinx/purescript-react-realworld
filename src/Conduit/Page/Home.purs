@@ -1,11 +1,13 @@
 module Conduit.Page.Home (mkHomePage) where
 
 import Prelude
-import Conduit.Capability.Auth (class MonadAuth, readAuth, readAuthEvent)
+import Conduit.Capability.Auth (class MonadAuth)
+import Conduit.Capability.Auth as Auth
 import Conduit.Capability.Halo (class MonadHalo, component)
 import Conduit.Capability.Resource.Article (class ArticleRepository, listArticles, listFeed, toggleFavorite)
 import Conduit.Capability.Resource.Tag (class TagRepository, listTags)
-import Conduit.Capability.Routing (class MonadRouting, navigate)
+import Conduit.Capability.Routing (class MonadRouting)
+import Conduit.Capability.Routing as Routing
 import Conduit.Component.ArticleList (articleList)
 import Conduit.Component.Pagination (pagination)
 import Conduit.Component.Tabs as Tabs
@@ -75,10 +77,8 @@ mkHomePage = component "HomePage" { context, initialState, eval, render }
 
   handleAction = case _ of
     Initialize -> do
-      auth <- readAuth
-      handleAction $ UpdateAuth auth
-      authEvent <- readAuthEvent
-      void $ Halo.subscribe $ map UpdateAuth authEvent
+      handleAction <<< UpdateAuth =<< Auth.read
+      Auth.subscribe UpdateAuth
       handleAction LoadTags
     UpdateAuth auth -> do
       state <- get
@@ -87,7 +87,7 @@ mkHomePage = component "HomePage" { context, initialState, eval, render }
         Nothing -> handleAction $ LoadArticles state.tab state.pagination
         Just _ -> handleAction $ LoadArticles Feed state.pagination
     Navigate route -> do
-      navigate route
+      Routing.navigate route
     LoadTags -> do
       modify_ _ { tags = RemoteData.Loading }
       response <- listTags

@@ -2,11 +2,13 @@ module Conduit.Page.Profile (Props, Tab(..), mkProfilePage) where
 
 import Prelude
 import Conduit.Api.Client (isNotFound)
-import Conduit.Capability.Auth (class MonadAuth, readAuth, readAuthEvent)
+import Conduit.Capability.Auth (class MonadAuth)
+import Conduit.Capability.Auth as Auth
 import Conduit.Capability.Halo (class MonadHalo, component)
 import Conduit.Capability.Resource.Article (class ArticleRepository, listArticles, toggleFavorite)
 import Conduit.Capability.Resource.Profile (class ProfileRepository, getProfile, toggleFollow)
-import Conduit.Capability.Routing (class MonadRouting, navigate, redirect)
+import Conduit.Capability.Routing (class MonadRouting)
+import Conduit.Capability.Routing as Routing
 import Conduit.Component.ArticleList (articleList)
 import Conduit.Component.Buttons (followButton)
 import Conduit.Component.Pagination (pagination)
@@ -85,10 +87,8 @@ mkProfilePage = component "ProfilePage" { context, initialState, eval, render }
 
   handleAction = case _ of
     Initialize -> do
-      auth <- readAuth
-      handleAction $ UpdateAuth auth
-      authEvent <- readAuthEvent
-      void $ Halo.subscribe $ map UpdateAuth authEvent
+      handleAction <<< UpdateAuth =<< Auth.read
+      Auth.subscribe UpdateAuth
       parTraverse_ handleAction
         [ LoadProfile
         , LoadArticles initialPagination
@@ -106,14 +106,14 @@ mkProfilePage = component "ProfilePage" { context, initialState, eval, render }
             ]
       parTraverse_ handleAction actions
     UpdateAuth auth -> modify_ _ { auth = auth }
-    Navigate route -> navigate route
+    Navigate route -> Routing.navigate route
     LoadProfile -> do
       props <- Halo.props
       modify_ _ { profile = RemoteData.Loading }
       response <- getProfile props.username
       modify_ _ { profile = RemoteData.fromEither response }
       when (isNotFound response) do
-        redirect Home
+        Routing.redirect Home
     LoadArticles pagination -> do
       props <- Halo.props
       let

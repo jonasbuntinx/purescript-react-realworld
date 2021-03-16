@@ -1,14 +1,16 @@
 module Conduit.Root where
 
 import Prelude
-import Conduit.Capability.Auth (class MonadAuth, readAuth, readAuthEvent)
+import Conduit.Capability.Auth (class MonadAuth)
+import Conduit.Capability.Auth as Auth
 import Conduit.Capability.Halo (class MonadHalo, component)
 import Conduit.Capability.Resource.Article (class ArticleRepository)
 import Conduit.Capability.Resource.Comment (class CommentRepository)
 import Conduit.Capability.Resource.Profile (class ProfileRepository)
 import Conduit.Capability.Resource.Tag (class TagRepository)
 import Conduit.Capability.Resource.User (class UserRepository)
-import Conduit.Capability.Routing (class MonadRouting, navigate, readRoute, readRoutingEvent, redirect)
+import Conduit.Capability.Routing (class MonadRouting)
+import Conduit.Capability.Routing as Routing
 import Conduit.Component.Footer as Footer
 import Conduit.Component.Header as Header
 import Conduit.Data.Auth (Auth)
@@ -63,28 +65,24 @@ mkRoot = do
   handleAction = case _ of
     Initialize -> do
       -- auth
-      auth <- readAuth
-      handleAction $ UpdateAuth auth
-      authEvent <- readAuthEvent
-      void $ Halo.subscribe $ map UpdateAuth authEvent
+      handleAction <<< UpdateAuth =<< Auth.read
+      Auth.subscribe UpdateAuth
       -- routing
-      route <- readRoute
-      handleAction $ UpdateRoute route
-      routingEvent <- readRoutingEvent
-      void $ Halo.subscribe $ map UpdateRoute routingEvent
+      handleAction <<< UpdateRoute =<< Routing.read
+      Routing.subscribe UpdateRoute
     UpdateAuth auth -> modify_ _ { auth = auth }
     UpdateRoute route -> do
       modify_ _ { route = route }
-      auth <- readAuth
+      auth <- Auth.read
       case route, auth of
-        Login, Just _ -> redirect Home
-        Register, Just _ -> redirect Home
-        Settings, Nothing -> redirect Home
-        CreateArticle, Nothing -> redirect Home
-        UpdateArticle _, Nothing -> redirect Home
-        Error, _ -> redirect Home
+        Login, Just _ -> Routing.redirect Home
+        Register, Just _ -> Routing.redirect Home
+        Settings, Nothing -> Routing.redirect Home
+        CreateArticle, Nothing -> Routing.redirect Home
+        UpdateArticle _, Nothing -> Routing.redirect Home
+        Error, _ -> Routing.redirect Home
         _, _ -> pure unit
-    Navigate route -> navigate route
+    Navigate route -> Routing.navigate route
 
   mkRender = do
     homePage <- mkHomePage

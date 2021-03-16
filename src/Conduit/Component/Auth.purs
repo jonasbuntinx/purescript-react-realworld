@@ -14,7 +14,7 @@ import Data.Foldable (for_, traverse_)
 import Data.HTTP.Method (Method(..))
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
-import Data.Tuple.Nested ((/\))
+import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
@@ -28,15 +28,15 @@ import Web.HTML (window)
 import Web.HTML.Window as Window
 import Web.Storage.Storage as Storage
 
-mkAuthManager ::
-  Effect
-    { read :: Effect (Maybe Auth)
-    , event :: HS.Emitter (Maybe Auth)
+type AuthIO
+  = { read :: Effect (Maybe Auth)
+    , emitter :: HS.Emitter (Maybe Auth)
     , modify :: (Maybe Auth -> Maybe Auth) -> Effect (Maybe Auth)
-    , component :: React.JSX
     }
+
+mkAuthManager :: Effect (AuthIO /\ React.JSX)
 mkAuthManager = do
-  { event, read, modify } <- create
+  { read, emitter, modify } <- create
   component <-
     React.component "AuthManager" \_ -> React.do
       state /\ setState <- React.useState { interval: Nothing }
@@ -47,19 +47,20 @@ mkAuthManager = do
         pure $ traverse_ Timer.clearInterval state.interval
       pure React.empty
   pure
-    { read
-    , event
-    , modify
-    , component: component unit
-    }
+    ( { read
+      , emitter
+      , modify
+      }
+        /\ component unit
+    )
   where
   create = do
     initial <- load
     value <- Ref.new initial
     { emitter, listener } <- HS.create
     pure
-      { event: emitter
-      , read: Ref.read value
+      { read: Ref.read value
+      , emitter
       , modify:
           \f -> do
             newValue <- Ref.modify f value
@@ -92,4 +93,4 @@ mkAuthManager = do
           (res :: Either Error { user :: CurrentUser }) <- makeSecureRequest' token GET (StatusCode 200) Endpoint.User unit
           liftEffect case hush $ _.user <$> res of
             Nothing -> void $ modify $ const Nothing
-            Just user -> void $ modify $ const $ toAuth user.token (Just $ Record.delete (SProxy :: _ "token") user)
+            Just user -> void $ modify $ const $ toAuth user.token (Just $ Record.delete (SProxy :: SProxy "token") user)

@@ -4,22 +4,22 @@ import Prelude
 import Conduit.Data.Auth (Auth)
 import Control.Monad.Trans.Class (lift)
 import Data.Maybe (Maybe)
-import Halogen.Subscription (Emitter)
+import Halogen.Subscription as HS
 import React.Halo (HaloM)
-
-type AuthInstance m
-  = { readAuth :: m (Maybe Auth)
-    , readAuthEvent :: m (Emitter (Maybe Auth))
-    , modifyAuth :: (Maybe Auth -> Maybe Auth) -> m (Maybe Auth)
-    }
+import React.Halo as Halo
 
 class
   Monad m <= MonadAuth m where
-  readAuth :: m (Maybe Auth)
-  readAuthEvent :: m (Emitter (Maybe Auth))
-  modifyAuth :: (Maybe Auth -> Maybe Auth) -> m (Maybe Auth)
+  read :: m (Maybe Auth)
+  getEmitter :: m (HS.Emitter (Maybe Auth))
+  modify :: (Maybe Auth -> Maybe Auth) -> m (Maybe Auth)
 
 instance monadAuthHaloM :: MonadAuth m => MonadAuth (HaloM props ctx state action m) where
-  readAuth = lift readAuth
-  readAuthEvent = lift readAuthEvent
-  modifyAuth = lift <<< modifyAuth
+  read = lift read
+  getEmitter = lift getEmitter
+  modify = lift <<< modify
+
+subscribe :: forall m props ctx state action. MonadAuth m => (Maybe Auth -> action) -> HaloM props ctx state action m Unit
+subscribe f = do
+  emitter <- lift getEmitter
+  void $ Halo.subscribe $ f <$> emitter

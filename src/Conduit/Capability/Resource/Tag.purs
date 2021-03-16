@@ -6,11 +6,6 @@ import Control.Monad.Trans.Class (lift)
 import Data.Either (Either)
 import React.Halo (HaloM)
 
--- | Tag
-type TagInstance m
-  = { listTags :: m (Either Error (Array String))
-    }
-
 class
   Monad m <= TagRepository m where
   listTags :: m (Either Error (Array String))

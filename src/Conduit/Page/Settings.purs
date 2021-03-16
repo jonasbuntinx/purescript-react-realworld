@@ -1,10 +1,12 @@
 module Conduit.Page.Settings (mkSettingsPage) where
 
 import Prelude
-import Conduit.Capability.Auth (class MonadAuth, readAuth, readAuthEvent)
+import Conduit.Capability.Auth (class MonadAuth)
+import Conduit.Capability.Auth as Auth
 import Conduit.Capability.Halo (class MonadHalo, component)
 import Conduit.Capability.Resource.User (class UserRepository, logoutUser, updateUser)
-import Conduit.Capability.Routing (class MonadRouting, navigate)
+import Conduit.Capability.Routing (class MonadRouting)
+import Conduit.Capability.Routing as Routing
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Route (Route(..))
@@ -70,10 +72,8 @@ mkSettingsPage = component "SettingsPage" { context, initialState, eval, render 
 
   handleAction = case _ of
     Initialize -> do
-      auth <- readAuth
-      handleAction $ UpdateUser $ _.user =<< auth
-      authEvent <- readAuthEvent
-      void $ Halo.subscribe $ map (UpdateUser <<< (_.user =<< _)) authEvent
+      handleAction <<< (UpdateUser <<< (_.user =<< _)) =<< Auth.read
+      Auth.subscribe (UpdateUser <<< (_.user =<< _))
     UpdateUser maybeUser ->
       for_ maybeUser \user@{ image, username, bio, email } -> do
         modify_
@@ -97,7 +97,7 @@ mkSettingsPage = component "SettingsPage" { context, initialState, eval, render 
           modify_ _ { submitResponse = RemoteData.Loading }
           response <- updateUser validated
           modify_ _ { submitResponse = RemoteData.fromEither response }
-          for_ response \_ -> navigate Home
+          for_ response \_ -> Routing.navigate Home
     Logout -> logoutUser
 
   validate values = ado

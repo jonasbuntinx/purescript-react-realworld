@@ -8,11 +8,6 @@ import Control.Monad.Trans.Class (lift)
 import Data.Either (Either)
 import React.Halo (HaloM)
 
-type ProfileInstance m
-  = { getProfile :: Username -> m (Either Error Profile)
-    , toggleFollow :: Profile -> m (Either Error Profile)
-    }
-
 class
   Monad m <= ProfileRepository m where
   getProfile :: Username -> m (Either Error Profile)

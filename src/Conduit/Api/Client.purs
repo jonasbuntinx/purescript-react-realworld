@@ -9,8 +9,10 @@ import Affjax.ResponseFormat as ResponseFormat
 import Affjax.ResponseHeader (ResponseHeader)
 import Affjax.StatusCode (StatusCode(..))
 import Conduit.Api.Endpoint (Endpoint, endpointCodec)
-import Conduit.Capability.Auth (class MonadAuth, readAuth)
-import Conduit.Capability.Routing (class MonadRouting, redirect)
+import Conduit.Capability.Auth (class MonadAuth)
+import Conduit.Capability.Auth as Auth
+import Conduit.Capability.Routing (class MonadRouting)
+import Conduit.Capability.Routing as Routing
 import Conduit.Config as Config
 import Conduit.Data.Route (Route(..))
 import Control.Monad.Except (ExceptT(..), except, runExceptT, throwError, withExceptT)
@@ -122,10 +124,10 @@ makeSecureRequest ::
   body ->
   m (Either Error response)
 makeSecureRequest method statusCode endpoint body = do
-  auth <- readAuth
+  auth <- Auth.read
   case auth of
     Nothing -> do
-      redirect Register
+      Routing.redirect Register
       pure $ Left $ NotAuthorized
     Just { token } -> do
       makeSecureRequest' token method statusCode endpoint body

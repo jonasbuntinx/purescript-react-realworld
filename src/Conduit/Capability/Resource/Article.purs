@@ -9,15 +9,6 @@ import Data.Either (Either)
 import Data.Maybe (Maybe)
 import React.Halo (HaloM)
 
-type ArticleInstance m
-  = { listArticles :: ArticlesQuery -> m (Either Error { articles :: Array Article, articlesCount :: Int })
-    , listFeed :: ArticlesQuery -> m (Either Error { articles :: Array Article, articlesCount :: Int })
-    , getArticle :: Slug -> m (Either Error Article)
-    , submitArticle :: Maybe Slug -> { | ArticleRep () } -> m (Either Error Article)
-    , deleteArticle :: Slug -> m (Either Error Unit)
-    , toggleFavorite :: Article -> m (Either Error Article)
-    }
-
 class
   Monad m <= ArticleRepository m where
   listArticles :: ArticlesQuery -> m (Either Error { articles :: Array Article, articlesCount :: Int })

@@ -3,6 +3,7 @@ module Conduit.Component.Routing where
 import Prelude
 import Conduit.Data.Route (Route(..), routeCodec)
 import Data.Either (either)
+import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
 import Effect.Ref as Ref
 import Halogen.Subscription as HS
@@ -13,14 +14,14 @@ import Web.Router as Router
 import Web.Router.Driver.PushState as Driver
 import Web.Router.Types (Event(..))
 
-mkRoutingManager ::
-  Effect
-    { read :: Effect Route
-    , event :: HS.Emitter Route
+type RoutingIO
+  = { read :: Effect Route
+    , emitter :: HS.Emitter Route
     , navigate :: Route -> Effect Unit
     , redirect :: Route -> Effect Unit
-    , component :: React.JSX
     }
+
+mkRoutingManager :: Effect (RoutingIO /\ React.JSX)
 mkRoutingManager = do
   interface <- PushState.makeInterface
   { path } <- interface.locationState
@@ -44,9 +45,10 @@ mkRoutingManager = do
         router.initialize
       pure React.empty
   pure
-    { read: Ref.read value
-    , event: emitter
-    , navigate: router.navigate
-    , redirect: router.redirect
-    , component: component unit
-    }
+    ( { read: Ref.read value
+      , emitter
+      , navigate: router.navigate
+      , redirect: router.redirect
+      }
+        /\ component unit
+    )

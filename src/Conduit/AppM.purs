@@ -1,37 +1,51 @@
 module Conduit.AppM where
 
 import Prelude
-import Conduit.Capability.Auth (class MonadAuth, AuthInstance)
+import Affjax.StatusCode (StatusCode(..))
+import Conduit.Api.Client (Error, makeRequest, makeSecureRequest)
+import Conduit.Api.Endpoint as Endpoint
+import Conduit.Capability.Auth (class MonadAuth)
+import Conduit.Capability.Auth as Auth
 import Conduit.Capability.Halo (class MonadHalo)
-import Conduit.Capability.Resource.Article (class ArticleRepository, ArticleInstance)
-import Conduit.Capability.Resource.Comment (class CommentRepository, CommentInstance)
-import Conduit.Capability.Resource.Profile (class ProfileRepository, ProfileInstance)
-import Conduit.Capability.Resource.Tag (class TagRepository, TagInstance)
-import Conduit.Capability.Resource.User (class UserRepository, UserInstance)
-import Conduit.Capability.Routing (class MonadRouting, RoutingInstance)
+import Conduit.Capability.Resource.Article (class ArticleRepository)
+import Conduit.Capability.Resource.Comment (class CommentRepository)
+import Conduit.Capability.Resource.Profile (class ProfileRepository)
+import Conduit.Capability.Resource.Tag (class TagRepository)
+import Conduit.Capability.Resource.User (class UserRepository)
+import Conduit.Capability.Routing (class MonadRouting)
+import Conduit.Capability.Routing as Routing
+import Conduit.Component.Auth (AuthIO)
+import Conduit.Component.Routing (RoutingIO)
+import Conduit.Data.Article (Article, defaultArticlesQuery)
+import Conduit.Data.Auth (toAuth)
+import Conduit.Data.Comment (Comment)
+import Conduit.Data.Profile (Profile)
+import Conduit.Data.Route (Route(..))
+import Conduit.Data.User (CurrentUser)
 import Control.Monad.Error.Class (class MonadError, class MonadThrow)
 import Control.Monad.Reader (ReaderT, ask, asks, runReaderT)
+import Data.Either (Either)
+import Data.Foldable (for_)
+import Data.HTTP.Method (Method(..))
+import Data.Maybe (Maybe(..))
+import Data.Symbol (SProxy(..))
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Exception as Exception
 import React.Halo as Halo
+import Record as Record
 
-type AppInstance m
-  = { auth :: AuthInstance m
-    , routing :: RoutingInstance m
-    , user :: UserInstance m
-    , article :: ArticleInstance m
-    , comment :: CommentInstance m
-    , profile :: ProfileInstance m
-    , tag :: TagInstance m
+type Env
+  = { auth :: AuthIO
+    , routing :: RoutingIO
     }
 
 newtype AppM a
-  = AppM (ReaderT (AppInstance AppM) Aff a)
+  = AppM (ReaderT Env Aff a)
 
-runAppM :: AppInstance AppM -> AppM ~> Aff
-runAppM inst (AppM go) = runReaderT go inst
+runAppM :: Env -> AppM ~> Aff
+runAppM env (AppM m) = runReaderT m env
 
 derive newtype instance functorAppM :: Functor AppM
 
@@ -62,78 +76,94 @@ instance monadHaloAppM :: MonadHalo AppM where
 
 -- | Auth
 instance monadAuthAppM :: MonadAuth AppM where
-  readAuth = join $ AppM $ asks _.auth.readAuth
-  readAuthEvent = join $ AppM $ asks _.auth.readAuthEvent
-  modifyAuth k = do
-    f <- AppM $ asks _.auth.modifyAuth
-    f k
+  read = liftEffect =<< (AppM $ asks _.auth.read)
+  getEmitter = AppM $ asks _.auth.emitter
+  modify k = do
+    f <- AppM $ asks _.auth.modify
+    liftEffect $ f k
 
 -- | Routing
 instance monadRoutingAppM :: MonadRouting AppM where
-  readRoute = join $ AppM $ asks _.routing.readRoute
-  readRoutingEvent = join $ AppM $ asks _.routing.readRoutingEvent
+  read = liftEffect =<< (AppM $ asks _.routing.read)
+  getEmitter = AppM $ asks _.routing.emitter
   navigate route = do
     f <- AppM $ asks _.routing.navigate
-    f route
+    liftEffect $ f route
   redirect route = do
     f <- AppM $ asks _.routing.redirect
-    f route
+    liftEffect $ f route
 
 -- | User
 instance userRepositoryAppM :: UserRepository AppM where
-  loginUser creds = do
-    f <- AppM $ asks _.user.loginUser
-    f creds
+  loginUser credentials = do
+    (res :: Either Error { user :: CurrentUser }) <- makeRequest POST (StatusCode 200) Endpoint.Login { user: credentials }
+    for_ res \{ user: currentUser } -> do
+      Auth.modify $ const $ toAuth currentUser.token (Just $ Record.delete (SProxy :: _ "token") currentUser)
+    pure $ res <#> _.user
   registerUser user = do
-    f <- AppM $ asks _.user.registerUser
-    f user
+    (res :: Either Error { user :: CurrentUser }) <- makeRequest POST (StatusCode 200) Endpoint.Users { user }
+    for_ res \{ user: currentUser } -> do
+      Auth.modify $ const $ toAuth currentUser.token (Just $ Record.delete (SProxy :: _ "token") currentUser)
+    pure $ res <#> _.user
   updateUser user = do
-    f <- AppM $ asks _.user.updateUser
-    f user
-  logoutUser = join $ AppM $ asks _.user.logoutUser
+    (res :: Either Error { user :: CurrentUser }) <- makeSecureRequest PUT (StatusCode 200) Endpoint.User { user }
+    for_ res \{ user: currentUser } -> do
+      Auth.modify $ map $ _ { user = Just $ Record.delete (SProxy :: _ "token") currentUser }
+    pure $ res <#> _.user
+  logoutUser = do
+    void $ Auth.modify $ const Nothing
+    Routing.redirect Home
 
 -- | Article
 instance articleRepositoryAppM :: ArticleRepository AppM where
-  listArticles query = do
-    f <- AppM $ asks _.article.listArticles
-    f query
-  listFeed query = do
-    f <- AppM $ asks _.article.listFeed
-    f query
+  listArticles query = makeRequest GET (StatusCode 200) (Endpoint.Articles query) unit
+  listFeed query = makeSecureRequest GET (StatusCode 200) (Endpoint.Feed query) unit
   getArticle slug = do
-    f <- AppM $ asks _.article.getArticle
-    f slug
+    (res :: Either Error { article :: Article }) <- makeRequest GET (StatusCode 200) (Endpoint.Article slug) unit
+    pure $ res <#> _.article
   submitArticle slug article = do
-    f <- AppM $ asks _.article.submitArticle
-    f slug article
+    (res :: Either Error { article :: Article }) <- case slug of
+      Nothing -> makeSecureRequest POST (StatusCode 200) (Endpoint.Articles defaultArticlesQuery) { article }
+      Just slug' -> makeSecureRequest PUT (StatusCode 200) (Endpoint.Article slug') { article }
+    pure $ res <#> _.article
   deleteArticle slug = do
-    f <- AppM $ asks _.article.deleteArticle
-    f slug
-  toggleFavorite article = do
-    f <- AppM $ asks _.article.toggleFavorite
-    f article
+    (res :: Either Error {}) <- makeSecureRequest DELETE (StatusCode 200) (Endpoint.Article slug) unit
+    pure $ res <#> const unit
+  toggleFavorite { slug, favorited } = do
+    (res :: Either Error { article :: Article }) <-
+      if favorited then
+        makeSecureRequest DELETE (StatusCode 200) (Endpoint.Favorite slug) unit
+      else
+        makeSecureRequest POST (StatusCode 200) (Endpoint.Favorite slug) unit
+    pure $ res <#> _.article
 
 -- | Comment
 instance commentRepositoryAppM :: CommentRepository AppM where
   listComments slug = do
-    f <- AppM $ asks _.comment.listComments
-    f slug
+    (res :: Either Error { comments :: Array Comment }) <- makeRequest GET (StatusCode 200) (Endpoint.Comments slug) unit
+    pure $ res <#> _.comments
   createComment slug comment = do
-    f <- AppM $ asks _.comment.createComment
-    f slug comment
+    (res :: Either Error { comment :: Comment }) <- makeSecureRequest POST (StatusCode 200) (Endpoint.Comments slug) { comment }
+    pure $ res <#> _.comment
   deleteComment slug id = do
-    f <- AppM $ asks _.comment.deleteComment
-    f slug id
+    (res :: Either Error {}) <- makeSecureRequest DELETE (StatusCode 200) (Endpoint.Comment slug id) unit
+    pure $ res <#> const unit
 
 -- | Profile
 instance profileRepositoryAppM :: ProfileRepository AppM where
   getProfile username = do
-    f <- AppM $ asks _.profile.getProfile
-    f username
-  toggleFollow profile = do
-    f <- AppM $ asks _.profile.toggleFollow
-    f profile
+    (res :: Either Error { profile :: Profile }) <- makeRequest GET (StatusCode 200) (Endpoint.Profiles username) unit
+    pure $ res <#> _.profile
+  toggleFollow { username, following } = do
+    (res :: Either Error { profile :: Profile }) <-
+      if following then
+        makeSecureRequest DELETE (StatusCode 200) (Endpoint.Follow username) unit
+      else
+        makeSecureRequest POST (StatusCode 200) (Endpoint.Follow username) unit
+    pure $ res <#> _.profile
 
 -- | Tag
 instance tagRepositoryAppM :: TagRepository AppM where
-  listTags = join $ AppM $ asks _.tag.listTags
+  listTags = do
+    (res :: Either Error { tags :: Array String }) <- makeRequest GET (StatusCode 200) Endpoint.Tags unit
+    pure $ res <#> _.tags
