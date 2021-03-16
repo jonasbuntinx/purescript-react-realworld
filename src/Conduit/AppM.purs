@@ -69,10 +69,10 @@ derive newtype instance monadErrorAppM :: MonadError Exception.Error AppM
 instance monadHaloAppM :: MonadHalo AppM where
   component name spec =
     AppM do
-      impl <- ask
+      env <- ask
       liftEffect
         $ Halo.component name
-            spec { eval = Halo.hoist (runAppM impl) <<< spec.eval }
+            spec { eval = Halo.hoist (runAppM env) <<< spec.eval }
 
 -- | Auth
 instance monadAuthAppM :: MonadAuth AppM where
