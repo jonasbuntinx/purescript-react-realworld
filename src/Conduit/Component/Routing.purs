@@ -12,7 +12,6 @@ import Routing.Duplex (parse, print)
 import Routing.PushState as PushState
 import Web.Router as Router
 import Web.Router.Driver.PushState as Driver
-import Web.Router.Types (Event(..))
 
 type RoutingIO
   = { read :: Effect Route
@@ -33,7 +32,7 @@ mkRoutingManager = do
     Router.makeRouter
       (\_ _ -> Router.continue)
       ( case _ of
-          Resolved _ route -> do
+          Router.Resolved _ route -> do
             newRoute <- Ref.modify (const route) value
             HS.notify listener newRoute
           _ -> pure unit

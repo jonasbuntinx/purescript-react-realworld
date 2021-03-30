@@ -41,7 +41,7 @@
   "dependencies": {
     "dayjs": "^1.10.4",
     "nano-markdown": "^1.2.1",
-    "preact": "^10.5.12",
+    "preact": "^10.5.13",
     "react": "npm:@preact/compat@^0.0.4",
     "react-dom": "npm:@preact/compat@^0.0.4"
   }
