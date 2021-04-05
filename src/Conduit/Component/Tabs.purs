@@ -3,6 +3,7 @@ module Conduit.Component.Tabs where
 import Prelude
 import Control.Alt ((<|>))
 import Data.Array as Array
+import Data.Foldable (foldMap)
 import Data.Maybe (Maybe, maybe)
 import Data.Monoid (guard)
 import Effect (Effect)
@@ -49,7 +50,7 @@ tabs props =
                 }
             ]
         }
-    , Array.foldMap _.content activeTab
+    , foldMap _.content activeTab
     ]
   where
   isActive id = maybe false (eq id <<< _.id) activeTab

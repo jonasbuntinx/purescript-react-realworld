@@ -5,7 +5,6 @@ import Conduit.Data.Username (Username, toString)
 import React.Basic.DOM as R
 import React.Basic.Events (EventHandler)
 import React.Basic.Hooks as React
-import Simple.JSON (writeJSON)
 
 data ButtonSize
   = Icon
@@ -41,8 +40,8 @@ favoriteButton { size, favorited, count, onClick } =
             { className: "counter"
             , children:
                 [ R.text case size of
-                    Icon -> " " <> writeJSON count
-                    _ -> " (" <> writeJSON count <> ")"
+                    Icon -> " " <> show count
+                    _ -> " (" <> show count <> ")"
                 ]
             }
         ]

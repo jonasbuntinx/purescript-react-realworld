@@ -1,7 +1,7 @@
 module Conduit.Page.Register (mkRegisterPage) where
 
 import Prelude
-import Conduit.Capability.Halo (class MonadHalo, JSX, component)
+import Conduit.Capability.Halo (class MonadHalo, component)
 import Conduit.Capability.Resource.User (class UserRepository, registerUser)
 import Conduit.Capability.Routing (class MonadRouting, navigate, redirect)
 import Conduit.Component.Link as Link
@@ -10,17 +10,19 @@ import Conduit.Data.Route (Route(..))
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Control.Comonad (extract)
+import Control.Monad.State (modify_, get)
 import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
 import Data.Lens.Record as LR
 import Data.Monoid (guard)
 import Data.Symbol (SProxy(..))
-import Data.Validation.Semigroup (andThen, toEither, unV)
+import Data.Validation.Semigroup (andThen, toEither, validation)
 import Network.RemoteData as RemoteData
 import React.Basic.DOM as R
 import React.Basic.DOM.Events (targetValue)
 import React.Basic.Events (handler, handler_)
+import React.Basic.Hooks as React
 import React.Halo as Halo
 
 data Action
@@ -35,10 +37,12 @@ mkRegisterPage ::
   MonadRouting m =>
   UserRepository m =>
   MonadHalo m =>
-  m (Unit -> JSX)
-mkRegisterPage = component "RegisterPage" { initialState, eval, render }
+  m (Unit -> React.JSX)
+mkRegisterPage = component "RegisterPage" { context, initialState, eval, render }
   where
-  initialState =
+  context _ = pure unit
+
+  initialState _ _ =
     { username: pure ""
     , email: pure ""
     , password: pure ""
@@ -53,17 +57,17 @@ mkRegisterPage = component "RegisterPage" { initialState, eval, render }
 
   handleAction = case _ of
     Navigate route -> navigate route
-    UpdateUsername username -> Halo.modify_ _ { username = V.Modified username }
-    UpdateEmail email -> Halo.modify_ _ { email = V.Modified email }
-    UpdatePassword password -> Halo.modify_ _ { password = V.Modified password }
+    UpdateUsername username -> modify_ _ { username = V.Modified username }
+    UpdateEmail email -> modify_ _ { email = V.Modified email }
+    UpdatePassword password -> modify_ _ { password = V.Modified password }
     Submit -> do
-      state <- V.setModified <$> Halo.get
+      state <- V.setModified <$> get
       case toEither (validate state) of
-        Left _ -> Halo.modify_ (const state)
+        Left _ -> modify_ (const state)
         Right validated -> do
-          Halo.modify_ _ { submitResponse = RemoteData.Loading }
+          modify_ _ { submitResponse = RemoteData.Loading }
           response <- registerUser validated
-          Halo.modify_ _ { submitResponse = RemoteData.fromEither response }
+          modify_ _ { submitResponse = RemoteData.fromEither response }
           for_ response \_ -> redirect Home
 
   validate values = ado
@@ -74,7 +78,7 @@ mkRegisterPage = component "RegisterPage" { initialState, eval, render }
 
   render { state, send } =
     let
-      errors = validate state # unV identity (const mempty) :: { username :: _, email :: _, password :: _ }
+      errors = validate state # validation identity (const mempty) :: { username :: _, email :: _, password :: _ }
     in
       container
         [ R.h1

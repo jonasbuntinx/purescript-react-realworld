@@ -2,12 +2,12 @@ module Foreign.Day (DateTime, fromUTCString, fromMilliseconds, toMilliseconds, n
 
 import Prelude
 import Control.Monad.Error.Class (throwError)
+import Data.Argonaut.Core as AC
+import Data.Argonaut.Decode (class DecodeJson, JsonDecodeError(..), decodeJson)
 import Data.Function.Uncurried (Fn3, runFn3)
 import Data.Maybe (Maybe(..))
 import Data.Time.Duration (Milliseconds)
 import Effect (Effect)
-import Foreign.Generic (ForeignError(..))
-import Simple.JSON (class ReadForeign, readImpl)
 
 foreign import data DateTime :: Type
 
@@ -33,11 +33,11 @@ instance eqDateTime :: Eq DateTime where
 instance ordDateTime :: Ord DateTime where
   compare a b = compare (toMilliseconds a) (toMilliseconds b)
 
-instance readForeignDateTime :: ReadForeign DateTime where
-  readImpl =
-    readImpl >=> fromUTCString
+instance decodeJsonDateTime :: DecodeJson DateTime where
+  decodeJson =
+    decodeJson >=> fromUTCString
       >>> case _ of
-          Nothing -> throwError $ pure $ ForeignError "Invalid format (expecting UTC)"
+          Nothing -> throwError $ UnexpectedValue $ AC.fromString "Invalid format (expecting UTC)"
           Just d -> pure d
 
 toDisplay :: DateTime -> String

@@ -1,27 +1,25 @@
 module Conduit.Data.Username where
 
 import Prelude
-import Apiary (class EncodeParam)
 import Control.Monad.Error.Class (throwError)
+import Data.Argonaut.Core as AC
+import Data.Argonaut.Decode (class DecodeJson, JsonDecodeError(..), decodeJson)
+import Data.Argonaut.Encode (class EncodeJson)
 import Data.Maybe (Maybe(..))
-import Foreign (ForeignError(..))
-import Simple.JSON (class ReadForeign, class WriteForeign, readImpl)
 
 newtype Username
   = Username String
 
 derive instance eqUsername :: Eq Username
 
-derive newtype instance writeForeignUsername :: WriteForeign Username
+derive newtype instance encodeJsonUsername :: EncodeJson Username
 
-instance readForeignUsername :: ReadForeign Username where
-  readImpl =
-    readImpl >=> fromString
+instance decodeJsonUsername :: DecodeJson Username where
+  decodeJson =
+    decodeJson >=> fromString
       >>> case _ of
           Just username -> pure username
-          Nothing -> throwError $ pure $ ForeignError "Failed to decode username"
-
-derive newtype instance encodeParamUsername :: EncodeParam Username
+          Nothing -> throwError $ UnexpectedValue $ AC.fromString "Failed to decode username"
 
 fromString :: String -> Maybe Username
 fromString "" = Nothing

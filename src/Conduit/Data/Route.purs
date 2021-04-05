@@ -1,12 +1,12 @@
 module Conduit.Data.Route (Route(..), routeCodec) where
 
+import Prelude hiding ((/))
 import Conduit.Data.Slug (Slug)
 import Conduit.Data.Slug as Slug
 import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
 import Data.Either (note)
 import Data.Generic.Rep (class Generic)
-import Prelude (class Eq, ($), (>>>))
 import Routing.Duplex (RouteDuplex', as, default, root, segment)
 import Routing.Duplex.Generic (noArgs, sum)
 import Routing.Duplex.Generic.Syntax ((/))

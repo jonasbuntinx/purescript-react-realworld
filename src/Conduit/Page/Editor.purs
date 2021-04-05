@@ -1,17 +1,18 @@
 module Conduit.Page.Editor (Props, mkEditorPage) where
 
 import Prelude
-import Conduit.Capability.Halo (class MonadHalo, JSX, component)
+import Conduit.Api.Client (isNotFound)
+import Conduit.Capability.Halo (class MonadHalo, component)
 import Conduit.Capability.Resource.Article (class ArticleRepository, getArticle, submitArticle)
 import Conduit.Capability.Routing (class MonadRouting, navigate, redirect)
 import Conduit.Component.ResponseErrors (responseErrors)
 import Conduit.Component.TagInput (tagInput)
-import Conduit.Data.Error (Error(..))
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Slug (Slug)
 import Conduit.Form.Validated as V
 import Conduit.Form.Validator as F
 import Control.Comonad (extract)
+import Control.Monad.State (modify_, get, put)
 import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Foldable (traverse_)
@@ -21,11 +22,12 @@ import Data.Monoid (guard)
 import Data.Set (Set)
 import Data.Set as Set
 import Data.Symbol (SProxy(..))
-import Data.Validation.Semigroup (andThen, toEither, unV)
+import Data.Validation.Semigroup (andThen, toEither, validation)
 import Network.RemoteData as RemoteData
 import React.Basic.DOM as R
 import React.Basic.DOM.Events (targetValue)
 import React.Basic.Events (handler, handler_)
+import React.Basic.Hooks as React
 import React.Halo as Halo
 
 type Props
@@ -45,10 +47,12 @@ mkEditorPage ::
   ArticleRepository m =>
   MonadRouting m =>
   MonadHalo m =>
-  m (Props -> JSX)
-mkEditorPage = component "SettingsPage" { initialState, eval, render }
+  m (Props -> React.JSX)
+mkEditorPage = component "SettingsPage" { context, initialState, eval, render }
   where
-  initialState =
+  context _ = pure unit
+
+  initialState _ _ =
     { article: RemoteData.NotAsked
     , title: pure ""
     , description: pure ""
@@ -61,7 +65,7 @@ mkEditorPage = component "SettingsPage" { initialState, eval, render }
     Halo.mkEval
       _
         { onInitialize = \_ -> Just Initialize
-        , onUpdate = \prev next -> if (prev.slug /= next.slug) then Just Initialize else Nothing
+        , onUpdate = \prev next -> if (prev.props.slug /= next.props.slug) then Just Initialize else Nothing
         , onAction = handleAction
         }
 
@@ -69,39 +73,38 @@ mkEditorPage = component "SettingsPage" { initialState, eval, render }
     Initialize -> do
       props <- Halo.props
       case props.slug of
-        Nothing -> Halo.put initialState
+        Nothing -> put $ initialState props unit
         Just slug -> do
-          Halo.modify_ _ { article = RemoteData.Loading }
+          modify_ _ { article = RemoteData.Loading }
           response <- getArticle slug
-          Halo.modify_ _ { article = RemoteData.fromEither response }
+          modify_ _ { article = RemoteData.fromEither response }
           case response of
-            Left (NotFound _) -> redirect Home
-            Left _ -> pure unit
+            Left _ -> when (isNotFound response) do redirect Home
             Right article -> do
-              Halo.modify_
+              modify_
                 _
                   { title = pure article.title
                   , description = pure article.description
                   , body = pure article.body
                   , tagList = Set.fromFoldable article.tagList
                   }
-    UpdateTitle title -> Halo.modify_ _ { title = V.Modified title }
-    UpdateDescription description -> Halo.modify_ _ { description = V.Modified description }
-    UpdateBody body -> Halo.modify_ _ { body = V.Modified body }
-    UpdateTagList tagList -> Halo.modify_ _ { tagList = tagList }
+    UpdateTitle title -> modify_ _ { title = V.Modified title }
+    UpdateDescription description -> modify_ _ { description = V.Modified description }
+    UpdateBody body -> modify_ _ { body = V.Modified body }
+    UpdateTagList tagList -> modify_ _ { tagList = tagList }
     Submit -> do
       props <- Halo.props
-      state <- V.setModified <$> Halo.get
+      state <- V.setModified <$> get
       case toEither (validate state) of
-        Left _ -> Halo.modify_ (const state)
+        Left _ -> modify_ (const state)
         Right validated -> do
-          Halo.modify_ _ { submitResponse = RemoteData.Loading }
+          modify_ _ { submitResponse = RemoteData.Loading }
           response <- submitArticle props.slug validated
           case response of
             Right article -> do
-              Halo.modify_ _ { submitResponse = RemoteData.Success unit }
+              modify_ _ { submitResponse = RemoteData.Success unit }
               navigate $ ViewArticle article.slug
-            Left err -> Halo.modify_ _ { submitResponse = RemoteData.Failure err }
+            Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
 
   validate values = ado
     title <- values.title # V.validated (LR.prop (SProxy :: _ "title")) F.nonEmpty
@@ -111,7 +114,7 @@ mkEditorPage = component "SettingsPage" { initialState, eval, render }
 
   render { state, send } =
     let
-      errors = validate state # unV identity (const mempty) :: { title :: _, description :: _, body :: _ }
+      errors = validate state # validation identity (const mempty) :: { title :: _, description :: _, body :: _ }
     in
       guard (not $ RemoteData.isLoading state.article) container
         [ responseErrors state.submitResponse

@@ -1,6 +1,6 @@
 {
   "name": "purescript-react-realworld",
-  "version": "1.0.0",
+  "version": "3.0.0",
   "description": "A real-world application demonstrating PureScript and React",
   "keywords": [
     "Purescript",
@@ -9,7 +9,8 @@
   ],
   "contributors": [
     {
-      "name": "Jonas Buntinx"
+      "name": "Jonas Buntinx",
+      "url": "https://github.com/jonasbuntinx"
     },
     {
       "name": "Robert Porter",
@@ -30,17 +31,17 @@
     "test": "spago test --no-install"
   },
   "devDependencies": {
-    "parcel": "^1.12.4",
-    "purescript": "^0.13.8",
+    "parcel": "1.12.3",
+    "purescript": "^0.14.0",
     "purescript-psa": "^0.8.2",
-    "purty": "^6.3.1",
+    "purty": "^7.0.0",
     "spago": "^0.19.1",
     "zephyr": "https://github.com/jonasbuntinx/zephyr.git"
   },
   "dependencies": {
     "dayjs": "^1.10.4",
     "nano-markdown": "^1.2.1",
-    "preact": "^10.5.12",
+    "preact": "^10.5.13",
     "react": "npm:@preact/compat@^0.0.4",
     "react-dom": "npm:@preact/compat@^0.0.4"
   }

@@ -1,10 +1,11 @@
 { name = "purescript-react-realword"
 , dependencies =
-    [ "apiary"
+    [ "affjax"
+    , "argonaut-codecs"
+    , "argonaut-core"
     , "console"
     , "effect"
-    , "event"
-    , "foreign-generic"
+    , "halogen-subscriptions"
     , "heterogeneous"
     , "js-timers"
     , "profunctor-lenses"
@@ -15,8 +16,8 @@
     , "routing"
     , "routing-duplex"
     , "unicode"
+    , "web-router"
     , "web-uievents"
-    , "wire-react-router"
     ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]

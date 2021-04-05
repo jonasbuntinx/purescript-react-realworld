@@ -52,17 +52,13 @@ An implementation of React hooks on top of purescript-react-basic.
 
 A Halogen-inspired interface for React.
 
-#### [Wire React Router](https://github.com/robertdp/purescript-wire-react-router)
+#### [Web Router](https://github.com/robertdp/purescript-web-router)
 
-A basic pushstate router for React, with support for asynchronous routing logic.
+A basic web router with support for asynchronous routing logic.
 
 #### [Routing Duplex](https://github.com/natefaubion/purescript-routing-duplex)
 
 Unified parsing and printing for routes in PureScript.
-
-#### [Apiary](https://github.com/robertdp/purescript-apiary)
-
-For the creation of type-level specs that can be queried against automatically.
 
 ## Recognition
 
