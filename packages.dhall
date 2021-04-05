@@ -131,7 +131,7 @@ let additions =
           , "routing"
           ]
         , repo = "https://github.com/robertdp/purescript-web-router.git"
-        , version = "ps-0.14"
+        , version = "v0.3.0"
         }
       }
 
