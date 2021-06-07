@@ -47,26 +47,26 @@ newtype AppM a
 runAppM :: Env -> AppM ~> Aff
 runAppM env (AppM m) = runReaderT m env
 
-derive newtype instance functorAppM :: Functor AppM
+derive newtype instance Functor AppM
 
-derive newtype instance applyAppM :: Apply AppM
+derive newtype instance Apply AppM
 
-derive newtype instance applicativeAppM :: Applicative AppM
+derive newtype instance Applicative AppM
 
-derive newtype instance bindAppM :: Bind AppM
+derive newtype instance Bind AppM
 
-derive newtype instance monadAppM :: Monad AppM
+derive newtype instance Monad AppM
 
-derive newtype instance monadEffectAppM :: MonadEffect AppM
+derive newtype instance MonadEffect AppM
 
-derive newtype instance monadAffAppM :: MonadAff AppM
+derive newtype instance MonadAff AppM
 
-derive newtype instance monadThrowAppM :: MonadThrow Exception.Error AppM
+derive newtype instance MonadThrow Exception.Error AppM
 
-derive newtype instance monadErrorAppM :: MonadError Exception.Error AppM
+derive newtype instance MonadError Exception.Error AppM
 
 -- | Halo
-instance monadHaloAppM :: MonadHalo AppM where
+instance MonadHalo AppM where
   component name spec =
     AppM do
       env <- ask
@@ -75,7 +75,7 @@ instance monadHaloAppM :: MonadHalo AppM where
             spec { eval = Halo.hoist (runAppM env) <<< spec.eval }
 
 -- | Auth
-instance monadAuthAppM :: MonadAuth AppM where
+instance MonadAuth AppM where
   read = liftEffect =<< (AppM $ asks _.auth.read)
   getEmitter = AppM $ asks _.auth.emitter
   modify k = do
@@ -83,7 +83,7 @@ instance monadAuthAppM :: MonadAuth AppM where
     liftEffect $ f k
 
 -- | Routing
-instance monadRoutingAppM :: MonadRouting AppM where
+instance MonadRouting AppM where
   read = liftEffect =<< (AppM $ asks _.routing.read)
   getEmitter = AppM $ asks _.routing.emitter
   navigate route = do
@@ -94,7 +94,7 @@ instance monadRoutingAppM :: MonadRouting AppM where
     liftEffect $ f route
 
 -- | User
-instance userRepositoryAppM :: UserRepository AppM where
+instance UserRepository AppM where
   loginUser credentials = do
     (res :: Either Error { user :: CurrentUser }) <- makeRequest POST (StatusCode 200) Endpoint.Login { user: credentials }
     for_ res \{ user: currentUser } -> do
@@ -115,7 +115,7 @@ instance userRepositoryAppM :: UserRepository AppM where
     Routing.redirect Home
 
 -- | Article
-instance articleRepositoryAppM :: ArticleRepository AppM where
+instance ArticleRepository AppM where
   listArticles query = makeRequest GET (StatusCode 200) (Endpoint.Articles query) unit
   listFeed query = makeSecureRequest GET (StatusCode 200) (Endpoint.Feed query) unit
   getArticle slug = do
@@ -138,7 +138,7 @@ instance articleRepositoryAppM :: ArticleRepository AppM where
     pure $ res <#> _.article
 
 -- | Comment
-instance commentRepositoryAppM :: CommentRepository AppM where
+instance CommentRepository AppM where
   listComments slug = do
     (res :: Either Error { comments :: Array Comment }) <- makeRequest GET (StatusCode 200) (Endpoint.Comments slug) unit
     pure $ res <#> _.comments
@@ -150,7 +150,7 @@ instance commentRepositoryAppM :: CommentRepository AppM where
     pure $ res <#> const unit
 
 -- | Profile
-instance profileRepositoryAppM :: ProfileRepository AppM where
+instance ProfileRepository AppM where
   getProfile username = do
     (res :: Either Error { profile :: Profile }) <- makeRequest GET (StatusCode 200) (Endpoint.Profiles username) unit
     pure $ res <#> _.profile
@@ -163,7 +163,7 @@ instance profileRepositoryAppM :: ProfileRepository AppM where
     pure $ res <#> _.profile
 
 -- | Tag
-instance tagRepositoryAppM :: TagRepository AppM where
+instance TagRepository AppM where
   listTags = do
     (res :: Either Error { tags :: Array String }) <- makeRequest GET (StatusCode 200) Endpoint.Tags unit
     pure $ res <#> _.tags

@@ -33,7 +33,7 @@ data Tab
   | Global
   | Tag String
 
-derive instance eqTab :: Eq Tab
+derive instance Eq Tab
 
 data Action
   = Initialize
@@ -184,7 +184,7 @@ mkHomePage = component "HomePage" { context, initialState, eval, render }
     renderTags = case state.tags of
       NotAsked -> R.div_ [ R.text "Tags not loaded" ]
       Loading -> R.div_ [ R.text "Loading Tags" ]
-      Failure err -> R.div_ [ R.text $ "Failed loading tags" ]
+      Failure _ -> R.div_ [ R.text $ "Failed loading tags" ]
       Success loadedTags -> R.div { className: "tag-list", children: map renderTag loadedTags }
 
     renderTag tag =

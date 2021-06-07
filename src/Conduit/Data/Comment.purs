@@ -18,12 +18,12 @@ type Comment
 newtype CommentId
   = CommentId Int
 
-derive instance newtypeCommentId :: Newtype CommentId _
+derive instance Newtype CommentId _
 
-derive newtype instance eqCommentId :: Eq CommentId
+derive newtype instance Eq CommentId
 
-instance decodeJsonCommentId :: DecodeJson CommentId where
+instance DecodeJson CommentId where
   decodeJson = decodeJson >>> map wrap
 
-instance encodeJsonCommentId :: EncodeJson CommentId where
+instance EncodeJson CommentId where
   encodeJson = encodeJson <<< unwrap

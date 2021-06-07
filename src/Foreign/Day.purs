@@ -27,13 +27,13 @@ foreign import format :: Format -> DateTime -> String
 newtype Format
   = Format String
 
-instance eqDateTime :: Eq DateTime where
+instance Eq DateTime where
   eq a b = eq (toMilliseconds a) (toMilliseconds b)
 
-instance ordDateTime :: Ord DateTime where
+instance Ord DateTime where
   compare a b = compare (toMilliseconds a) (toMilliseconds b)
 
-instance decodeJsonDateTime :: DecodeJson DateTime where
+instance DecodeJson DateTime where
   decodeJson =
     decodeJson >=> fromUTCString
       >>> case _ of

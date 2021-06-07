@@ -41,7 +41,7 @@ data Tab
   = Published
   | Favorited
 
-derive instance eqTab :: Eq Tab
+derive instance Eq Tab
 
 data Action
   = Initialize

@@ -1817,7 +1817,7 @@ data-urls@^1.1.0:
     whatwg-mimetype "^2.2.0"
     whatwg-url "^7.0.0"
 
-dayjs@^1.10.4:
+dayjs@^1.10.5:
   version "1.10.5"
   resolved "https://registry.yarnpkg.com/dayjs/-/dayjs-1.10.5.tgz#5600df4548fc2453b3f163ebb2abbe965ccfb986"
   integrity sha512-BUFis41ikLz+65iH6LHQCDm4YPMj5r1YFLdupPIyM4SGcXMmtiLQ7U37i+hGS8urIuqe7I/ou3IS1jVc4nbN4g==
@@ -4456,7 +4456,7 @@ purescript-psa@^0.8.2:
   resolved "https://registry.yarnpkg.com/purescript-psa/-/purescript-psa-0.8.2.tgz#ee20c40f02cd0c5ed6dd3dd93ef02d9c466f17bc"
   integrity sha512-4Olf0aQQrNCfcDLXQI3gJgINEQ+3U+4QPLmQ2LHX2L/YOXSwM7fOGIUs/wMm/FQnwERUyQmHKQTJKB4LIjE2fg==
 
-purescript@^0.14.0:
+purescript@^0.14.2:
   version "0.14.2"
   resolved "https://registry.yarnpkg.com/purescript/-/purescript-0.14.2.tgz#6c42c941c014c23991d7782bbaa71f1ee73aa290"
   integrity sha512-kEXY5yUaG8a1FNN/IdtfNl4gcql7p76CPqnanMZ37GdtBZTcFK/SB24bp2rOAT1/N9qU8/corlra6uNf4+5pgQ==
@@ -4985,10 +4985,10 @@ source-map@~0.7.2:
   resolved "https://registry.yarnpkg.com/source-map/-/source-map-0.7.3.tgz#5302f8169031735226544092e64981f751750383"
   integrity sha512-CkCj6giN3S+n9qrYiBTX5gystlENnRW5jZeNLHpe6aue+SrHcG5VYwujhW9s4dY31mEGsxBDrHR6oI69fTXsaQ==
 
-spago@^0.19.1:
-  version "0.19.2"
-  resolved "https://registry.yarnpkg.com/spago/-/spago-0.19.2.tgz#2dfe3952ea282bd239084c934b0e0eaca7aaddd3"
-  integrity sha512-/u4ofPqWkK1JKRlDU8ZpuLVEOqOpD7/F9zIms4jaPxrXDNhddvhZkbYXrFF/Pe4ZpawysrkhQxhKKt+FJfOfuw==
+spago@^0.20.3:
+  version "0.20.3"
+  resolved "https://registry.yarnpkg.com/spago/-/spago-0.20.3.tgz#f72a096456f580f6eb64fc850c371f8cb97b139f"
+  integrity sha512-R4CWLP5IbaWoNIpS1QAUuDK2LKlKYqT5gBKVZL7ILilvCwdwS72u3NbGZbvx7VCRRZz4lG7zXUkqKNow7zh6wQ==
   dependencies:
     request "^2.88.0"
     tar "^4.4.8"

@@ -28,7 +28,7 @@ data Endpoint
   | Feed ArticlesQuery
   | Tags
 
-derive instance genericEndpoint :: Generic Endpoint _
+derive instance Generic Endpoint _
 
 endpointCodec :: RouteDuplex' Endpoint
 endpointCodec =

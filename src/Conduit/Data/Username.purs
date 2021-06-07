@@ -10,11 +10,11 @@ import Data.Maybe (Maybe(..))
 newtype Username
   = Username String
 
-derive instance eqUsername :: Eq Username
+derive instance Eq Username
 
-derive newtype instance encodeJsonUsername :: EncodeJson Username
+derive newtype instance EncodeJson Username
 
-instance decodeJsonUsername :: DecodeJson Username where
+instance DecodeJson Username where
   decodeJson =
     decodeJson >=> fromString
       >>> case _ of

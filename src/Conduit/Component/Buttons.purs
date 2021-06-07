@@ -10,7 +10,7 @@ data ButtonSize
   = Icon
   | Medium
 
-derive instance eqButtonSize :: Eq ButtonSize
+derive instance Eq ButtonSize
 
 -- | Favorite Button
 type FavoriteButtonProps

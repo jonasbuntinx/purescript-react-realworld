@@ -18,7 +18,7 @@ class
   deleteArticle :: Slug -> m (Either Error Unit)
   toggleFavorite :: Article -> m (Either Error Article)
 
-instance articleRepositoryHaloM :: ArticleRepository m => ArticleRepository (HaloM props ctx state action m) where
+instance ArticleRepository m => ArticleRepository (HaloM props ctx state action m) where
   listArticles = lift <<< listArticles
   listFeed = lift <<< listFeed
   getArticle = lift <<< getArticle

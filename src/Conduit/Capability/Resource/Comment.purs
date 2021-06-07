@@ -14,7 +14,7 @@ class
   createComment :: Slug -> { body :: String } -> m (Either Error Comment)
   deleteComment :: Slug -> CommentId -> m (Either Error Unit)
 
-instance commentRepositoryHaloM :: CommentRepository m => CommentRepository (HaloM props ctx state action m) where
+instance CommentRepository m => CommentRepository (HaloM props ctx state action m) where
   listComments = lift <<< listComments
   createComment = \a b -> lift $ createComment a b
   deleteComment = \a b -> lift $ deleteComment a b

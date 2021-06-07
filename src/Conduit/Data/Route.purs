@@ -23,9 +23,9 @@ data Route
   | Favorites Username
   | Error
 
-derive instance genericRoute :: Generic Route _
+derive instance  Generic Route _
 
-derive instance eqRoute :: Eq Route
+derive instance Eq Route
 
 routeCodec :: RouteDuplex' Route
 routeCodec =

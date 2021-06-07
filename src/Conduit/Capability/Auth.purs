@@ -14,7 +14,7 @@ class
   getEmitter :: m (HS.Emitter (Maybe Auth))
   modify :: (Maybe Auth -> Maybe Auth) -> m (Maybe Auth)
 
-instance monadAuthHaloM :: MonadAuth m => MonadAuth (HaloM props ctx state action m) where
+instance MonadAuth m => MonadAuth (HaloM props ctx state action m) where
   read = lift read
   getEmitter = lift getEmitter
   modify = lift <<< modify

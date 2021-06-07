@@ -53,7 +53,7 @@ data Error
   | DecodeError Request Response JsonDecodeError
   | UnexpectedResponse Request Response
 
-instance showError :: Show Error where
+instance Show Error where
   show NotAuthorized = "(NotAuthorized)"
   show (RuntimeError err) = "(RuntimeError {- " <> Affjax.printError err <> " -})"
   show (DecodeError req res err) = "(DecodeError " <> printRequest req <> " " <> printResponse res <> " " <> printJsonDecodeError err <> ")"

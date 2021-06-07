@@ -14,7 +14,7 @@ class
   navigate :: Route -> m Unit
   redirect :: Route -> m Unit
 
-instance monadRoutingHaloM :: MonadRouting m => MonadRouting (HaloM props ctx state action m) where
+instance MonadRouting m => MonadRouting (HaloM props ctx state action m) where
   read = lift read
   getEmitter = lift getEmitter
   navigate = lift <<< navigate

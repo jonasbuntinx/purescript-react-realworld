@@ -10,11 +10,11 @@ import Data.String as String
 newtype Avatar
   = Avatar String
 
-derive instance eqAvatar :: Eq Avatar
+derive instance Eq Avatar
 
-derive newtype instance encodeJsonAvatar :: EncodeJson Avatar
+derive newtype instance EncodeJson Avatar
 
-derive newtype instance decodeJsonAvatar :: DecodeJson Avatar
+derive newtype instance DecodeJson Avatar
 
 fromString :: String -> Avatar
 fromString str = Avatar str

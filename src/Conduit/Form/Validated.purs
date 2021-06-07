@@ -14,20 +14,20 @@ data Validated a
   = Fresh a
   | Modified a
 
-derive instance functorValidated :: Functor Validated
+derive instance Functor Validated
 
-instance applyValidated :: Apply Validated where
+instance Apply Validated where
   apply (Fresh f) a = map f a
   apply (Modified f) (Fresh a) = Modified (f a)
   apply (Modified f) (Modified a) = Modified (f a)
 
-instance applicativeValidated :: Applicative Validated where
+instance Applicative Validated where
   pure = Fresh
 
-instance extendValidated :: Extend Validated where
+instance Extend Validated where
   extend f a = f a <$ a
 
-instance comonadValidated :: Comonad Validated where
+instance Comonad Validated where
   extract (Fresh a) = a
   extract (Modified a) = a
 
@@ -54,13 +54,13 @@ _Modified =
 newtype ModifyValidated
   = ModifyValidated (Validated ~> Validated)
 
-instance modifyValidated :: Mapping ModifyValidated a a => Mapping ModifyValidated (Validated a) (Validated a) where
+instance Mapping ModifyValidated a a => Mapping ModifyValidated (Validated a) (Validated a) where
   mapping m@(ModifyValidated f) = over _Validated (mapping m) <<< f
-else instance modifyValidatedRecord :: (RL.RowToList r xs, MapRecordWithIndex xs (ConstMapping ModifyValidated) r r) => Mapping ModifyValidated { | r } { | r } where
+else instance (RL.RowToList r xs, MapRecordWithIndex xs (ConstMapping ModifyValidated) r r) => Mapping ModifyValidated { | r } { | r } where
   mapping d = hmap d
-else instance modifyValidatedArray :: Mapping ModifyValidated a a => Mapping ModifyValidated (Array a) (Array a) where
+else instance Mapping ModifyValidated a a => Mapping ModifyValidated (Array a) (Array a) where
   mapping d = map (mapping d)
-else instance modifyValidatedIdentity :: Mapping ModifyValidated a a where
+else instance Mapping ModifyValidated a a where
   mapping _ = identity
 
 setFresh :: forall i o. HMap ModifyValidated i o => i -> o

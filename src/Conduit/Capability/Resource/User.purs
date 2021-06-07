@@ -15,7 +15,7 @@ class
   updateUser :: { | User ( password :: String ) } -> m (Either Error CurrentUser)
   logoutUser :: m Unit
 
-instance userRepositoryHaloM :: UserRepository m => UserRepository (HaloM props ctx state action m) where
+instance UserRepository m => UserRepository (HaloM props ctx state action m) where
   loginUser = lift <<< loginUser
   registerUser = lift <<< registerUser
   updateUser = lift <<< updateUser

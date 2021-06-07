@@ -13,9 +13,9 @@ import Partial.Unsafe (unsafePartial)
 newtype Slug
   = Slug String
 
-derive instance eqSlug :: Eq Slug
+derive instance Eq Slug
 
-instance decodeJsonSlug :: DecodeJson Slug where
+instance DecodeJson Slug where
   decodeJson =
     decodeJson >=> fromString
       >>> case _ of
