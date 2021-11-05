@@ -1,6 +1,7 @@
 module Conduit.Page.Profile (Props, Tab(..), mkProfilePage) where
 
 import Prelude
+
 import Conduit.Api.Client (isNotFound)
 import Conduit.Capability.Auth (class MonadAuth)
 import Conduit.Capability.Auth as Auth
@@ -24,7 +25,7 @@ import Control.Monad.State (modify_, get)
 import Control.Parallel (parTraverse_)
 import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Monoid (guard)
 import Network.RemoteData as RemoteData
 import React.Basic.DOM as R
@@ -207,7 +208,7 @@ mkProfilePage = component "ProfilePage" { context, initialState, eval, render }
                                           }
                                       else
                                         followButton
-                                          { following: RemoteData.maybe false _.following state.profile
+                                          { following: fromMaybe false (RemoteData.toMaybe state.profile >>= _.following)
                                           , username: props.username
                                           , onClick: handler_ $ send ToggleFollow
                                           }

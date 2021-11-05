@@ -25,7 +25,7 @@ instance DecodeJson Slug where
 fromString :: String -> Maybe Slug
 fromString str = if Regex.test slugRegex str then Just $ Slug str else Nothing
   where
-  slugRegex = unsafePartial $ (\(Right a) -> a) $ Regex.regex """^[_a-z0-9]*(?:-[_a-z0-9]+)*$""" Flags.global
+  slugRegex = unsafePartial $ (\(Right a) -> a) $ Regex.regex """^[_a-zA-Z0-9]*(?:-[_a-zA-Z0-9]+)*$""" Flags.global
 
 toString :: Slug -> String
 toString (Slug s) = s

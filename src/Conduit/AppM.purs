@@ -1,6 +1,7 @@
 module Conduit.AppM where
 
 import Prelude
+
 import Affjax.StatusCode (StatusCode(..))
 import Conduit.Api.Client (Error, makeRequest, makeSecureRequest)
 import Conduit.Api.Endpoint as Endpoint
@@ -27,7 +28,7 @@ import Control.Monad.Reader (ReaderT, ask, asks, runReaderT)
 import Data.Either (Either)
 import Data.Foldable (for_)
 import Data.HTTP.Method (Method(..))
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Symbol (SProxy(..))
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
@@ -156,7 +157,7 @@ instance ProfileRepository AppM where
     pure $ res <#> _.profile
   toggleFollow { username, following } = do
     (res :: Either Error { profile :: Profile }) <-
-      if following then
+      if fromMaybe false following then
         makeSecureRequest DELETE (StatusCode 200) (Endpoint.Follow username) unit
       else
         makeSecureRequest POST (StatusCode 200) (Endpoint.Follow username) unit

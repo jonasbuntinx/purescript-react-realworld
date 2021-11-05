@@ -29,7 +29,7 @@ import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
 import Data.Lens.Record as LR
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Monoid (guard)
 import Data.Symbol (SProxy(..))
 import Data.Validation.Semigroup (V, toEither)
@@ -322,7 +322,7 @@ mkArticlePage = component "ArticlePage" { context, initialState, eval, render }
                 _ ->
                   R.span_
                     [ followButton
-                        { following: article.author.following
+                        { following: fromMaybe false article.author.following
                         , username: article.author.username
                         , onClick: handler_ $ send ToggleFollow
                         }

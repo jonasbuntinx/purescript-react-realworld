@@ -12,4 +12,4 @@ type ProfileRep r
     )
 
 type Profile
-  = { | ProfileRep ( following :: Boolean ) }
+  = { | ProfileRep ( following :: Maybe Boolean ) }
