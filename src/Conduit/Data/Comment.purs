@@ -1,11 +1,14 @@
 module Conduit.Data.Comment where
 
 import Prelude
-import Conduit.Data.Profile (Profile)
-import Data.Argonaut.Decode (class DecodeJson, decodeJson)
-import Data.Argonaut.Encode (class EncodeJson, encodeJson)
-import Data.Newtype (class Newtype, unwrap, wrap)
-import Foreign.Day (DateTime)
+
+import Conduit.Data.Profile (Profile, profileCodec)
+import Data.Codec.Argonaut (JsonCodec)
+import Data.Codec.Argonaut as CA
+import Data.Codec.Argonaut.Record as CAR
+import Data.Newtype (class Newtype)
+import Data.Profunctor (wrapIso)
+import Foreign.Day (DateTime, dateTimeCodec)
 
 type Comment
   = { id :: CommentId
@@ -22,8 +25,17 @@ derive instance Newtype CommentId _
 
 derive newtype instance Eq CommentId
 
-instance DecodeJson CommentId where
-  decodeJson = decodeJson >>> map wrap
+-- | Codecs
+commentCodec :: JsonCodec Comment
+commentCodec =
+  CAR.object "Comment"
+    { id: commentIdCodec
+    , createdAt: dateTimeCodec
+    , updatedAt: dateTimeCodec
+    , body: CA.string
+    , author: profileCodec
+    }
 
-instance EncodeJson CommentId where
-  encodeJson = encodeJson <<< unwrap
+commentIdCodec :: JsonCodec CommentId
+commentIdCodec =
+  wrapIso CommentId CA.int

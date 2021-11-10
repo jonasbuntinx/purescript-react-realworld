@@ -1,9 +1,10 @@
 module Conduit.Data.Avatar where
 
 import Prelude
+
 import Conduit.Assets as Assets
-import Data.Argonaut.Decode (class DecodeJson)
-import Data.Argonaut.Encode (class EncodeJson)
+import Data.Codec.Argonaut (JsonCodec)
+import Data.Codec.Argonaut as CA
 import Data.Maybe (Maybe(..))
 import Data.String as String
 
@@ -12,12 +13,14 @@ newtype Avatar
 
 derive instance Eq Avatar
 
-derive newtype instance EncodeJson Avatar
+-- | Codecs
+avatarCodec :: JsonCodec Avatar
+avatarCodec = CA.prismaticCodec "Avatar" fromString toString CA.string
 
-derive newtype instance DecodeJson Avatar
-
-fromString :: String -> Avatar
-fromString str = Avatar str
+-- | Helpers
+fromString :: String -> Maybe Avatar
+fromString "" = Nothing
+fromString str = Just (Avatar str)
 
 toString :: Avatar -> String
 toString (Avatar str) = str
@@ -30,7 +33,7 @@ withDefault (Just av)
 withDefault Nothing = default
 
 default :: Avatar
-default = fromString Assets.smileyCyrus
+default = Avatar Assets.smileyCyrus
 
 blank :: Avatar
-blank = fromString "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+blank = Avatar "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"

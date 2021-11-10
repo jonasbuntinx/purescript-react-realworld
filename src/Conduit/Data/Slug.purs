@@ -1,9 +1,9 @@
 module Conduit.Data.Slug where
 
 import Prelude
-import Control.Monad.Error.Class (throwError)
-import Data.Argonaut.Core as AC
-import Data.Argonaut.Decode (class DecodeJson, JsonDecodeError(..), decodeJson)
+
+import Data.Codec.Argonaut (JsonCodec)
+import Data.Codec.Argonaut as CA
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.String.Regex as Regex
@@ -15,13 +15,12 @@ newtype Slug
 
 derive instance Eq Slug
 
-instance DecodeJson Slug where
-  decodeJson =
-    decodeJson >=> fromString
-      >>> case _ of
-          Just slug -> pure slug
-          Nothing -> throwError $ UnexpectedValue $ AC.fromString "Failed to decode slug"
+-- | Codecs
+slugCodec :: JsonCodec Slug
+slugCodec =
+  CA.prismaticCodec "Slug" fromString toString CA.string
 
+-- | Helpers
 fromString :: String -> Maybe Slug
 fromString str = if Regex.test slugRegex str then Just $ Slug str else Nothing
   where

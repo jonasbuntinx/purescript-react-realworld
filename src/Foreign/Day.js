@@ -7,6 +7,10 @@ exports._fromUTCString = function (nothing, just, str) {
   return d.isValid() ? just(d) : nothing;
 };
 
+exports.toUTCString = function (d) {
+  return d.format();
+};
+
 exports.fromMilliseconds = function (ms) {
   return dayjs(ms);
 };
