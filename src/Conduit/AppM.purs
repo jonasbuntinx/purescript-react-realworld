@@ -17,19 +17,17 @@ import Conduit.Capability.Routing (class MonadRouting)
 import Conduit.Capability.Routing as Routing
 import Conduit.Component.Auth (AuthIO)
 import Conduit.Component.Routing (RoutingIO)
-import Conduit.Data.Article (Article, ArticleRep, articleCodec, defaultArticlesQuery)
+import Conduit.Data.Article (Article, ArticleRep, articleCodec, defaultArticlesQuery, mkArticleRepCodec)
 import Conduit.Data.Auth (toAuth)
-import Conduit.Data.Avatar (avatarCodec)
 import Conduit.Data.Comment (Comment, commentCodec)
 import Conduit.Data.Profile (Profile, profileCodec)
 import Conduit.Data.Route (Route(..))
-import Conduit.Data.User (CurrentUser, UserRep, currentUserCodec)
+import Conduit.Data.User (CurrentUser, UserRep, currentUserCodec, mkUserRepCodec)
 import Conduit.Data.Username (Username, usernameCodec)
 import Control.Monad.Error.Class (class MonadError, class MonadThrow)
 import Control.Monad.Reader (ReaderT, ask, asks, runReaderT)
 import Data.Codec.Argonaut (JsonCodec)
 import Data.Codec.Argonaut as CA
-import Data.Codec.Argonaut.Compat as CAC
 import Data.Codec.Argonaut.Record as CAR
 import Data.Either (Either)
 import Data.Foldable (for_)
@@ -122,37 +120,16 @@ instance UserRepository AppM where
     Routing.redirect Home
 
 loginBodyCodec :: JsonCodec { user :: { email :: String, password :: String } }
-loginBodyCodec = CAR.object "Body"
-  { user: CAR.object "User"
-    { email : CA.string
-    , password: CA.string
-    }
-  }
+loginBodyCodec = CAR.object "Body" { user: CAR.object "User" { email : CA.string, password: CA.string } }
 
 registerBodyCodec :: JsonCodec { user :: { username :: Username, email :: String, password :: String } }
-registerBodyCodec = CAR.object "Body"
-  { user: CAR.object "User"
-    { username: usernameCodec
-    , email : CA.string
-    , password: CA.string
-    }
-  }
+registerBodyCodec = CAR.object "Body" { user: CAR.object "User" { username: usernameCodec, email : CA.string, password: CA.string } }
 
 updateUserBodyCodec :: JsonCodec { user :: { | UserRep ( password :: String ) } }
-updateUserBodyCodec = CAR.object "Body"
-  { user: CAR.object "User"
-    { username: usernameCodec
-    , bio: CAC.maybe CA.string
-    , image: CAC.maybe avatarCodec
-    , email: CA.string
-    , password: CA.string
-    }
-  }
+updateUserBodyCodec = CAR.object "Body" { user: CA.object "User" $ mkUserRepCodec $ CAR.record { password: CA.string } }
 
 userResponseCodec :: JsonCodec { user ::  CurrentUser }
-userResponseCodec = CAR.object "Response"
-  { user: currentUserCodec
-  }
+userResponseCodec = CAR.object "Response" { user: currentUserCodec }
 
 -- | Article
 instance ArticleRepository AppM where
@@ -178,25 +155,13 @@ instance ArticleRepository AppM where
     pure $ res <#> _.article
 
 articleBodyCodec :: JsonCodec { article:: { | ArticleRep () } }
-articleBodyCodec = CAR.object "Body"
-  { article: CAR.object "Article"
-    { title: CA.string
-    , description: CA.string
-    , body: CA.string
-    , tagList: CA.array CA.string
-    }
-  }
+articleBodyCodec = CAR.object "Body" { article: CA.object "Article" $ mkArticleRepCodec CA.record }
 
 articlesResponseCodec :: JsonCodec { articles :: Array Article, articlesCount :: Int }
-articlesResponseCodec = CAR.object "Response"
-  { articles: CA.array articleCodec
-  , articlesCount: CA.int
-  }
+articlesResponseCodec = CAR.object "Response" { articles: CA.array articleCodec, articlesCount: CA.int }
 
 articleResponseCodec :: JsonCodec { article ::  Article }
-articleResponseCodec = CAR.object "Response"
-  { article: articleCodec
-  }
+articleResponseCodec = CAR.object "Response" { article: articleCodec }
 
 -- | Comment
 instance CommentRepository AppM where
@@ -211,21 +176,13 @@ instance CommentRepository AppM where
     pure $ res <#> const unit
 
 commentBodyCodec :: JsonCodec { comment:: { body :: String } }
-commentBodyCodec = CAR.object "Body"
-  { comment: CAR.object "Comment"
-    { body: CA.string
-    }
-  }
+commentBodyCodec = CAR.object "Body" { comment: CAR.object "Comment" { body: CA.string } }
 
 commentsResponseCodec :: JsonCodec { comments :: Array Comment }
-commentsResponseCodec = CAR.object "Response"
-  { comments: CA.array commentCodec
-  }
+commentsResponseCodec = CAR.object "Response" { comments: CA.array commentCodec }
 
 commentResponseCodec :: JsonCodec { comment ::  Comment }
-commentResponseCodec = CAR.object "Response"
-  { comment: commentCodec
-  }
+commentResponseCodec = CAR.object "Response" { comment: commentCodec }
 
 -- | Profile
 instance ProfileRepository AppM where
@@ -241,9 +198,7 @@ instance ProfileRepository AppM where
     pure $ res <#> _.profile
 
 profileResponseCodec :: JsonCodec { profile ::  Profile }
-profileResponseCodec = CAR.object "Response"
-  { profile: profileCodec
-  }
+profileResponseCodec = CAR.object "Response" { profile: profileCodec }
 
 -- | Tag
 instance TagRepository AppM where
@@ -252,6 +207,4 @@ instance TagRepository AppM where
     pure $ res <#> _.tags
 
 tagsResponseCodec :: JsonCodec { tags :: Array String }
-tagsResponseCodec = CAR.object "Response"
-  { tags: CA.array CA.string
-  }
+tagsResponseCodec = CAR.object "Response" { tags: CA.array CA.string }

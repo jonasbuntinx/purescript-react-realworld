@@ -1,12 +1,11 @@
 module Conduit.Data.User where
 
-import Conduit.Data.Avatar (avatarCodec)
-import Conduit.Data.Profile (ProfileRep)
-import Conduit.Data.Username (usernameCodec)
+import Prelude
+import Conduit.Data.Profile (ProfileRep, mkProfileRepCodec)
 import Data.Codec.Argonaut (JsonCodec)
 import Data.Codec.Argonaut as CA
-import Data.Codec.Argonaut.Compat as CAC
 import Data.Codec.Argonaut.Record as CAR
+import Type.Prelude (Proxy(..))
 
 type UserRep r
   = ( email :: String | ProfileRep r )
@@ -18,21 +17,13 @@ type CurrentUser
   = { | UserRep ( token :: String ) }
 
 -- | Codecs
+mkUserRepCodec :: forall rest. CA.JPropCodec (Record rest) -> CA.JPropCodec { | UserRep rest }
+mkUserRepCodec =
+  mkProfileRepCodec
+    <<< CA.recordProp (Proxy :: Proxy "email") CA.string
+
 userCodec :: JsonCodec User
-userCodec =
-  CAR.object "User"
-    { username: usernameCodec
-    , bio: CAC.maybe CA.string
-    , image: CAC.maybe avatarCodec
-    , email: CA.string
-    }
+userCodec = CA.object "User" $ mkUserRepCodec CA.record
 
 currentUserCodec :: JsonCodec CurrentUser
-currentUserCodec =
-  CAR.object "CurrentUser"
-    { username: usernameCodec
-    , bio: CAC.maybe CA.string
-    , image: CAC.maybe avatarCodec
-    , email: CA.string
-    , token: CA.string
-    }
+currentUserCodec = CA.object "User" $ mkUserRepCodec $ CAR.record { token: CA.string }

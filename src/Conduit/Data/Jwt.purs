@@ -5,7 +5,6 @@ import Conduit.Data.Username (Username, usernameCodec)
 import Data.Codec as Codec
 import Data.Argonaut.Parser (jsonParser)
 import Data.Array as Array
-import Data.Codec.Argonaut (JsonCodec)
 import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut.Record as CAR
 import Data.Either (Either, note)
@@ -25,14 +24,6 @@ data Error
   | JSONParseError String
   | JSONDecodeError CA.JsonDecodeError
 
--- | Codecs
-jwtCodec :: JsonCodec Jwt
-jwtCodec =
-  CAR.object "Jwt"
-    { username: usernameCodec
-    , exp: CA.number
-    }
-
 -- | Helpers
 decode :: String -> Either Error Jwt
 decode =
@@ -43,6 +34,13 @@ decode =
 
     parseJSON = map (over _Left JSONParseError) jsonParser
 
-    decodeJSON = map (over _Left JSONDecodeError) (Codec.decode jwtCodec)
+    decodeJSON =
+      map (over _Left JSONDecodeError)
+        ( Codec.decode
+            $ CAR.object "Jwt"
+                { username: usernameCodec
+                , exp: CA.number
+                }
+        )
   in
     payload >=> decodeBase64 >=> parseJSON >=> decodeJSON
