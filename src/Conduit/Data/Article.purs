@@ -9,7 +9,7 @@ import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut.Record as CAR
 import Data.Maybe (Maybe(..))
 import Foreign.Day (DateTime, dateTimeCodec)
-import Type.Prelude (Proxy(..))
+import Type.Proxy (Proxy(..))
 
 type ArticleRep r
   = ( title :: String

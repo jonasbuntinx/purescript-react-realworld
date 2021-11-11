@@ -11,7 +11,7 @@ import Data.Codec.Argonaut.Compat as CAC
 import Data.Codec.Argonaut.Migration as CAM
 import Data.Codec.Argonaut.Record as CAR
 import Data.Maybe (Maybe)
-import Type.Prelude (Proxy(..))
+import Type.Proxy (Proxy(..))
 
 type ProfileRep r
   = ( username :: Username

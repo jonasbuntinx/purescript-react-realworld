@@ -5,7 +5,7 @@ import Conduit.Data.Profile (ProfileRep, mkProfileRepCodec)
 import Data.Codec.Argonaut (JsonCodec)
 import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut.Record as CAR
-import Type.Prelude (Proxy(..))
+import Type.Proxy (Proxy(..))
 
 type UserRep r
   = ( email :: String | ProfileRep r )

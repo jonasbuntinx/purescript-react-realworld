@@ -42,7 +42,6 @@
   , "strings"
   , "transformers"
   , "tuples"
-  , "typelevel-prelude"
   , "validation"
   , "web-dom"
   , "web-html"
