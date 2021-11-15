@@ -13,10 +13,11 @@ import React.Basic.DOM as R
 import React.Basic.Hooks as React
 
 type Props
-  = { auth :: Maybe Auth
-    , currentRoute :: Route
-    , onNavigate :: Route -> Effect Unit
-    }
+  =
+  { auth :: Maybe Auth
+  , currentRoute :: Route
+  , onNavigate :: Route -> Effect Unit
+  }
 
 header :: Props -> React.JSX
 header { auth, currentRoute, onNavigate } =

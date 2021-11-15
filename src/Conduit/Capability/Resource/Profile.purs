@@ -9,7 +9,8 @@ import Data.Either (Either)
 import React.Halo (HaloM)
 
 class
-  Monad m <= ProfileRepository m where
+  Monad m <=
+  ProfileRepository m where
   getProfile :: Username -> m (Either Error Profile)
   toggleFollow :: Profile -> m (Either Error Profile)
 

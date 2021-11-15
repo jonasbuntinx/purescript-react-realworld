@@ -18,10 +18,11 @@ import React.Basic.Hooks as React
 
 -- | Article List
 type Props err
-  = { articles :: RemoteData err (Array Article)
-    , onNavigate :: Route -> Effect Unit
-    , onFavoriteToggle :: Int -> Effect Unit
-    }
+  =
+  { articles :: RemoteData err (Array Article)
+  , onNavigate :: Route -> Effect Unit
+  , onFavoriteToggle :: Int -> Effect Unit
+  }
 
 articleList :: forall err. Props err -> React.JSX
 articleList props = case props.articles of
@@ -32,10 +33,10 @@ articleList props = case props.articles of
       }
   Success articles
     | Array.null articles ->
-      R.div
-        { className: "article-preview"
-        , children: [ R.text "No articles are here...yet!" ]
-        }
+        R.div
+          { className: "article-preview"
+          , children: [ R.text "No articles are here...yet!" ]
+          }
   Success articles -> React.fragment $ Array.mapWithIndex preview articles
   _ ->
     R.div
@@ -102,10 +103,10 @@ articleList props = case props.articles of
                       , children:
                           article.tagList
                             <#> \tag ->
-                                R.li
-                                  { className: "tag-default tag-pill tag-outline"
-                                  , children: [ R.text tag ]
-                                  }
+                              R.li
+                                { className: "tag-default tag-pill tag-outline"
+                                , children: [ R.text tag ]
+                                }
                       }
                   ]
               }

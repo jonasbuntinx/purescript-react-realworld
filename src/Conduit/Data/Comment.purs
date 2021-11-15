@@ -11,12 +11,13 @@ import Data.Profunctor (wrapIso)
 import Foreign.Day (DateTime, dateTimeCodec)
 
 type Comment
-  = { id :: CommentId
-    , createdAt :: DateTime
-    , updatedAt :: DateTime
-    , body :: String
-    , author :: Profile
-    }
+  =
+  { id :: CommentId
+  , createdAt :: DateTime
+  , updatedAt :: DateTime
+  , body :: String
+  , author :: Profile
+  }
 
 newtype CommentId
   = CommentId Int

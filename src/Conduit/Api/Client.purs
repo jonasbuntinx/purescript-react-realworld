@@ -36,17 +36,19 @@ type URL
   = String
 
 type Request
-  = { method :: Method
-    , url :: URL
-    , headers :: Array RequestHeader
-    , body :: AC.Json
-    }
+  =
+  { method :: Method
+  , url :: URL
+  , headers :: Array RequestHeader
+  , body :: AC.Json
+  }
 
 type Response
-  = { status :: StatusCode
-    , headers :: Array ResponseHeader
-    , body :: AC.Json
-    }
+  =
+  { status :: StatusCode
+  , headers :: Array ResponseHeader
+  , body :: AC.Json
+  }
 
 data Error
   = NotAuthorized
@@ -71,7 +73,7 @@ makeRequest' ::
   JsonCodec response ->
   body ->
   m (Either Error response)
-makeRequest' method statusCode endpoint transform bodyCodec responseCodec body  = liftAff $ runExceptT $ handle =<< fetch request
+makeRequest' method statusCode endpoint transform bodyCodec responseCodec body = liftAff $ runExceptT $ handle =<< fetch request
   where
   request = transform $ buildRequest method endpoint bodyCodec body
 

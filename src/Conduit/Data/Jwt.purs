@@ -14,9 +14,10 @@ import Effect.Exception as Exception
 import Foreign.Base64 (atob)
 
 type Jwt
-  = { username :: Username
-    , exp :: Number
-    }
+  =
+  { username :: Username
+  , exp :: Number
+  }
 
 data Error
   = MalformedToken

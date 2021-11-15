@@ -12,31 +12,34 @@ import Foreign.Day (DateTime, dateTimeCodec)
 import Type.Proxy (Proxy(..))
 
 type ArticleRep r
-  = ( title :: String
-    , description :: String
-    , body :: String
-    , tagList :: Array String
-    | r
-    )
+  =
+  ( title :: String
+  , description :: String
+  , body :: String
+  , tagList :: Array String
+  | r
+  )
 
 type Article
-  = {
-    | ArticleRep
+  =
+  {
+  | ArticleRep
       ( slug :: Slug
       , createdAt :: DateTime
       , favorited :: Boolean
       , favoritesCount :: Int
       , author :: Profile
       )
-    }
+  }
 
 type ArticlesQuery
-  = { tag :: Maybe String
-    , author :: Maybe Username
-    , favorited :: Maybe Username
-    , offset :: Maybe Int
-    , limit :: Maybe Int
-    }
+  =
+  { tag :: Maybe String
+  , author :: Maybe Username
+  , favorited :: Maybe Username
+  , offset :: Maybe Int
+  , limit :: Maybe Int
+  }
 
 -- | Codecs
 mkArticleRepCodec :: forall rest. CA.JPropCodec (Record rest) -> CA.JPropCodec { | ArticleRep rest }

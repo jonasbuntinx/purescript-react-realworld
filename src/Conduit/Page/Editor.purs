@@ -31,8 +31,9 @@ import React.Basic.Hooks as React
 import React.Halo as Halo
 
 type Props
-  = { slug :: Maybe Slug
-    }
+  =
+  { slug :: Maybe Slug
+  }
 
 data Action
   = Initialize

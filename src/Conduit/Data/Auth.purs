@@ -10,11 +10,12 @@ import Data.Time.Duration (Milliseconds(..))
 import Foreign.Day (DateTime, fromMilliseconds)
 
 type Auth
-  = { token :: String
-    , username :: Username
-    , expirationTime :: DateTime
-    , user :: Maybe User
-    }
+  =
+  { token :: String
+  , username :: Username
+  , expirationTime :: DateTime
+  , user :: Maybe User
+  }
 
 -- | Helpers
 toAuth :: String -> Maybe User -> Maybe Auth

@@ -9,7 +9,8 @@ import React.Halo (HaloM)
 import React.Halo as Halo
 
 class
-  Monad m <= MonadAuth m where
+  Monad m <=
+  MonadAuth m where
   read :: m (Maybe Auth)
   getEmitter :: m (HS.Emitter (Maybe Auth))
   modify :: (Maybe Auth -> Maybe Auth) -> m (Maybe Auth)

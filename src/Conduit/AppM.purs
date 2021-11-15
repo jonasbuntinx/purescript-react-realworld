@@ -42,9 +42,10 @@ import React.Halo as Halo
 import Record as Record
 
 type Env
-  = { auth :: AuthIO
-    , routing :: RoutingIO
-    }
+  =
+  { auth :: AuthIO
+  , routing :: RoutingIO
+  }
 
 newtype AppM a
   = AppM (ReaderT Env Aff a)
@@ -120,15 +121,15 @@ instance UserRepository AppM where
     Routing.redirect Home
 
 loginBodyCodec :: JsonCodec { user :: { email :: String, password :: String } }
-loginBodyCodec = CAR.object "Body" { user: CAR.object "User" { email : CA.string, password: CA.string } }
+loginBodyCodec = CAR.object "Body" { user: CAR.object "User" { email: CA.string, password: CA.string } }
 
 registerBodyCodec :: JsonCodec { user :: { username :: Username, email :: String, password :: String } }
-registerBodyCodec = CAR.object "Body" { user: CAR.object "User" { username: usernameCodec, email : CA.string, password: CA.string } }
+registerBodyCodec = CAR.object "Body" { user: CAR.object "User" { username: usernameCodec, email: CA.string, password: CA.string } }
 
-updateUserBodyCodec :: JsonCodec { user :: { | UserRep ( password :: String ) } }
+updateUserBodyCodec :: JsonCodec { user :: { | UserRep (password :: String) } }
 updateUserBodyCodec = CAR.object "Body" { user: CA.object "User" $ mkUserRepCodec $ CAR.record { password: CA.string } }
 
-userResponseCodec :: JsonCodec { user ::  CurrentUser }
+userResponseCodec :: JsonCodec { user :: CurrentUser }
 userResponseCodec = CAR.object "Response" { user: currentUserCodec }
 
 -- | Article
@@ -154,13 +155,13 @@ instance ArticleRepository AppM where
         makeSecureRequest POST (StatusCode 200) (Endpoint.Favorite slug) CA.null articleResponseCodec unit
     pure $ res <#> _.article
 
-articleBodyCodec :: JsonCodec { article:: { | ArticleRep () } }
+articleBodyCodec :: JsonCodec { article :: { | ArticleRep () } }
 articleBodyCodec = CAR.object "Body" { article: CA.object "Article" $ mkArticleRepCodec CA.record }
 
 articlesResponseCodec :: JsonCodec { articles :: Array Article, articlesCount :: Int }
 articlesResponseCodec = CAR.object "Response" { articles: CA.array articleCodec, articlesCount: CA.int }
 
-articleResponseCodec :: JsonCodec { article ::  Article }
+articleResponseCodec :: JsonCodec { article :: Article }
 articleResponseCodec = CAR.object "Response" { article: articleCodec }
 
 -- | Comment
@@ -175,13 +176,13 @@ instance CommentRepository AppM where
     (res :: Either Error {}) <- makeSecureRequest DELETE (StatusCode 200) (Endpoint.Comment slug id) CA.null (CAR.object "Response" {}) unit
     pure $ res <#> const unit
 
-commentBodyCodec :: JsonCodec { comment:: { body :: String } }
+commentBodyCodec :: JsonCodec { comment :: { body :: String } }
 commentBodyCodec = CAR.object "Body" { comment: CAR.object "Comment" { body: CA.string } }
 
 commentsResponseCodec :: JsonCodec { comments :: Array Comment }
 commentsResponseCodec = CAR.object "Response" { comments: CA.array commentCodec }
 
-commentResponseCodec :: JsonCodec { comment ::  Comment }
+commentResponseCodec :: JsonCodec { comment :: Comment }
 commentResponseCodec = CAR.object "Response" { comment: commentCodec }
 
 -- | Profile
@@ -197,7 +198,7 @@ instance ProfileRepository AppM where
         makeSecureRequest POST (StatusCode 200) (Endpoint.Follow username) CA.null profileResponseCodec unit
     pure $ res <#> _.profile
 
-profileResponseCodec :: JsonCodec { profile ::  Profile }
+profileResponseCodec :: JsonCodec { profile :: Profile }
 profileResponseCodec = CAR.object "Response" { profile: profileCodec }
 
 -- | Tag

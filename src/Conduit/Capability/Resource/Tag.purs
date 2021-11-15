@@ -7,7 +7,8 @@ import Data.Either (Either)
 import React.Halo (HaloM)
 
 class
-  Monad m <= TagRepository m where
+  Monad m <=
+  TagRepository m where
   listTags :: m (Either Error (Array String))
 
 instance TagRepository m => TagRepository (HaloM props ctx state action m) where

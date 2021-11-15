@@ -8,7 +8,8 @@ import React.Halo (HaloM)
 import React.Halo as Halo
 
 class
-  Monad m <= MonadRouting m where
+  Monad m <=
+  MonadRouting m where
   read :: m Route
   getEmitter :: m (HS.Emitter Route)
   navigate :: Route -> m Unit

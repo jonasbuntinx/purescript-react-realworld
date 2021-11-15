@@ -14,11 +14,12 @@ import Web.Router as Router
 import Web.Router.Driver.PushState as Driver
 
 type RoutingIO
-  = { read :: Effect Route
-    , emitter :: HS.Emitter Route
-    , navigate :: Route -> Effect Unit
-    , redirect :: Route -> Effect Unit
-    }
+  =
+  { read :: Effect Route
+  , emitter :: HS.Emitter Route
+  , navigate :: Route -> Effect Unit
+  , redirect :: Route -> Effect Unit
+  }
 
 mkRoutingManager :: Effect (RoutingIO /\ React.JSX)
 mkRoutingManager = do

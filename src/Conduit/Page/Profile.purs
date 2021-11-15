@@ -34,9 +34,10 @@ import React.Basic.Hooks as React
 import React.Halo as Halo
 
 type Props
-  = { username :: Username
-    , tab :: Tab
-    }
+  =
+  { username :: Username
+  , tab :: Tab
+  }
 
 data Tab
   = Published

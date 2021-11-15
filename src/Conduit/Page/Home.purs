@@ -142,21 +142,21 @@ mkHomePage = component "HomePage" { context, initialState, eval, render }
                       }
                     ]
                       <> case state.tab of
-                          Tag tag ->
-                            [ { id: Tag tag
-                              , label:
-                                  React.fragment
-                                    [ R.i
-                                        { className: "ion-pound"
-                                        , children: []
-                                        }
-                                    , R.text $ " " <> tag
-                                    ]
-                              , disabled: false
-                              , content: tabContent
-                              }
-                            ]
-                          _ -> []
+                        Tag tag ->
+                          [ { id: Tag tag
+                            , label:
+                                React.fragment
+                                  [ R.i
+                                      { className: "ion-pound"
+                                      , children: []
+                                      }
+                                  , R.text $ " " <> tag
+                                  ]
+                            , disabled: false
+                            , content: tabContent
+                            }
+                          ]
+                        _ -> []
                 , onChange: \tab -> send $ LoadArticles tab initialPagination
                 }
             ]

@@ -9,10 +9,11 @@ import Data.Either (Either)
 import React.Halo (HaloM)
 
 class
-  Monad m <= UserRepository m where
+  Monad m <=
+  UserRepository m where
   loginUser :: { email :: String, password :: String } -> m (Either Error CurrentUser)
   registerUser :: { username :: Username, email :: String, password :: String } -> m (Either Error CurrentUser)
-  updateUser :: { | UserRep ( password :: String ) } -> m (Either Error CurrentUser)
+  updateUser :: { | UserRep (password :: String) } -> m (Either Error CurrentUser)
   logoutUser :: m Unit
 
 instance UserRepository m => UserRepository (HaloM props ctx state action m) where

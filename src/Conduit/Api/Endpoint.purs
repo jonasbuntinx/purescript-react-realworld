@@ -44,7 +44,8 @@ endpointCodec =
         , "Favorite": "articles" / slug segment / "favorite"
         , "Articles":
             "articles"
-              ? { tag: optional <<< string
+              ?
+                { tag: optional <<< string
                 , author: optional <<< username
                 , favorited: optional <<< username
                 , offset: optional <<< int
@@ -53,7 +54,8 @@ endpointCodec =
         , "Profiles": "profiles" / username segment
         , "Feed":
             "articles" / "feed"
-              ? { tag: optional <<< string
+              ?
+                { tag: optional <<< string
                 , author: optional <<< username
                 , favorited: optional <<< username
                 , offset: optional <<< int

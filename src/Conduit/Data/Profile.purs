@@ -14,14 +14,15 @@ import Data.Maybe (Maybe)
 import Type.Proxy (Proxy(..))
 
 type ProfileRep r
-  = ( username :: Username
-    , bio :: Maybe String
-    , image :: Maybe Avatar
-    | r
-    )
+  =
+  ( username :: Username
+  , bio :: Maybe String
+  , image :: Maybe Avatar
+  | r
+  )
 
 type Profile
-  = { | ProfileRep ( following :: Boolean ) }
+  = { | ProfileRep (following :: Boolean) }
 
 -- | Codecs
 mkProfileRepCodec :: forall rest. CA.JPropCodec (Record rest) -> CA.JPropCodec { | ProfileRep rest }

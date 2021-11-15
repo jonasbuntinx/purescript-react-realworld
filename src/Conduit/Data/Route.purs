@@ -23,7 +23,7 @@ data Route
   | Favorites Username
   | Error
 
-derive instance  Generic Route _
+derive instance Generic Route _
 
 derive instance Eq Route
 

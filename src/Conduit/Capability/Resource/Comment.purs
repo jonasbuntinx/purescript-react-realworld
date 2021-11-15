@@ -9,7 +9,8 @@ import Data.Either (Either)
 import React.Halo (HaloM)
 
 class
-  Monad m <= CommentRepository m where
+  Monad m <=
+  CommentRepository m where
   listComments :: Slug -> m (Either Error (Array Comment))
   createComment :: Slug -> { body :: String } -> m (Either Error Comment)
   deleteComment :: Slug -> CommentId -> m (Either Error Unit)

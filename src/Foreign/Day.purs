@@ -16,7 +16,6 @@ foreign import _fromUTCString :: forall a. Fn3 a (DateTime -> a) String a
 fromUTCString :: String -> Maybe DateTime
 fromUTCString = runFn3 _fromUTCString Nothing Just
 
-
 foreign import toUTCString :: DateTime -> String
 
 foreign import fromMilliseconds :: Milliseconds -> DateTime

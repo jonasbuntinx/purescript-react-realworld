@@ -14,11 +14,12 @@ derive instance Eq ButtonSize
 
 -- | Favorite Button
 type FavoriteButtonProps
-  = { size :: ButtonSize
-    , favorited :: Boolean
-    , count :: Int
-    , onClick :: EventHandler
-    }
+  =
+  { size :: ButtonSize
+  , favorited :: Boolean
+  , count :: Int
+  , onClick :: EventHandler
+  }
 
 favoriteButton :: FavoriteButtonProps -> React.JSX
 favoriteButton { size, favorited, count, onClick } =
@@ -49,10 +50,11 @@ favoriteButton { size, favorited, count, onClick } =
 
 -- | Follow Button
 type FollowButtonProps
-  = { following :: Boolean
-    , username :: Username
-    , onClick :: EventHandler
-    }
+  =
+  { following :: Boolean
+  , username :: Username
+  , onClick :: EventHandler
+  }
 
 followButton :: FollowButtonProps -> React.JSX
 followButton { following, username, onClick } =

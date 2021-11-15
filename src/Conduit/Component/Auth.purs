@@ -28,10 +28,11 @@ import Web.HTML.Window as Window
 import Web.Storage.Storage as Storage
 
 type AuthIO
-  = { read :: Effect (Maybe Auth)
-    , emitter :: HS.Emitter (Maybe Auth)
-    , modify :: (Maybe Auth -> Maybe Auth) -> Effect (Maybe Auth)
-    }
+  =
+  { read :: Effect (Maybe Auth)
+  , emitter :: HS.Emitter (Maybe Auth)
+  , modify :: (Maybe Auth -> Maybe Auth) -> Effect (Maybe Auth)
+  }
 
 mkAuthManager :: Effect (AuthIO /\ React.JSX)
 mkAuthManager = do

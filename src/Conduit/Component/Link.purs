@@ -12,11 +12,12 @@ import React.Basic.Hooks as React
 import Routing.Duplex (print)
 
 type Props
-  = { className :: String
-    , route :: Route
-    , onClick :: Route -> Effect Unit
-    , children :: Array React.JSX
-    }
+  =
+  { className :: String
+  , route :: Route
+  , onClick :: Route -> Effect Unit
+  , children :: Array React.JSX
+  }
 
 link :: Props -> React.JSX
 link props =
