@@ -25,7 +25,7 @@ import Control.Monad.State (modify_, get)
 import Control.Parallel (parTraverse_)
 import Data.Foldable (for_, traverse_)
 import Data.Lens (preview, set)
-import Data.Maybe (Maybe(..), fromMaybe, maybe)
+import Data.Maybe (Maybe(..), maybe)
 import Data.Monoid (guard)
 import Network.RemoteData as RemoteData
 import React.Basic.DOM as R
@@ -208,7 +208,7 @@ mkProfilePage = component "ProfilePage" { context, initialState, eval, render }
                                           }
                                       else
                                         followButton
-                                          { following: fromMaybe false (RemoteData.toMaybe state.profile >>= _.following)
+                                          { following: RemoteData.maybe false _.following state.profile
                                           , username: props.username
                                           , onClick: handler_ $ send ToggleFollow
                                           }

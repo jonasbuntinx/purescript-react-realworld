@@ -13,11 +13,11 @@ type Auth
   = { token :: String
     , username :: Username
     , expirationTime :: DateTime
-    , user :: Maybe { | User () }
+    , user :: Maybe User
     }
 
 -- | Helpers
-toAuth :: String -> Maybe { | User () } -> Maybe Auth
+toAuth :: String -> Maybe User -> Maybe Auth
 toAuth token user = do
   { exp, username } <- hush $ Jwt.decode token
   pure { token, username, expirationTime: fromMilliseconds $ Milliseconds $ exp * 1000.0, user }

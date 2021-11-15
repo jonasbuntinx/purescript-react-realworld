@@ -33,7 +33,7 @@ import React.Halo as Halo
 
 data Action
   = Initialize
-  | UpdateUser (Maybe { | User () })
+  | UpdateUser (Maybe User)
   | UpdateImage String
   | UpdateUsername String
   | UpdateBio String
@@ -104,7 +104,7 @@ mkSettingsPage = component "SettingsPage" { context, initialState, eval, render 
     username <- values.username # V.validated (LR.prop (SProxy :: _ "username")) \username -> F.nonEmpty username `andThen` F.validUsername
     email <- values.email # V.validated (LR.prop (SProxy :: _ "email")) \email -> F.nonEmpty email `andThen` F.validEmail
     password <- values.password # V.validated (LR.prop (SProxy :: _ "password")) \password -> F.nonEmpty password `andThen` (F.minimumLength 3 *> F.maximunLength 20)
-    in { image: Avatar.fromString <$> values.image, username, bio: values.bio, email, password }
+    in { image: Avatar.fromString =<< values.image, username, bio: values.bio, email, password }
 
   render { state, send } =
     let

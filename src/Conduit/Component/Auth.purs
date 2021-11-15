@@ -5,10 +5,9 @@ import Affjax.StatusCode (StatusCode(..))
 import Conduit.Api.Client (Error, makeSecureRequest')
 import Conduit.Api.Endpoint as Endpoint
 import Conduit.Data.Auth (Auth, toAuth)
-import Conduit.Data.User (CurrentUser)
-import Data.Argonaut.Core as AC
-import Data.Argonaut.Decode (decodeJson)
-import Data.Argonaut.Encode (encodeJson)
+import Conduit.Data.User (CurrentUser, currentUserCodec)
+import Data.Codec.Argonaut as CA
+import Data.Codec.Argonaut.Record as CAR
 import Data.Either (Either, hush)
 import Data.Foldable (for_, traverse_)
 import Data.HTTP.Method (Method(..))
@@ -72,7 +71,7 @@ mkAuthManager = do
   load = do
     localStorage <- Window.localStorage =<< window
     item <- Storage.getItem "token" localStorage
-    pure $ flip toAuth Nothing =<< (hush <<< decodeJson <<< AC.fromString) =<< item
+    pure $ flip toAuth Nothing =<< item
 
   save = case _ of
     Nothing -> do
@@ -80,7 +79,7 @@ mkAuthManager = do
       Storage.removeItem "token" localStorage
     Just { token } -> do
       localStorage <- Window.localStorage =<< window
-      Storage.setItem "token" (AC.stringify $ encodeJson token) localStorage
+      Storage.setItem "token" token localStorage
 
   refresh { read, modify } = do
     auth <- read
@@ -90,7 +89,7 @@ mkAuthManager = do
         void $ modify $ const Nothing
       else
         launchAff_ do
-          (res :: Either Error { user :: CurrentUser }) <- makeSecureRequest' token GET (StatusCode 200) Endpoint.User unit
+          (res :: Either Error { user :: CurrentUser }) <- makeSecureRequest' token GET (StatusCode 200) Endpoint.User CA.null (CAR.object "UserResponse" { user: currentUserCodec }) unit
           liftEffect case hush $ _.user <$> res of
             Nothing -> void $ modify $ const Nothing
             Just user -> void $ modify $ const $ toAuth user.token (Just $ Record.delete (SProxy :: SProxy "token") user)

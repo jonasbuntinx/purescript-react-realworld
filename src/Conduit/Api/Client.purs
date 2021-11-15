@@ -1,6 +1,7 @@
 module Conduit.Api.Client where
 
 import Prelude
+
 import Affjax (defaultRequest)
 import Affjax as Affjax
 import Affjax.RequestBody as RequestBody
@@ -17,10 +18,10 @@ import Conduit.Config as Config
 import Conduit.Data.Route (Route(..))
 import Control.Monad.Except (ExceptT(..), except, runExceptT, throwError, withExceptT)
 import Data.Argonaut.Core as AC
-import Data.Argonaut.Decode (class DecodeJson, JsonDecodeError, decodeJson, printJsonDecodeError)
-import Data.Argonaut.Encode (class EncodeJson, encodeJson)
 import Data.Array as Array
 import Data.Bitraversable (lfor)
+import Data.Codec as Codec
+import Data.Codec.Argonaut (JsonDecodeError, JsonCodec, printJsonDecodeError)
 import Data.Either (Either(..))
 import Data.HTTP.Method (Method)
 import Data.Maybe (Maybe(..))
@@ -62,52 +63,52 @@ instance Show Error where
 makeRequest' ::
   forall m body response.
   MonadAff m =>
-  EncodeJson body =>
-  DecodeJson response =>
   Method ->
   StatusCode ->
   Endpoint ->
   (Request -> Request) ->
+  JsonCodec body ->
+  JsonCodec response ->
   body ->
   m (Either Error response)
-makeRequest' method statusCode endpoint transform body = liftAff $ runExceptT $ handle =<< fetch request
+makeRequest' method statusCode endpoint transform bodyCodec responseCodec body  = liftAff $ runExceptT $ handle =<< fetch request
   where
-  request = transform $ buildRequest method endpoint body
+  request = transform $ buildRequest method endpoint bodyCodec body
 
   handle resp
-    | resp.status == statusCode = decode resp
+    | resp.status == statusCode = decodeResponse resp
     | otherwise = throwError $ UnexpectedResponse request resp
 
-  decode resp = withExceptT (DecodeError request resp) $ except $ decodeJson resp.body
+  decodeResponse resp = withExceptT (DecodeError request resp) $ except $ Codec.decode responseCodec resp.body
 
 makeRequest ::
   forall m body response.
   MonadAff m =>
-  EncodeJson body =>
-  DecodeJson response =>
   Method ->
   StatusCode ->
   Endpoint ->
+  JsonCodec body ->
+  JsonCodec response ->
   body ->
   m (Either Error response)
-makeRequest method statusCode endpoint body = do
-  res <- makeRequest' method statusCode endpoint addBaseUrl body
+makeRequest method statusCode endpoint bodyCodec responseCodec body = do
+  res <- makeRequest' method statusCode endpoint addBaseUrl bodyCodec responseCodec body
   void $ lfor res onError
   pure res
 
 makeSecureRequest' ::
   forall m body response.
   MonadAff m =>
-  EncodeJson body =>
-  DecodeJson response =>
   String ->
   Method ->
   StatusCode ->
   Endpoint ->
+  JsonCodec body ->
+  JsonCodec response ->
   body ->
   m (Either Error response)
-makeSecureRequest' token method statusCode endpoint body = do
-  res <- makeRequest' method statusCode endpoint (addBaseUrl <<< addToken token) body
+makeSecureRequest' token method statusCode endpoint bodyCodec responseCodec body = do
+  res <- makeRequest' method statusCode endpoint (addBaseUrl <<< addToken token) bodyCodec responseCodec body
   void $ lfor res onError
   pure res
 
@@ -116,28 +117,34 @@ makeSecureRequest ::
   MonadAuth m =>
   MonadRouting m =>
   MonadAff m =>
-  EncodeJson body =>
-  DecodeJson response =>
   Method ->
   StatusCode ->
   Endpoint ->
+  JsonCodec body ->
+  JsonCodec response ->
   body ->
   m (Either Error response)
-makeSecureRequest method statusCode endpoint body = do
+makeSecureRequest method statusCode endpoint bodyCodec responseCodec body = do
   auth <- Auth.read
   case auth of
     Nothing -> do
       Routing.redirect Register
       pure $ Left $ NotAuthorized
     Just { token } -> do
-      makeSecureRequest' token method statusCode endpoint body
+      makeSecureRequest' token method statusCode endpoint bodyCodec responseCodec body
 
-buildRequest :: forall body. EncodeJson body => Method -> Endpoint -> body -> Request
-buildRequest method endpoint body =
+buildRequest ::
+  forall body.
+  Method ->
+  Endpoint ->
+  JsonCodec body ->
+  body ->
+  Request
+buildRequest method endpoint codec body =
   { method
   , url: print endpointCodec endpoint
   , headers: [ ContentType applicationJSON ]
-  , body: encodeJson body
+  , body: Codec.encode codec body
   }
 
 fetch :: Request -> ExceptT Error Aff Response
