@@ -7,14 +7,14 @@ import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut.Record as CAR
 import Type.Proxy (Proxy(..))
 
-type UserRep r
-  = (email :: String | ProfileRep r)
+type UserRep r =
+  (email :: String | ProfileRep r)
 
-type User
-  = { | UserRep () }
+type User =
+  { | UserRep () }
 
-type CurrentUser
-  = { | UserRep (token :: String) }
+type CurrentUser =
+  { | UserRep (token :: String) }
 
 -- | Codecs
 mkUserRepCodec :: forall rest. CA.JPropCodec (Record rest) -> CA.JPropCodec { | UserRep rest }

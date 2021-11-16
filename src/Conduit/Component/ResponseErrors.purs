@@ -15,8 +15,8 @@ import Network.RemoteData as RemoteData
 import React.Basic.DOM as R
 import React.Basic.Hooks as React
 
-type ErrorReponse
-  = { errors :: Object (Array String) }
+type ErrorReponse =
+  { errors :: Object (Array String) }
 
 responseErrors :: forall a. RemoteData Error a -> React.JSX
 responseErrors = case _ of

@@ -13,8 +13,7 @@ import Data.String as String
 import Effect.Exception as Exception
 import Foreign.Base64 (atob)
 
-type Jwt
-  =
+type Jwt =
   { username :: Username
   , exp :: Number
   }

@@ -9,8 +9,7 @@ import Data.Maybe (Maybe)
 import Data.Time.Duration (Milliseconds(..))
 import Foreign.Day (DateTime, fromMilliseconds)
 
-type Auth
-  =
+type Auth =
   { token :: String
   , username :: Username
   , expirationTime :: DateTime

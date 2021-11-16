@@ -11,8 +11,7 @@ import React.Basic.DOM.Events (preventDefault)
 import React.Basic.Events (handler)
 import React.Basic.Hooks (JSX, fragment)
 
-type Props
-  =
+type Props =
   { offset :: Int
   , limit :: Int
   , totalCount :: Int

@@ -33,8 +33,7 @@ import React.Basic.Events (handler_)
 import React.Basic.Hooks as React
 import React.Halo as Halo
 
-type Props
-  =
+type Props =
   { username :: Username
   , tab :: Tab
   }

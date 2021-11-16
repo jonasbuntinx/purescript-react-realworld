@@ -12,8 +12,7 @@ import React.Basic.DOM.Events (preventDefault)
 import React.Basic.Events (handler)
 import React.Basic.Hooks as React
 
-type Props a
-  =
+type Props a =
   { className :: String
   , selectedTab :: Maybe a
   , tabs ::

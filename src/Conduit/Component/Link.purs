@@ -11,8 +11,7 @@ import React.Basic.Events (handler, merge, syntheticEvent)
 import React.Basic.Hooks as React
 import Routing.Duplex (print)
 
-type Props
-  =
+type Props =
   { className :: String
   , route :: Route
   , onClick :: Route -> Effect Unit

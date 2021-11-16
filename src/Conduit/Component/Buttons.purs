@@ -13,8 +13,7 @@ data ButtonSize
 derive instance Eq ButtonSize
 
 -- | Favorite Button
-type FavoriteButtonProps
-  =
+type FavoriteButtonProps =
   { size :: ButtonSize
   , favorited :: Boolean
   , count :: Int
@@ -49,8 +48,7 @@ favoriteButton { size, favorited, count, onClick } =
     }
 
 -- | Follow Button
-type FollowButtonProps
-  =
+type FollowButtonProps =
   { following :: Boolean
   , username :: Username
   , onClick :: EventHandler

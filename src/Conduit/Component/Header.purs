@@ -12,8 +12,7 @@ import Effect (Effect)
 import React.Basic.DOM as R
 import React.Basic.Hooks as React
 
-type Props
-  =
+type Props =
   { auth :: Maybe Auth
   , currentRoute :: Route
   , onNavigate :: Route -> Effect Unit

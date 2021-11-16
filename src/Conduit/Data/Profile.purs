@@ -13,16 +13,15 @@ import Data.Codec.Argonaut.Record as CAR
 import Data.Maybe (Maybe)
 import Type.Proxy (Proxy(..))
 
-type ProfileRep r
-  =
+type ProfileRep r =
   ( username :: Username
   , bio :: Maybe String
   , image :: Maybe Avatar
   | r
   )
 
-type Profile
-  = { | ProfileRep (following :: Boolean) }
+type Profile =
+  { | ProfileRep (following :: Boolean) }
 
 -- | Codecs
 mkProfileRepCodec :: forall rest. CA.JPropCodec (Record rest) -> CA.JPropCodec { | ProfileRep rest }

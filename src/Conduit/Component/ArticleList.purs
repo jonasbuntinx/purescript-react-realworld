@@ -17,8 +17,7 @@ import React.Basic.Events (handler_)
 import React.Basic.Hooks as React
 
 -- | Article List
-type Props err
-  =
+type Props err =
   { articles :: RemoteData err (Array Article)
   , onNavigate :: Route -> Effect Unit
   , onFavoriteToggle :: Int -> Effect Unit

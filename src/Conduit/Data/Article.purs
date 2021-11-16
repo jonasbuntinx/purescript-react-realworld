@@ -11,8 +11,7 @@ import Data.Maybe (Maybe(..))
 import Foreign.Day (DateTime, dateTimeCodec)
 import Type.Proxy (Proxy(..))
 
-type ArticleRep r
-  =
+type ArticleRep r =
   ( title :: String
   , description :: String
   , body :: String
@@ -20,8 +19,7 @@ type ArticleRep r
   | r
   )
 
-type Article
-  =
+type Article =
   {
   | ArticleRep
       ( slug :: Slug
@@ -32,8 +30,7 @@ type Article
       )
   }
 
-type ArticlesQuery
-  =
+type ArticlesQuery =
   { tag :: Maybe String
   , author :: Maybe Username
   , favorited :: Maybe Username

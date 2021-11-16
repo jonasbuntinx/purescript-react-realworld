@@ -10,8 +10,7 @@ import Data.Newtype (class Newtype)
 import Data.Profunctor (wrapIso)
 import Foreign.Day (DateTime, dateTimeCodec)
 
-type Comment
-  =
+type Comment =
   { id :: CommentId
   , createdAt :: DateTime
   , updatedAt :: DateTime

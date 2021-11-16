@@ -41,8 +41,7 @@ import Effect.Exception as Exception
 import React.Halo as Halo
 import Record as Record
 
-type Env
-  =
+type Env =
   { auth :: AuthIO
   , routing :: RoutingIO
   }

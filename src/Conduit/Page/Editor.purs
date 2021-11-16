@@ -30,8 +30,7 @@ import React.Basic.Events (handler, handler_)
 import React.Basic.Hooks as React
 import React.Halo as Halo
 
-type Props
-  =
+type Props =
   { slug :: Maybe Slug
   }
 

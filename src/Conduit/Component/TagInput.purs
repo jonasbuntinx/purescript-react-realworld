@@ -14,8 +14,7 @@ import React.Basic.DOM.Events (key, preventDefault, stopPropagation, targetValue
 import React.Basic.Events (handler, handler_, merge, syntheticEvent)
 import React.Basic.Hooks as React
 
-type Props
-  =
+type Props =
   { tags :: Set String
   , onChange :: Set String -> Effect Unit
   }

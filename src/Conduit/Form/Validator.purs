@@ -10,8 +10,8 @@ import Data.String.Regex.Flags as Flags
 import Data.Validation.Semigroup (V(..), invalid)
 import Partial.Unsafe (unsafePartial)
 
-type Validator result valid
-  = result -> V (Array String) valid
+type Validator result valid =
+  result -> V (Array String) valid
 
 nonEmpty :: Validator String String
 nonEmpty = mustBe (not <<< String.null) "is required"

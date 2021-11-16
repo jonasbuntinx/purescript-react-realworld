@@ -32,19 +32,17 @@ import Effect.Class (class MonadEffect)
 import Effect.Class.Console as Console
 import Routing.Duplex (print)
 
-type URL
-  = String
+type URL =
+  String
 
-type Request
-  =
+type Request =
   { method :: Method
   , url :: URL
   , headers :: Array RequestHeader
   , body :: AC.Json
   }
 
-type Response
-  =
+type Response =
   { status :: StatusCode
   , headers :: Array ResponseHeader
   , body :: AC.Json
