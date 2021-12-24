@@ -13,7 +13,7 @@ loading = (unsafePerformEffect mkLoading) unit
 
 mkLoading :: React.Component Unit
 mkLoading = do
-  React.component "Loading" \content -> React.do
+  React.component "Loading" \_ -> React.do
     visible /\ setVisible <- React.useState false
     React.useEffectOnce do
       timeoutId <- Timer.setTimeout 400 do setVisible $ const true
