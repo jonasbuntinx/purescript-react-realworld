@@ -1,16 +1,25 @@
-/bower_components/
-/node_modules/
-/.pulp-cache/
-/output/
-/dce-output/
-/generated-docs/
-/.psc-package/
-/.psc*
-/.purs*
-/.psa*
-/dist/
-/serve/
-/.cache/
-/.spago/
-/*.log
-/.parcel-cache
+# Dependencies
+bower_components
+node_modules
+.psc-package
+.spago
+
+# Caches
+.cache
+.parcel-cache
+.pulp-cache
+
+# Dot files
+.psc*
+.purs*
+.psa*
+
+# Logs
+*.log
+
+# Generated
+dce-output
+dist
+generated-docs
+output
+serve
