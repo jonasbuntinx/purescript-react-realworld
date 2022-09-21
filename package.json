@@ -1,6 +1,6 @@
 {
   "name": "purescript-react-realworld",
-  "version": "4.0.1",
+  "version": "4.1.0",
   "description": "A real-world application demonstrating PureScript and React",
   "keywords": [
     "Purescript",
@@ -20,8 +20,8 @@
   "license": "MIT",
   "scripts": {
     "build": "spago build",
-    "bundle": "spago build && parcel build index.html --no-source-maps",
-    "clean": "rm -Rf .cache dist serve output dce-output node_modules .spago *.lock",
+    "bundle": "spago -x spago.production.dhall build && parcel build index.html --no-source-maps",
+    "clean": "rm -Rf .cache dist serve output output-es node_modules .spago *.lock",
     "postinstall": "spago install",
     "serve": "yarn build && yarn serve:parcel",
     "serve:parcel": "parcel serve --no-source-maps --dist-dir serve index.html",
@@ -31,6 +31,7 @@
     "parcel": "2.0.0",
     "purescript": "^0.15.4",
     "purescript-psa": "^0.8.2",
+    "purs-backend-es": "^1.1.0",
     "purs-tidy": "^0.9.2",
     "spago": "^0.20.9"
   },

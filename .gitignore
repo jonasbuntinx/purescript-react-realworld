@@ -18,8 +18,8 @@ node_modules
 *.log
 
 # Generated
-dce-output
 dist
 generated-docs
 output
+output-es
 serve

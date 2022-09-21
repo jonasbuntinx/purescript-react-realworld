@@ -2304,6 +2304,11 @@ purescript@^0.15.4:
   dependencies:
     purescript-installer "^0.2.6"
 
+purs-backend-es@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/purs-backend-es/-/purs-backend-es-1.1.0.tgz#55c78280a8ae572792e5b0876a09b1c998dadb53"
+  integrity sha512-AC7OLAAmGyslvNriOOE6BaEDoG3UKsT2Pw2P72R2DLhn7yiAsRNH60/1e+Huj29Vyn2ClWaY7TEQAu7AFclqGQ==
+
 purs-tidy@^0.9.2:
   version "0.9.2"
   resolved "https://registry.yarnpkg.com/purs-tidy/-/purs-tidy-0.9.2.tgz#b67e4a18ee3125edb4562cd5e3244dafe747cfdd"
