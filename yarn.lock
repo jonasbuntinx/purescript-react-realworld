@@ -2811,8 +2811,8 @@ zen-observable@^0.8.14:
   integrity sha512-PQ2PC7R9rslx84ndNBZB/Dkv8V8fZEpk83RLgXtYd0fwUgEjseMn1Dgajh2x6S8QbZAFa9p2qVCEuYZNgve0dQ==
 
 "zephyr@https://github.com/jonasbuntinx/zephyr.git":
-  version "0.3.2"
-  resolved "https://github.com/jonasbuntinx/zephyr.git#3ded8f126ee3ac21b8a541c0283b36f4b4b95e1d"
+  version "0.5.2"
+  resolved "https://github.com/jonasbuntinx/zephyr.git#58abb996aa6e917a854cd9d03df8d976dfd36e9d"
   dependencies:
     request "^2.88.0"
     tar "^4.4.8"
