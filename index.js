@@ -1,3 +1,3 @@
-import { main } from "./output-es/Main";
+import { main } from "./output/Main";
 
 main();

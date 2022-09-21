@@ -1,1 +1,1 @@
-./spago.dhall // { backend = "purs-backend-es build" }
+./spago.dhall // { backend = "purs-backend-es build --output-dir output" }
