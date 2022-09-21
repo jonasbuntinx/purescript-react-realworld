@@ -21,7 +21,6 @@ import Data.Maybe (Maybe(..))
 import Data.Monoid (guard)
 import Data.Set (Set)
 import Data.Set as Set
-import Data.Symbol (SProxy(..))
 import Data.Validation.Semigroup (andThen, toEither, validation)
 import Network.RemoteData as RemoteData
 import React.Basic.DOM as R
@@ -29,6 +28,7 @@ import React.Basic.DOM.Events (targetValue)
 import React.Basic.Events (handler, handler_)
 import React.Basic.Hooks as React
 import React.Halo as Halo
+import Type.Proxy (Proxy(..))
 
 type Props =
   { slug :: Maybe Slug
@@ -48,11 +48,9 @@ mkEditorPage ::
   MonadRouting m =>
   MonadHalo m =>
   m (Props -> React.JSX)
-mkEditorPage = component "SettingsPage" { context, initialState, eval, render }
+mkEditorPage = component "SettingsPage" { initialState, eval, render }
   where
-  context _ = pure unit
-
-  initialState _ _ =
+  initialState _ =
     { article: RemoteData.NotAsked
     , title: pure ""
     , description: pure ""
@@ -63,9 +61,9 @@ mkEditorPage = component "SettingsPage" { context, initialState, eval, render }
 
   eval =
     Halo.mkEval
-      _
+      Halo.defaultEval
         { onInitialize = \_ -> Just Initialize
-        , onUpdate = \prev next -> if (prev.props.slug /= next.props.slug) then Just Initialize else Nothing
+        , onUpdate = \prev next -> if (prev.slug /= next.slug) then Just Initialize else Nothing
         , onAction = handleAction
         }
 
@@ -73,7 +71,7 @@ mkEditorPage = component "SettingsPage" { context, initialState, eval, render }
     Initialize -> do
       props <- Halo.props
       case props.slug of
-        Nothing -> put $ initialState props unit
+        Nothing -> put $ initialState props
         Just slug -> do
           modify_ _ { article = RemoteData.Loading }
           response <- getArticle slug
@@ -107,9 +105,9 @@ mkEditorPage = component "SettingsPage" { context, initialState, eval, render }
             Left err -> modify_ _ { submitResponse = RemoteData.Failure err }
 
   validate values = ado
-    title <- values.title # V.validated (LR.prop (SProxy :: _ "title")) F.nonEmpty
-    description <- values.description # V.validated (LR.prop (SProxy :: _ "description")) F.nonEmpty
-    body <- values.body # V.validated (LR.prop (SProxy :: _ "body")) \body -> F.nonEmpty body `andThen` F.minimumLength 3
+    title <- values.title # V.validated (LR.prop (Proxy :: _ "title")) F.nonEmpty
+    description <- values.description # V.validated (LR.prop (Proxy :: _ "description")) F.nonEmpty
+    body <- values.body # V.validated (LR.prop (Proxy :: _ "body")) \body -> F.nonEmpty body `andThen` F.minimumLength 3
     in { title, description, body, tagList: Set.toUnfoldable values.tagList }
 
   render { state, send } =

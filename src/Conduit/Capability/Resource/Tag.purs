@@ -11,5 +11,5 @@ class
   TagRepository m where
   listTags :: m (Either Error (Array String))
 
-instance TagRepository m => TagRepository (HaloM props ctx state action m) where
+instance TagRepository m => TagRepository (HaloM props state action m) where
   listTags = lift listTags

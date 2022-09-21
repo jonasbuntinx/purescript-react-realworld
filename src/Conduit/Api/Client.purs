@@ -3,7 +3,7 @@ module Conduit.Api.Client where
 import Prelude
 
 import Affjax (defaultRequest)
-import Affjax as Affjax
+import Affjax.Web as Affjax
 import Affjax.RequestBody as RequestBody
 import Affjax.RequestHeader (RequestHeader(..))
 import Affjax.ResponseFormat as ResponseFormat

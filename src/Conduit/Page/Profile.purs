@@ -62,11 +62,9 @@ mkProfilePage ::
   ArticleRepository m =>
   MonadHalo m =>
   m (Props -> React.JSX)
-mkProfilePage = component "ProfilePage" { context, initialState, eval, render }
+mkProfilePage = component "ProfilePage" { initialState, eval, render }
   where
-  context _ = pure unit
-
-  initialState _ _ =
+  initialState _ =
     { auth: Nothing
     , profile: RemoteData.NotAsked
     , articles: RemoteData.NotAsked
@@ -80,9 +78,9 @@ mkProfilePage = component "ProfilePage" { context, initialState, eval, render }
 
   eval =
     Halo.mkEval
-      _
+      Halo.defaultEval
         { onInitialize = \_ -> Just Initialize
-        , onUpdate = \prev next -> Just $ OnPropsUpdate prev.props next.props
+        , onUpdate = \prev next -> Just $ OnPropsUpdate prev next
         , onAction = handleAction
         }
 

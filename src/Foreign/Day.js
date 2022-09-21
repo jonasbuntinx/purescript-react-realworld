@@ -1,29 +1,30 @@
-var dayjs = require("dayjs");
+import * as dayjs from "dayjs";
+import * as advancedFormat from "dayjs/plugin/advancedFormat";
 
-dayjs.extend(require("dayjs/plugin/advancedFormat"));
+dayjs.extend(advancedFormat);
 
-exports._fromUTCString = function (nothing, just, str) {
+export const _fromUTCString = (nothing, just, str) => {
   var d = dayjs(str);
   return d.isValid() ? just(d) : nothing;
 };
 
-exports.toUTCString = function (d) {
+export const toUTCString = (d) => {
   return d.format();
 };
 
-exports.fromMilliseconds = function (ms) {
+export const fromMilliseconds = (ms) => {
   return dayjs(ms);
 };
 
-exports.toMilliseconds = function (d) {
+export const toMilliseconds = (d) => {
   return d.valueOf();
 };
 
-exports.now = function () {
+export const now = () => {
   return dayjs();
 };
 
-exports.format = function (format) {
+export const format = (format) => {
   return function (d) {
     return d.format(format);
   };

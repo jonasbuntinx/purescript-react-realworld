@@ -18,8 +18,7 @@ type Comment =
   , author :: Profile
   }
 
-newtype CommentId
-  = CommentId Int
+newtype CommentId = CommentId Int
 
 derive instance Newtype CommentId _
 

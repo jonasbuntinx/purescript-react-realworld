@@ -8,8 +8,7 @@ import Data.Codec.Argonaut as CA
 import Data.Maybe (Maybe(..))
 import Data.String as String
 
-newtype Avatar
-  = Avatar String
+newtype Avatar = Avatar String
 
 derive instance Eq Avatar
 

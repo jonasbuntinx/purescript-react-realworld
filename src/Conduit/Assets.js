@@ -1,1 +1,1 @@
-exports.smileyCyrus = require("../../assets/smiley-cyrus.jpg");
+export { default as smileyCyrus } from "../../assets/smiley-cyrus.jpg";

@@ -1,5 +1,5 @@
-var nmd = require("nano-markdown");
+import * as nmd from "nano-markdown";
 
-exports.nmd = function(str) {
+export const nmd = (str) => {
   return nmd(str);
 };

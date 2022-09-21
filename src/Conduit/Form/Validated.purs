@@ -51,8 +51,7 @@ _Modified =
     _ -> Nothing
 
 -- | Mapping instance
-newtype ModifyValidated
-  = ModifyValidated (Validated ~> Validated)
+newtype ModifyValidated = ModifyValidated (Validated ~> Validated)
 
 instance Mapping ModifyValidated a a => Mapping ModifyValidated (Validated a) (Validated a) where
   mapping m@(ModifyValidated f) = over _Validated (mapping m) <<< f

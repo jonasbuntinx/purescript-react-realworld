@@ -1,4 +1,4 @@
-exports._atob = function (Left, Right, str) {
+export const _atob = (Left, Right, str) => {
   var result;
 
   try {
@@ -11,7 +11,7 @@ exports._atob = function (Left, Right, str) {
   return result;
 };
 
-exports._btoa = function (Left, Right, str) {
+export const _btoa =  (Left, Right, str) => {
   var result;
 
   try {

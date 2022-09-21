@@ -14,6 +14,6 @@ class
   getProfile :: Username -> m (Either Error Profile)
   toggleFollow :: Profile -> m (Either Error Profile)
 
-instance ProfileRepository m => ProfileRepository (HaloM props ctx state action m) where
+instance ProfileRepository m => ProfileRepository (HaloM props state action m) where
   getProfile = lift <<< getProfile
   toggleFollow = lift <<< toggleFollow

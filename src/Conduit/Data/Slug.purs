@@ -10,8 +10,7 @@ import Data.String.Regex as Regex
 import Data.String.Regex.Flags as Flags
 import Partial.Unsafe (unsafePartial)
 
-newtype Slug
-  = Slug String
+newtype Slug = Slug String
 
 derive instance Eq Slug
 
