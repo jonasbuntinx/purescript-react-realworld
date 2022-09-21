@@ -1,6 +1,6 @@
 {
   "name": "purescript-react-realworld",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "description": "A real-world application demonstrating PureScript and React",
   "keywords": [
     "Purescript",
@@ -32,16 +32,16 @@
   },
   "devDependencies": {
     "parcel": "2.0.0",
-    "purescript": "^0.14.5",
+    "purescript": "^0.15.4",
     "purescript-psa": "^0.8.2",
-    "spago": "^0.20.3",
+    "purs-tidy": "^0.9.2",
+    "spago": "^0.20.9",
     "zephyr": "https://github.com/jonasbuntinx/zephyr.git"
   },
   "dependencies": {
-    "dayjs": "^1.10.7",
+    "dayjs": "^1.11.5",
     "nano-markdown": "^1.2.1",
-    "preact": "^10.5.15",
-    "xhr2": "^0.2.1"
+    "preact": "^10.11.0"
   },
   "alias": {
     "react": "preact/compat",

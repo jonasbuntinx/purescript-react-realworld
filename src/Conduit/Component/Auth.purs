@@ -12,7 +12,6 @@ import Data.Either (Either, hush)
 import Data.Foldable (for_, traverse_)
 import Data.HTTP.Method (Method(..))
 import Data.Maybe (Maybe(..))
-import Data.Symbol (SProxy(..))
 import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
 import Effect.Aff (launchAff_)
@@ -23,6 +22,7 @@ import Foreign.Day (now)
 import Halogen.Subscription as HS
 import React.Basic.Hooks as React
 import Record as Record
+import Type.Proxy (Proxy(..))
 import Web.HTML (window)
 import Web.HTML.Window as Window
 import Web.Storage.Storage as Storage
@@ -92,4 +92,4 @@ mkAuthManager = do
           (res :: Either Error { user :: CurrentUser }) <- makeSecureRequest' token GET (StatusCode 200) Endpoint.User CA.null (CAR.object "UserResponse" { user: currentUserCodec }) unit
           liftEffect case hush $ _.user <$> res of
             Nothing -> void $ modify $ const Nothing
-            Just user -> void $ modify $ const $ toAuth user.token (Just $ Record.delete (SProxy :: SProxy "token") user)
+            Just user -> void $ modify $ const $ toAuth user.token (Just $ Record.delete (Proxy :: Proxy "token") user)

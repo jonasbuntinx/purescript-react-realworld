@@ -26,8 +26,7 @@ foreign import now :: Effect DateTime
 
 foreign import format :: Format -> DateTime -> String
 
-newtype Format
-  = Format String
+newtype Format = Format String
 
 instance Eq DateTime where
   eq a b = eq (toMilliseconds a) (toMilliseconds b)

@@ -6,8 +6,7 @@ import Data.Codec.Argonaut (JsonCodec)
 import Data.Codec.Argonaut as CA
 import Data.Maybe (Maybe(..))
 
-newtype Username
-  = Username String
+newtype Username = Username String
 
 derive instance Eq Username
 

@@ -51,11 +51,9 @@ mkHomePage ::
   ArticleRepository m =>
   MonadHalo m =>
   m (Unit -> React.JSX)
-mkHomePage = component "HomePage" { context, initialState, eval, render }
+mkHomePage = component "HomePage" { initialState, eval, render }
   where
-  context _ = pure unit
-
-  initialState _ _ =
+  initialState _ =
     { auth: Nothing
     , tags: NotAsked
     , articles: NotAsked
@@ -70,7 +68,7 @@ mkHomePage = component "HomePage" { context, initialState, eval, render }
 
   eval =
     Halo.mkEval
-      _
+      Halo.defaultEval
         { onInitialize = \_ -> Just Initialize
         , onAction = handleAction
         }

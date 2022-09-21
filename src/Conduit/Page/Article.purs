@@ -31,7 +31,6 @@ import Data.Lens (preview, set)
 import Data.Lens.Record as LR
 import Data.Maybe (Maybe(..), maybe)
 import Data.Monoid (guard)
-import Data.Symbol (SProxy(..))
 import Data.Validation.Semigroup (V, toEither)
 import Foreign.Day (toDisplay)
 import Foreign.NanoMarkdown (nmd)
@@ -42,6 +41,7 @@ import React.Basic.DOM.Events (preventDefault, targetValue)
 import React.Basic.Events (handler, handler_)
 import React.Basic.Hooks as React
 import React.Halo as Halo
+import Type.Proxy (Proxy(..))
 
 type Props =
   { slug :: Slug
@@ -70,11 +70,9 @@ mkArticlePage ::
   ProfileRepository m =>
   MonadHalo m =>
   m (Props -> React.JSX)
-mkArticlePage = component "ArticlePage" { context, initialState, eval, render }
+mkArticlePage = component "ArticlePage" { initialState, eval, render }
   where
-  context _ = pure unit
-
-  initialState _ _ =
+  initialState _ =
     { auth: Nothing
     , article: RemoteData.NotAsked
     , comments: RemoteData.NotAsked
@@ -84,9 +82,9 @@ mkArticlePage = component "ArticlePage" { context, initialState, eval, render }
 
   eval =
     Halo.mkEval
-      _
+      Halo.defaultEval
         { onInitialize = \_ -> Just Initialize
-        , onUpdate = \prev next -> Just $ OnPropsUpdate prev.props next.props
+        , onUpdate = \prev next -> Just $ OnPropsUpdate prev next
         , onAction = handleAction
         }
 
@@ -158,7 +156,7 @@ mkArticlePage = component "ArticlePage" { context, initialState, eval, render }
 
   validate :: forall r. { body :: Validated String | r } -> V { body :: Array String } { body :: String }
   validate values = ado
-    body <- values.body # V.validated (LR.prop (SProxy :: _ "body")) F.nonEmpty
+    body <- values.body # V.validated (LR.prop (Proxy :: _ "body")) F.nonEmpty
     in { body }
 
   render { state, send } =

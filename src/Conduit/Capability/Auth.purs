@@ -15,12 +15,12 @@ class
   getEmitter :: m (HS.Emitter (Maybe Auth))
   modify :: (Maybe Auth -> Maybe Auth) -> m (Maybe Auth)
 
-instance MonadAuth m => MonadAuth (HaloM props ctx state action m) where
+instance MonadAuth m => MonadAuth (HaloM props state action m) where
   read = lift read
   getEmitter = lift getEmitter
   modify = lift <<< modify
 
-subscribe :: forall m props ctx state action. MonadAuth m => (Maybe Auth -> action) -> HaloM props ctx state action m Unit
+subscribe :: forall m props state action. MonadAuth m => (Maybe Auth -> action) -> HaloM props state action m Unit
 subscribe f = do
   emitter <- lift getEmitter
   void $ Halo.subscribe $ f <$> emitter

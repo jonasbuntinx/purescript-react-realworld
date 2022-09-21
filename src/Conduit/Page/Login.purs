@@ -16,7 +16,6 @@ import Data.Either (Either(..))
 import Data.Foldable (for_, traverse_)
 import Data.Lens.Record as LR
 import Data.Monoid (guard)
-import Data.Symbol (SProxy(..))
 import Data.Validation.Semigroup (andThen, toEither, validation)
 import Network.RemoteData as RemoteData
 import React.Basic.DOM as R
@@ -24,6 +23,7 @@ import React.Basic.DOM.Events (targetValue)
 import React.Basic.Events (handler, handler_)
 import React.Basic.Hooks as React
 import React.Halo as Halo
+import Type.Proxy (Proxy(..))
 
 data Action
   = Navigate Route
@@ -37,11 +37,9 @@ mkLoginPage ::
   UserRepository m =>
   MonadHalo m =>
   m (Unit -> React.JSX)
-mkLoginPage = component "LoginPage" { context, initialState, eval, render }
+mkLoginPage = component "LoginPage" { initialState, eval, render }
   where
-  context _ = pure unit
-
-  initialState _ _ =
+  initialState _ =
     { email: pure ""
     , password: pure ""
     , submitResponse: RemoteData.NotAsked
@@ -49,7 +47,7 @@ mkLoginPage = component "LoginPage" { context, initialState, eval, render }
 
   eval =
     Halo.mkEval
-      _
+      Halo.defaultEval
         { onAction = handleAction
         }
 
@@ -68,8 +66,8 @@ mkLoginPage = component "LoginPage" { context, initialState, eval, render }
           for_ response \_ -> redirect Home
 
   validate values = ado
-    email <- values.email # V.validated (LR.prop (SProxy :: _ "email")) \email -> F.nonEmpty email `andThen` F.validEmail
-    password <- values.password # V.validated (LR.prop (SProxy :: _ "password")) \password -> F.nonEmpty password `andThen` (F.minimumLength 3 *> F.maximunLength 20)
+    email <- values.email # V.validated (LR.prop (Proxy :: _ "email")) \email -> F.nonEmpty email `andThen` F.validEmail
+    password <- values.password # V.validated (LR.prop (Proxy :: _ "password")) \password -> F.nonEmpty password `andThen` (F.minimumLength 3 *> F.maximunLength 20)
     in { email, password }
 
   render { state, send } =

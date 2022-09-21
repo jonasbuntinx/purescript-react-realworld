@@ -33,21 +33,20 @@ import Data.Either (Either)
 import Data.Foldable (for_)
 import Data.HTTP.Method (Method(..))
 import Data.Maybe (Maybe(..))
-import Data.Symbol (SProxy(..))
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Exception as Exception
 import React.Halo as Halo
 import Record as Record
+import Type.Proxy (Proxy(..))
 
 type Env =
   { auth :: AuthIO
   , routing :: RoutingIO
   }
 
-newtype AppM a
-  = AppM (ReaderT Env Aff a)
+newtype AppM a = AppM (ReaderT Env Aff a)
 
 runAppM :: Env -> AppM ~> Aff
 runAppM env (AppM m) = runReaderT m env
@@ -103,17 +102,17 @@ instance UserRepository AppM where
   loginUser credentials = do
     (res :: Either Error { user :: CurrentUser }) <- makeRequest POST (StatusCode 200) Endpoint.Login loginBodyCodec userResponseCodec { user: credentials }
     for_ res \{ user: currentUser } -> do
-      Auth.modify $ const $ toAuth currentUser.token (Just $ Record.delete (SProxy :: _ "token") currentUser)
+      Auth.modify $ const $ toAuth currentUser.token (Just $ Record.delete (Proxy :: _ "token") currentUser)
     pure $ res <#> _.user
   registerUser user = do
     (res :: Either Error { user :: CurrentUser }) <- makeRequest POST (StatusCode 200) Endpoint.Users registerBodyCodec userResponseCodec { user }
     for_ res \{ user: currentUser } -> do
-      Auth.modify $ const $ toAuth currentUser.token (Just $ Record.delete (SProxy :: _ "token") currentUser)
+      Auth.modify $ const $ toAuth currentUser.token (Just $ Record.delete (Proxy :: _ "token") currentUser)
     pure $ res <#> _.user
   updateUser user = do
     (res :: Either Error { user :: CurrentUser }) <- makeSecureRequest PUT (StatusCode 200) Endpoint.User updateUserBodyCodec userResponseCodec { user }
     for_ res \{ user: currentUser } -> do
-      Auth.modify $ map $ _ { user = Just $ Record.delete (SProxy :: _ "token") currentUser }
+      Auth.modify $ map $ _ { user = Just $ Record.delete (Proxy :: _ "token") currentUser }
     pure $ res <#> _.user
   logoutUser = do
     void $ Auth.modify $ const Nothing

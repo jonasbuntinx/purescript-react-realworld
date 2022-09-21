@@ -11,7 +11,7 @@ import React.Basic.Hooks as React
 import Routing.Duplex (parse, print)
 import Routing.PushState as PushState
 import Web.Router as Router
-import Web.Router.Driver.PushState as Driver
+import Web.Router.PushState as Driver
 
 type RoutingIO =
   { read :: Effect Route
@@ -27,9 +27,9 @@ mkRoutingManager = do
   value <- Ref.new $ either (const Error) identity $ parse routeCodec path
   { emitter, listener } <- HS.create
   let
-    driver = Driver.makeDriver_ (parse routeCodec) (print routeCodec) interface
+    driver = Driver.mkInterface_ (parse routeCodec) (print routeCodec) interface
   router <-
-    Router.makeRouter
+    Router.mkInterface
       (\_ _ -> Router.continue)
       ( case _ of
           Router.Resolved _ route -> do

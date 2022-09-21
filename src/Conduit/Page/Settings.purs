@@ -22,7 +22,6 @@ import Data.Foldable (for_, traverse_)
 import Data.Lens.Record as LR
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Monoid (guard)
-import Data.Symbol (SProxy(..))
 import Data.Validation.Semigroup (andThen, toEither, validation)
 import Network.RemoteData as RemoteData
 import React.Basic.DOM as R
@@ -30,6 +29,7 @@ import React.Basic.DOM.Events (targetValue)
 import React.Basic.Events (handler, handler_)
 import React.Basic.Hooks as React
 import React.Halo as Halo
+import Type.Proxy (Proxy(..))
 
 data Action
   = Initialize
@@ -49,11 +49,9 @@ mkSettingsPage ::
   MonadRouting m =>
   MonadHalo m =>
   m (Unit -> React.JSX)
-mkSettingsPage = component "SettingsPage" { context, initialState, eval, render }
+mkSettingsPage = component "SettingsPage" { initialState, eval, render }
   where
-  context _ = pure unit
-
-  initialState _ _ =
+  initialState _ =
     { user: Nothing
     , image: Nothing
     , username: pure ""
@@ -65,7 +63,7 @@ mkSettingsPage = component "SettingsPage" { context, initialState, eval, render 
 
   eval =
     Halo.mkEval
-      _
+      Halo.defaultEval
         { onInitialize = \_ -> Just Initialize
         , onAction = handleAction
         }
@@ -101,9 +99,9 @@ mkSettingsPage = component "SettingsPage" { context, initialState, eval, render 
     Logout -> logoutUser
 
   validate values = ado
-    username <- values.username # V.validated (LR.prop (SProxy :: _ "username")) \username -> F.nonEmpty username `andThen` F.validUsername
-    email <- values.email # V.validated (LR.prop (SProxy :: _ "email")) \email -> F.nonEmpty email `andThen` F.validEmail
-    password <- values.password # V.validated (LR.prop (SProxy :: _ "password")) \password -> F.nonEmpty password `andThen` (F.minimumLength 3 *> F.maximunLength 20)
+    username <- values.username # V.validated (LR.prop (Proxy :: _ "username")) \username -> F.nonEmpty username `andThen` F.validUsername
+    email <- values.email # V.validated (LR.prop (Proxy :: _ "email")) \email -> F.nonEmpty email `andThen` F.validEmail
+    password <- values.password # V.validated (LR.prop (Proxy :: _ "password")) \password -> F.nonEmpty password `andThen` (F.minimumLength 3 *> F.maximunLength 20)
     in { image: Avatar.fromString =<< values.image, username, bio: values.bio, email, password }
 
   render { state, send } =
