@@ -2596,7 +2596,7 @@ svgo@^2.4.0:
     picocolors "^1.0.0"
     stable "^0.1.8"
 
-tar@^4.4.6, tar@^4.4.8:
+tar@^4.4.6:
   version "4.4.19"
   resolved "https://registry.yarnpkg.com/tar/-/tar-4.4.19.tgz#2e4d7263df26f2b914dee10c825ab132123742f3"
   integrity sha512-a20gEsvHnWe0ygBY8JbxoM4w3SJdhc7ZAuxkLqh+nvNQN2IOt0B5lLgM490X5Hl8FF0dl0tOf2ewFYAlIFgzVA==
@@ -2814,10 +2814,3 @@ zen-observable@^0.8.14:
   version "0.8.15"
   resolved "https://registry.yarnpkg.com/zen-observable/-/zen-observable-0.8.15.tgz#96415c512d8e3ffd920afd3889604e30b9eaac15"
   integrity sha512-PQ2PC7R9rslx84ndNBZB/Dkv8V8fZEpk83RLgXtYd0fwUgEjseMn1Dgajh2x6S8QbZAFa9p2qVCEuYZNgve0dQ==
-
-"zephyr@https://github.com/jonasbuntinx/zephyr.git":
-  version "0.5.2"
-  resolved "https://github.com/jonasbuntinx/zephyr.git#58abb996aa6e917a854cd9d03df8d976dfd36e9d"
-  dependencies:
-    request "^2.88.0"
-    tar "^4.4.8"
