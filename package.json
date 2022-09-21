@@ -20,14 +20,15 @@
   "license": "MIT",
   "scripts": {
     "build": "spago build",
-    "bundle": "spago -x spago.production.dhall build && parcel build index.html --no-source-maps",
+    "bundle": "spago -x spago.production.dhall build && parcel build index.pug --no-source-maps",
     "clean": "rm -Rf .cache dist serve output output-es node_modules .spago *.lock",
     "postinstall": "spago install",
     "serve": "yarn build && yarn serve:parcel",
-    "serve:parcel": "parcel serve --no-source-maps --dist-dir serve index.html",
+    "serve:parcel": "parcel serve --no-source-maps --dist-dir serve index.pug",
     "test": "spago test --no-install"
   },
   "devDependencies": {
+    "@parcel/transformer-pug": "2.7.0",
     "parcel": "2.0.0",
     "purescript": "^0.15.4",
     "purescript-psa": "^0.8.2",
