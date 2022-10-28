@@ -24,6 +24,12 @@ data Error
   | JSONParseError String
   | JSONDecodeError CA.JsonDecodeError
 
+instance showError :: Show Error where
+  show (MalformedToken) = "MalformedToken"
+  show (Base64DecodeError e) = "Base64DecodeError: " <> (show e)
+  show (JSONParseError e) = "JSONParseError: " <> e
+  show (JSONDecodeError e) = "JSONDecodeError: " <> (show e)
+
 -- | Helpers
 decode :: String -> Either Error Jwt
 decode =

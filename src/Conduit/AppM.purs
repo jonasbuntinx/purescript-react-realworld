@@ -17,6 +17,7 @@ import Conduit.Capability.Routing (class MonadRouting)
 import Conduit.Capability.Routing as Routing
 import Conduit.Component.Auth (AuthIO)
 import Conduit.Component.Routing (RoutingIO)
+import Conduit.Config as Config
 import Conduit.Data.Article (Article, ArticleRep, articleCodec, defaultArticlesQuery, mkArticleRepCodec)
 import Conduit.Data.Auth (toAuth)
 import Conduit.Data.Comment (Comment, commentCodec)
@@ -29,13 +30,14 @@ import Control.Monad.Reader (ReaderT, ask, asks, runReaderT)
 import Data.Codec.Argonaut (JsonCodec)
 import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut.Record as CAR
-import Data.Either (Either)
+import Data.Either (Either, isLeft, fromLeft, hush)
 import Data.Foldable (for_)
 import Data.HTTP.Method (Method(..))
 import Data.Maybe (Maybe(..))
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Class.Console as Console
 import Effect.Exception as Exception
 import React.Halo as Halo
 import Record as Record
@@ -102,12 +104,18 @@ instance UserRepository AppM where
   loginUser credentials = do
     (res :: Either Error { user :: CurrentUser }) <- makeRequest POST (StatusCode 200) Endpoint.Login loginBodyCodec userResponseCodec { user: credentials }
     for_ res \{ user: currentUser } -> do
-      Auth.modify $ const $ toAuth currentUser.token (Just $ Record.delete (Proxy :: _ "token") currentUser)
+      let auth = toAuth currentUser.token (Just $ Record.delete (Proxy :: _ "token") currentUser)
+      when (isLeft auth && Config.nodeEnv /= "production") do
+        Console.log $ fromLeft "" auth
+      Auth.modify $ const $ hush auth
     pure $ res <#> _.user
   registerUser user = do
     (res :: Either Error { user :: CurrentUser }) <- makeRequest POST (StatusCode 200) Endpoint.Users registerBodyCodec userResponseCodec { user }
     for_ res \{ user: currentUser } -> do
-      Auth.modify $ const $ toAuth currentUser.token (Just $ Record.delete (Proxy :: _ "token") currentUser)
+      let auth = toAuth currentUser.token (Just $ Record.delete (Proxy :: _ "token") currentUser)
+      when (isLeft auth && Config.nodeEnv /= "production") do
+        Console.log $ fromLeft "" auth
+      Auth.modify $ const $ hush auth
     pure $ res <#> _.user
   updateUser user = do
     (res :: Either Error { user :: CurrentUser }) <- makeSecureRequest PUT (StatusCode 200) Endpoint.User updateUserBodyCodec userResponseCodec { user }
