@@ -2165,7 +2165,7 @@ purescript-psa@^0.8.2:
   resolved "https://registry.yarnpkg.com/purescript-psa/-/purescript-psa-0.8.2.tgz#ee20c40f02cd0c5ed6dd3dd93ef02d9c466f17bc"
   integrity sha512-4Olf0aQQrNCfcDLXQI3gJgINEQ+3U+4QPLmQ2LHX2L/YOXSwM7fOGIUs/wMm/FQnwERUyQmHKQTJKB4LIjE2fg==
 
-purescript@^0.15.6:
+purescript@^0.15.4:
   version "0.15.7"
   resolved "https://registry.yarnpkg.com/purescript/-/purescript-0.15.7.tgz#2849bc0c46485d9282e1817b92188bf025bad712"
   integrity sha512-FRAiAlL19IwuNSGrsvXLdcZ7vrv6QqJtQKgOeTavyJluCGb2bVaw7KSDflzwKIFyUWhY1GOEBIXJ/ehUQ5rK6A==
