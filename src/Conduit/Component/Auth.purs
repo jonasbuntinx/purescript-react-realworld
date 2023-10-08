@@ -4,11 +4,12 @@ import Prelude
 import Affjax.StatusCode (StatusCode(..))
 import Conduit.Api.Client (Error, makeSecureRequest')
 import Conduit.Api.Endpoint as Endpoint
+import Conduit.Config as Config
 import Conduit.Data.Auth (Auth, toAuth)
 import Conduit.Data.User (CurrentUser, currentUserCodec)
 import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut.Record as CAR
-import Data.Either (Either, hush)
+import Data.Either (Either, isLeft, fromLeft, hush)
 import Data.Foldable (for_, traverse_)
 import Data.HTTP.Method (Method(..))
 import Data.Maybe (Maybe(..))
@@ -16,6 +17,7 @@ import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
+import Effect.Class.Console as Console
 import Effect.Ref as Ref
 import Effect.Timer as Timer
 import Foreign.Day (now)
@@ -71,7 +73,9 @@ mkAuthManager = do
   load = do
     localStorage <- Window.localStorage =<< window
     item <- Storage.getItem "token" localStorage
-    pure $ flip toAuth Nothing =<< item
+    pure $ flip toAuth' Nothing =<< item
+    where
+    toAuth' token user = hush $ toAuth token user
 
   save = case _ of
     Nothing -> do
@@ -92,4 +96,8 @@ mkAuthManager = do
           (res :: Either Error { user :: CurrentUser }) <- makeSecureRequest' token GET (StatusCode 200) Endpoint.User CA.null (CAR.object "UserResponse" { user: currentUserCodec }) unit
           liftEffect case hush $ _.user <$> res of
             Nothing -> void $ modify $ const Nothing
-            Just user -> void $ modify $ const $ toAuth user.token (Just $ Record.delete (Proxy :: Proxy "token") user)
+            Just user -> do
+              let auth' = toAuth user.token (Just $ Record.delete (Proxy :: _ "token") user)
+              when (isLeft auth' && Config.nodeEnv /= "production") do
+                Console.log $ fromLeft "" auth'
+              void $ modify $ const $ hush auth'
